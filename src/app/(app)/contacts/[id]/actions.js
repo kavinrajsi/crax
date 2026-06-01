@@ -46,5 +46,26 @@ export async function addTag(contactId, tag) {
 
 export async function removeTag(tagId) {
   await sql`DELETE FROM public.contact_tags WHERE id = ${tagId}`
-  // revalidatePath is handled optimistically client-side; server revalidates on next load
+}
+
+export async function addActivity(contactId, { type, title, body, due_at }) {
+  const { data: session } = await auth.getSession()
+  const authorEmail = session?.user?.email ?? "anonymous"
+  await sql`
+    INSERT INTO public.contact_activities (contact_id, author_email, type, title, body, due_at)
+    VALUES (${contactId}, ${authorEmail}, ${type}, ${title}, ${body ?? null}, ${due_at ?? null})
+  `
+  revalidatePath(`/contacts/${contactId}`)
+}
+
+export async function completeActivity(activityId, contactId) {
+  await sql`
+    UPDATE public.contact_activities SET completed_at = NOW() WHERE id = ${activityId}
+  `
+  revalidatePath(`/contacts/${contactId}`)
+}
+
+export async function deleteActivity(activityId, contactId) {
+  await sql`DELETE FROM public.contact_activities WHERE id = ${activityId}`
+  revalidatePath(`/contacts/${contactId}`)
 }

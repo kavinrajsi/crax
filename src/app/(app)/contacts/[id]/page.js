@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { sql } from "@/lib/db"
-import { ContactNotes } from "@/components/contact-notes"
+import { ContactTimeline } from "@/components/contact-timeline"
 import { ContactStatusSelect } from "@/components/contact-status-select"
 import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
@@ -35,10 +35,11 @@ function sourceDomain(url) {
 
 export default async function ContactDetailPage({ params }) {
   const { id } = await params
-  const [rows, notes, tags] = await Promise.all([
+  const [rows, notes, tags, activities] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
+    sql`SELECT * FROM public.contact_activities WHERE contact_id = ${id} ORDER BY created_at ASC`,
   ])
   const contact = rows[0]
 
@@ -188,8 +189,12 @@ export default async function ContactDetailPage({ params }) {
 
       <Separator />
 
-      {/* Notes trail */}
-      <ContactNotes contactId={contact.id} initialNotes={notes} />
+      {/* Timeline */}
+      <ContactTimeline
+        contactId={contact.id}
+        initialNotes={notes}
+        initialActivities={activities}
+      />
     </div>
   )
 }
