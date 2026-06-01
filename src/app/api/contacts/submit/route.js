@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { evaluateRules } from "@/lib/automation"
+import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function POST(request) {
   // Optional secret auth
@@ -83,6 +84,7 @@ export async function POST(request) {
       `
     }
 
+    await autoLinkCompany(contactId, email, company)
     await evaluateRules("contact_created", { contactId })
   }
 

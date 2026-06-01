@@ -137,6 +137,7 @@ export default async function ContactDetailPage({ params }) {
               contactId={contact.id}
               initialCompanyId={contact.company_id}
               companies={companies}
+              contactEmail={contact.email}
             />
           </CardContent>
         </Card>

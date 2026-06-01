@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { evaluateRules } from "@/lib/automation"
+import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function addNote(contactId, body) {
   const trimmed = body?.trim()
@@ -70,4 +71,18 @@ export async function completeActivity(activityId, contactId) {
 export async function deleteActivity(activityId, contactId) {
   await sql`DELETE FROM public.contact_activities WHERE id = ${activityId}`
   revalidatePath(`/contacts/${contactId}`)
+}
+
+export async function detectAndLinkCompany(contactId) {
+  const [contact] = await sql`
+    SELECT email, company FROM public.contact_us WHERE id = ${contactId}
+  `
+  if (!contact) return null
+
+  const result = await autoLinkCompany(contactId, contact.email, contact.company, { overwrite: true })
+  if (result) {
+    revalidatePath(`/contacts/${contactId}`)
+    revalidatePath("/companies")
+  }
+  return result
 }
