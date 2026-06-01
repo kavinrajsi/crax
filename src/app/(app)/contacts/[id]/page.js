@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { sql } from "@/lib/db"
+import { ContactNotes } from "@/components/contact-notes"
 
 export const dynamic = "force-dynamic"
 
@@ -40,7 +41,10 @@ function sourceDomain(url) {
 
 export default async function ContactDetailPage({ params }) {
   const { id } = await params
-  const rows = await sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`
+  const [rows, notes] = await Promise.all([
+    sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
+    sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
+  ])
   const contact = rows[0]
 
   if (!contact) notFound()
@@ -182,6 +186,11 @@ export default async function ContactDetailPage({ params }) {
           </CardContent>
         </Card>
       </div>
+
+      <Separator />
+
+      {/* Notes trail */}
+      <ContactNotes contactId={contact.id} initialNotes={notes} />
     </div>
   )
 }
