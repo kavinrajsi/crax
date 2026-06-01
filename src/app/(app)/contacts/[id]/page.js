@@ -14,17 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { sql } from "@/lib/db"
 import { ContactNotes } from "@/components/contact-notes"
+import { ContactStatusSelect } from "@/components/contact-status-select"
+import { ContactEditForm } from "@/components/contact-edit-form"
+import { ContactTags } from "@/components/contact-tags"
 
 export const dynamic = "force-dynamic"
-
-const STATUS_COLORS = {
-  New:        "#3b82f6",
-  "follow-up":"#f97316",
-  win:        "#22c55e",
-  closed:     "#64748b",
-  rejected:   "#ef4444",
-  fake:       "#a855f7",
-}
 
 function formatDate(iso) {
   if (!iso) return "—"
@@ -41,15 +35,14 @@ function sourceDomain(url) {
 
 export default async function ContactDetailPage({ params }) {
   const { id } = await params
-  const [rows, notes] = await Promise.all([
+  const [rows, notes, tags] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
+    sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
   ])
   const contact = rows[0]
 
   if (!contact) notFound()
-
-  const statusColor = STATUS_COLORS[contact.status] ?? "#64748b"
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -64,26 +57,19 @@ export default async function ContactDetailPage({ params }) {
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            {contact.name || "—"}
-          </h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight truncate">
+              {contact.name || "—"}
+            </h1>
+            <ContactEditForm contact={contact} />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">Contact #{contact.id}</p>
         </div>
-        {contact.status && (
-          <Badge
-            className="text-xs shrink-0 mt-1"
-            style={{
-              backgroundColor: `${statusColor}20`,
-              color: statusColor,
-              borderColor: `${statusColor}40`,
-              border: "1px solid",
-            }}
-          >
-            {contact.status}
-          </Badge>
-        )}
+        <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} />
       </div>
+
+      {/* Edit form (rendered inline below header when open) */}
 
       <Separator />
 
@@ -170,6 +156,19 @@ export default async function ContactDetailPage({ params }) {
             ) : (
               <p className="text-sm text-muted-foreground">—</p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Tags */}
+        <Card className="sm:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+              <TagIcon className="h-3.5 w-3.5" />
+              Tags
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ContactTags contactId={contact.id} initialTags={tags} />
           </CardContent>
         </Card>
 

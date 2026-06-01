@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   Sidebar,
@@ -9,7 +9,6 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInput,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
@@ -19,6 +18,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -34,7 +41,10 @@ import {
   ChevronDownIcon,
   FilterIcon,
   SearchIcon,
+  DownloadIcon,
+  XIcon,
 } from "lucide-react"
+import { bulkUpdateStatus } from "@/app/(app)/data/actions"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
@@ -61,11 +71,13 @@ function truncate(str, n = 20) {
   return str.length > n ? str.slice(0, n) + "…" : str
 }
 
-const statusColors = {
+const STATUS_COLORS = {
   New:       "secondary",
   Contacted: "outline",
   Closed:    "destructive",
 }
+
+const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake"]
 
 /* ─── sort ─────────────────────────────────────────────────────────────── */
 
@@ -113,6 +125,9 @@ export function DataPageClient({ contacts }) {
   const [statusFilter, setStatusFilter] = useState("all")
   const [sourceFilter, setSourceFilter] = useState("all")
   const [sort, setSort] = useState({ col: "created_at", dir: "desc" })
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkStatus, setBulkStatus] = useState("")
+  const [isPending, startTransition] = useTransition()
 
   function toggleSort(col) {
     setSort((prev) =>
@@ -149,6 +164,42 @@ export function DataPageClient({ contacts }) {
     return sortRows(filtered, sort.col, sort.dir)
   }, [contacts, statusFilter, sourceFilter, search, sort])
 
+  const allVisibleSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id))
+
+  function toggleSelectAll() {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(rows.map((r) => r.id)))
+    }
+  }
+
+  function toggleRow(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function handleExport(idsToExport) {
+    const url = idsToExport?.length
+      ? `/api/contacts/export?ids=${idsToExport.join(",")}`
+      : "/api/contacts/export"
+    window.location.href = url
+  }
+
+  function handleBulkStatus() {
+    if (!bulkStatus || !selectedIds.size) return
+    const ids = [...selectedIds]
+    startTransition(async () => {
+      await bulkUpdateStatus(ids, bulkStatus)
+      setSelectedIds(new Set())
+      setBulkStatus("")
+      router.refresh()
+    })
+  }
+
   return (
     <SidebarProvider style={{ "--sidebar-width": "260px" }}>
       {/* Filter sidebar */}
@@ -175,20 +226,14 @@ export function DataPageClient({ contacts }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={statusFilter === "all"}
-                    onClick={() => setStatusFilter("all")}
-                  >
+                  <SidebarMenuButton isActive={statusFilter === "all"} onClick={() => setStatusFilter("all")}>
                     <span>All</span>
                     <span className="ml-auto text-xs text-muted-foreground">{contacts.length}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {statuses.map((s) => (
                   <SidebarMenuItem key={s}>
-                    <SidebarMenuButton
-                      isActive={statusFilter === s}
-                      onClick={() => setStatusFilter(s)}
-                    >
+                    <SidebarMenuButton isActive={statusFilter === s} onClick={() => setStatusFilter(s)}>
                       <span>{s}</span>
                       <span className="ml-auto text-xs text-muted-foreground">
                         {contacts.filter((r) => r.status === s).length}
@@ -208,10 +253,7 @@ export function DataPageClient({ contacts }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={sourceFilter === "all"}
-                    onClick={() => setSourceFilter("all")}
-                  >
+                  <SidebarMenuButton isActive={sourceFilter === "all"} onClick={() => setSourceFilter("all")}>
                     <span>All</span>
                     <span className="ml-auto text-xs text-muted-foreground">{contacts.length}</span>
                   </SidebarMenuButton>
@@ -263,15 +305,28 @@ export function DataPageClient({ contacts }) {
             </div>
           )}
 
-          {/* Search */}
-          <div className="relative ml-auto">
-            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search name, email, phone…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 w-56 text-xs"
-            />
+          <div className="ml-auto flex items-center gap-2">
+            {/* Export all */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => handleExport(null)}
+            >
+              <DownloadIcon className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+
+            {/* Search */}
+            <div className="relative">
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search name, email, phone…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8 w-56 text-xs"
+              />
+            </div>
           </div>
         </header>
 
@@ -280,20 +335,28 @@ export function DataPageClient({ contacts }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableHead label="ID"      col="id"         sort={sort} onSort={toggleSort} className="w-12" />
-                <SortableHead label="Name / Email" col="name" sort={sort} onSort={toggleSort} />
-                <SortableHead label="Phone"   col="phone"      sort={sort} onSort={toggleSort} />
-                <SortableHead label="Company" col="company"    sort={sort} onSort={toggleSort} />
-                <SortableHead label="Source"  col="source_url" sort={sort} onSort={toggleSort} />
-                <SortableHead label="Needs"   col="needs"      sort={sort} onSort={toggleSort} />
-                <SortableHead label="Status"  col="status"     sort={sort} onSort={toggleSort} />
-                <SortableHead label="Date"    col="created_at" sort={sort} onSort={toggleSort} />
+                <TableHead className="sticky top-0 z-10 bg-background w-10">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-border cursor-pointer"
+                  />
+                </TableHead>
+                <SortableHead label="ID"           col="id"         sort={sort} onSort={toggleSort} className="w-12" />
+                <SortableHead label="Name / Email" col="name"       sort={sort} onSort={toggleSort} />
+                <SortableHead label="Phone"        col="phone"      sort={sort} onSort={toggleSort} />
+                <SortableHead label="Company"      col="company"    sort={sort} onSort={toggleSort} />
+                <SortableHead label="Source"       col="source_url" sort={sort} onSort={toggleSort} />
+                <SortableHead label="Needs"        col="needs"      sort={sort} onSort={toggleSort} />
+                <SortableHead label="Status"       col="status"     sort={sort} onSort={toggleSort} />
+                <SortableHead label="Date"         col="created_at" sort={sort} onSort={toggleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                     No records match the selected filters.
                   </TableCell>
                 </TableRow>
@@ -302,25 +365,33 @@ export function DataPageClient({ contacts }) {
                   <TableRow
                     key={row.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/contacts/${row.id}`)}
+                    data-selected={selectedIds.has(row.id) || undefined}
                   >
-                    <TableCell className="text-muted-foreground text-xs">{row.id}</TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id)}
+                        onChange={() => toggleRow(row.id)}
+                        className="h-4 w-4 rounded border-border cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>{row.id}</TableCell>
+                    <TableCell onClick={() => router.push(`/contacts/${row.id}`)}>
                       <div className="font-medium whitespace-nowrap">{row.name || "—"}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{row.email || "—"}</div>
                     </TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{row.phone || "—"}</TableCell>
-                    <TableCell className="text-xs">{truncate(row.company) || "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{sourcePath(row.source_url)}</TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-xs whitespace-nowrap" onClick={() => router.push(`/contacts/${row.id}`)}>{row.phone || "—"}</TableCell>
+                    <TableCell className="text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>{truncate(row.company) || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground" onClick={() => router.push(`/contacts/${row.id}`)}>{sourcePath(row.source_url)}</TableCell>
+                    <TableCell className="text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>
                       {Array.isArray(row.needs) && row.needs.length > 0 ? row.needs.join(", ") : "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={statusColors[row.status] ?? "outline"} className="text-xs">
+                    <TableCell onClick={() => router.push(`/contacts/${row.id}`)}>
+                      <Badge variant={STATUS_COLORS[row.status] ?? "outline"} className="text-xs">
                         {row.status || "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap" onClick={() => router.push(`/contacts/${row.id}`)}>
                       {formatDate(row.created_at)}
                     </TableCell>
                   </TableRow>
@@ -330,6 +401,52 @@ export function DataPageClient({ contacts }) {
           </Table>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border border-border bg-background shadow-lg px-4 py-3">
+            <span className="text-sm font-medium">{selectedIds.size} selected</span>
+            <Separator orientation="vertical" className="h-4" />
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => handleExport([...selectedIds])}
+            >
+              <DownloadIcon className="h-3.5 w-3.5" />
+              Export
+            </Button>
+
+            <div className="flex items-center gap-1.5">
+              <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                <SelectTrigger className="h-8 text-xs w-36">
+                  <SelectValue placeholder="Set status…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                className="text-xs"
+                onClick={handleBulkStatus}
+                disabled={!bulkStatus || isPending}
+              >
+                {isPending ? "Updating…" : "Apply"}
+              </Button>
+            </div>
+
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </SidebarInset>
     </SidebarProvider>
   )

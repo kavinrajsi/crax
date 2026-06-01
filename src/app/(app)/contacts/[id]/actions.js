@@ -17,3 +17,34 @@ export async function addNote(contactId, body) {
   `
   revalidatePath(`/contacts/${contactId}`)
 }
+
+export async function updateContact(contactId, fields) {
+  const { name, email, phone, company } = fields
+  await sql`
+    UPDATE public.contact_us
+    SET
+      name    = ${name    ?? null},
+      email   = ${email   ?? null},
+      phone   = ${phone   ?? null},
+      company = ${company ?? null}
+    WHERE id = ${contactId}
+  `
+  revalidatePath(`/contacts/${contactId}`)
+  revalidatePath("/data")
+}
+
+export async function addTag(contactId, tag) {
+  const trimmed = tag?.trim().toLowerCase()
+  if (!trimmed) return
+  await sql`
+    INSERT INTO public.contact_tags (contact_id, tag)
+    VALUES (${contactId}, ${trimmed})
+    ON CONFLICT (contact_id, tag) DO NOTHING
+  `
+  revalidatePath(`/contacts/${contactId}`)
+}
+
+export async function removeTag(tagId) {
+  await sql`DELETE FROM public.contact_tags WHERE id = ${tagId}`
+  // revalidatePath is handled optimistically client-side; server revalidates on next load
+}

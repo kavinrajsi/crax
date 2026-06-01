@@ -8,6 +8,7 @@ import { sql } from "@/lib/db"
 export async function updateContactStatus(contactId, newStatus) {
   await sql`UPDATE public.contact_us SET status = ${newStatus} WHERE id = ${contactId}`
   revalidatePath("/planner")
+  revalidatePath(`/contacts/${contactId}`)
 }
 
 /* ─── boards ─────────────────────────────────────────────────────────── */
