@@ -17,6 +17,7 @@ import { ContactTimeline } from "@/components/contact-timeline"
 import { ContactStatusSelect } from "@/components/contact-status-select"
 import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
+import { ContactCompanySelect } from "@/components/contact-company-select"
 
 export const dynamic = "force-dynamic"
 
@@ -35,11 +36,12 @@ function sourceDomain(url) {
 
 export default async function ContactDetailPage({ params }) {
   const { id } = await params
-  const [rows, notes, tags, activities] = await Promise.all([
+  const [rows, notes, tags, activities, companies] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_activities WHERE contact_id = ${id} ORDER BY created_at ASC`,
+    sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
   ])
   const contact = rows[0]
 
@@ -102,7 +104,7 @@ export default async function ContactDetailPage({ params }) {
           </CardContent>
         </Card>
 
-        {/* Company */}
+        {/* Company (text field from form) */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
@@ -112,6 +114,23 @@ export default async function ContactDetailPage({ params }) {
           </CardHeader>
           <CardContent>
             <p className="text-sm">{contact.company || "—"}</p>
+          </CardContent>
+        </Card>
+
+        {/* Company link (CRM entity) */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+              <BuildingIcon className="h-3.5 w-3.5" />
+              Linked Company
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ContactCompanySelect
+              contactId={contact.id}
+              initialCompanyId={contact.company_id}
+              companies={companies}
+            />
           </CardContent>
         </Card>
 
