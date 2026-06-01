@@ -8,6 +8,7 @@ import {
   KanbanSquareIcon,
   CircleDollarSignIcon,
   BuildingIcon,
+  BarChart2Icon,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import {
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/data",      label: "Data",      icon: DatabaseIcon },
   { href: "/deals",     label: "Deals",     icon: CircleDollarSignIcon },
   { href: "/companies", label: "Companies", icon: BuildingIcon },
+  { href: "/analytics", label: "Analytics", icon: BarChart2Icon },
   { href: "/logs",      label: "Logs",      icon: ScrollTextIcon },
   { href: "/planner",   label: "Planner",   icon: KanbanSquareIcon },
   { href: "/profile",   label: "Profile",   icon: UserIcon },

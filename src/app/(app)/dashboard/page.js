@@ -1,4 +1,5 @@
-import { UsersIcon, MailIcon, ActivityIcon, GlobeIcon, CircleDollarSignIcon, TrendingUpIcon } from "lucide-react"
+import Link from "next/link"
+import { MailIcon, GlobeIcon, CircleDollarSignIcon, TrendingUpIcon, CheckSquareIcon, PhoneIcon, CalendarIcon, AlertCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -32,7 +33,7 @@ export default async function DashboardPage() {
   const { data: session } = await auth.getSession()
   const firstName = (session?.user?.name ?? session?.user?.email ?? "there").split(" ")[0]
 
-  const [contactRows, auditRows, sourceRows, recentLogs, dealRows] = await Promise.all([
+  const [contactRows, auditRows, sourceRows, recentLogs, dealRows, upcomingTasks] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
@@ -48,6 +49,14 @@ export default async function DashboardPage() {
     sql`SELECT actor_email, action, target_table, target_id, created_at
         FROM public.audit_logs
         ORDER BY created_at DESC
+        LIMIT 8`,
+    sql`SELECT ca.id, ca.type, ca.title, ca.due_at, ca.contact_id, cu.name AS contact_name
+        FROM public.contact_activities ca
+        JOIN public.contact_us cu ON cu.id = ca.contact_id
+        WHERE ca.completed_at IS NULL
+          AND ca.due_at IS NOT NULL
+          AND ca.due_at <= NOW() + INTERVAL '7 days'
+        ORDER BY ca.due_at ASC
         LIMIT 8`,
     sql`SELECT
           COUNT(*)::int AS total,
@@ -140,6 +149,55 @@ export default async function DashboardPage() {
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming tasks */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Upcoming Tasks</CardTitle>
+              <Badge variant={upcomingTasks.some(t => new Date(t.due_at) < new Date()) ? "destructive" : "secondary"}>
+                {upcomingTasks.length}
+              </Badge>
+            </div>
+            <CardDescription>Due within the next 7 days</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {upcomingTasks.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">No upcoming tasks.</p>
+            ) : (
+              <ul>
+                {upcomingTasks.map((task, i) => {
+                  const due = new Date(task.due_at)
+                  const now = new Date()
+                  const isOverdue = due < now
+                  const diff = Math.round((due - now) / 86400000)
+                  const dueLabel = isOverdue
+                    ? `${Math.abs(diff)}d overdue`
+                    : diff === 0 ? "Today"
+                    : diff === 1 ? "Tomorrow"
+                    : `${diff}d left`
+                  const TypeIcon = { call: PhoneIcon, meeting: CalendarIcon, email: MailIcon, task: CheckSquareIcon }[task.type] ?? CheckSquareIcon
+                  return (
+                    <li key={task.id}>
+                      {i > 0 && <Separator />}
+                      <Link href={`/contacts/${task.contact_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
+                        <TypeIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="flex flex-1 flex-col min-w-0">
+                          <span className="text-sm font-medium truncate">{task.title}</span>
+                          <span className="text-xs text-muted-foreground truncate">{task.contact_name}</span>
+                        </div>
+                        <span className={`text-xs shrink-0 font-medium ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                          {isOverdue && <AlertCircleIcon className="h-3 w-3 inline mr-1" />}
+                          {dueLabel}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
