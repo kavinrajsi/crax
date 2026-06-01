@@ -6,6 +6,7 @@ import {
   ScrollTextIcon,
   BoltIcon,
   KanbanSquareIcon,
+  CircleDollarSignIcon,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import {
@@ -31,6 +32,7 @@ export const dynamic = "force-dynamic"
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/data",      label: "Data",      icon: DatabaseIcon },
+  { href: "/deals",     label: "Deals",     icon: CircleDollarSignIcon },
   { href: "/logs",      label: "Logs",      icon: ScrollTextIcon },
   { href: "/planner",   label: "Planner",   icon: KanbanSquareIcon },
   { href: "/profile",   label: "Profile",   icon: UserIcon },

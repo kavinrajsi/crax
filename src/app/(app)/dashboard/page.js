@@ -1,4 +1,4 @@
-import { UsersIcon, MailIcon, ActivityIcon, GlobeIcon } from "lucide-react"
+import { UsersIcon, MailIcon, ActivityIcon, GlobeIcon, CircleDollarSignIcon, TrendingUpIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   const { data: session } = await auth.getSession()
   const firstName = (session?.user?.name ?? session?.user?.email ?? "there").split(" ")[0]
 
-  const [contactRows, auditRows, sourceRows, recentLogs] = await Promise.all([
+  const [contactRows, auditRows, sourceRows, recentLogs, dealRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
@@ -49,6 +49,12 @@ export default async function DashboardPage() {
         FROM public.audit_logs
         ORDER BY created_at DESC
         LIMIT 8`,
+    sql`SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE stage != 'Closed-Lost')::int AS open_count,
+          COALESCE(SUM(value) FILTER (WHERE stage != 'Closed-Lost'), 0)::numeric AS pipeline_value,
+          COALESCE(SUM(value) FILTER (WHERE won_at >= date_trunc('month', NOW())), 0)::numeric AS won_this_month
+        FROM public.deals`,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0
@@ -65,11 +71,22 @@ export default async function DashboardPage() {
   const domainList = Object.entries(domainMap)
     .sort((a, b) => b[1] - a[1])
 
+  const pipelineValue = parseFloat(dealRows[0]?.pipeline_value ?? 0)
+  const wonThisMonth  = parseFloat(dealRows[0]?.won_this_month ?? 0)
+  const openDeals     = dealRows[0]?.open_count ?? 0
+
+  function formatCurrency(v) {
+    if (!v) return "₹0"
+    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`
+    if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`
+    return `₹${v}`
+  }
+
   const stats = [
-    { label: "Total Contacts", value: contactTotal, icon: MailIcon,     sub: `${contactNew} new` },
-    { label: "Audit Events",   value: auditTotal,   icon: ActivityIcon, sub: `${loginCount} logins` },
-    { label: "Unique Sources", value: domainList.length, icon: GlobeIcon, sub: "distinct domains" },
-    { label: "Registered Users", value: null,       icon: UsersIcon,    sub: "via Neon Auth" },
+    { label: "Total Contacts",  value: contactTotal,            icon: MailIcon,              sub: `${contactNew} new` },
+    { label: "Pipeline Value",  value: formatCurrency(pipelineValue), icon: CircleDollarSignIcon, sub: `${openDeals} open deals` },
+    { label: "Won This Month",  value: formatCurrency(wonThisMonth),  icon: TrendingUpIcon,   sub: "closed-won revenue" },
+    { label: "Unique Sources",  value: domainList.length,       icon: GlobeIcon,             sub: "distinct domains" },
   ]
 
   return (
