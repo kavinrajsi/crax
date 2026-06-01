@@ -10,6 +10,15 @@ export async function bulkUpdateStatus(ids, newStatus) {
     SET status = ${newStatus}
     WHERE id = ANY(${ids})
   `
+  // Log status change as timeline entry for each contact
+  await sql`
+    INSERT INTO public.contact_activities
+      (contact_id, author_email, type, title, body, completed_at)
+    SELECT id, 'system', 'status_change', 'Status changed',
+           ${"Bulk status update to " + newStatus}, NOW()
+    FROM public.contact_us
+    WHERE id = ANY(${ids})
+  `
   revalidatePath("/data")
   revalidatePath("/planner")
 }

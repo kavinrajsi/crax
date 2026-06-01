@@ -57,12 +57,24 @@ export async function POST(request) {
     VALUES (${contactId ?? null}, ${fromEmail}, ${to}, ${subject}, ${body}, ${providerId}, ${status})
   `
 
-  // Also log as a contact activity so it appears in the timeline
+  // Log email as contact activity + auto-create follow-up task
   if (contactId) {
     await sql`
       INSERT INTO public.contact_activities (contact_id, author_email, type, title, body, completed_at)
       VALUES (${contactId}, ${fromEmail}, 'email', ${subject}, ${body}, NOW())
     `
+    if (status === "sent") {
+      const dueAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      await sql`
+        INSERT INTO public.contact_activities
+          (contact_id, author_email, type, title, body, due_at)
+        VALUES
+          (${contactId}, ${fromEmail}, 'task',
+           ${"Follow up on: " + subject},
+           'Auto-created after email send',
+           ${dueAt})
+      `
+    }
   }
 
   if (status === "failed") {

@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { auth } from "@/lib/auth"
+import { evaluateRules } from "@/lib/automation"
 
 export async function POST(request) {
   const { data: session } = await auth.getSession()
@@ -32,8 +33,10 @@ export async function POST(request) {
         ON CONFLICT (email) DO NOTHING
         RETURNING id
       `
-      if (result.length > 0) inserted++
-      else skipped++
+      if (result.length > 0) {
+        inserted++
+        await evaluateRules("contact_created", { contactId: result[0].id })
+      } else skipped++
     } catch {
       skipped++
     }

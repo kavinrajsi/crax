@@ -2,11 +2,29 @@
 
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
+import { evaluateRules } from "@/lib/automation"
 
 /* ─── contact status ─────────────────────────────────────────────────── */
 
-export async function updateContactStatus(contactId, newStatus) {
+export async function updateContactStatus(contactId, newStatus, authorEmail = "system") {
+  const [existing] = await sql`SELECT status FROM public.contact_us WHERE id = ${contactId}`
+  const oldStatus = existing?.status ?? "unknown"
+
+  if (oldStatus === newStatus) return
+
   await sql`UPDATE public.contact_us SET status = ${newStatus} WHERE id = ${contactId}`
+
+  // Auto-log status change as a timeline entry
+  await sql`
+    INSERT INTO public.contact_activities
+      (contact_id, author_email, type, title, body, completed_at)
+    VALUES
+      (${contactId}, ${authorEmail}, 'status_change', 'Status changed',
+       ${`Status changed from ${oldStatus} to ${newStatus}`}, NOW())
+  `
+
+  await evaluateRules("contact_status_changed", { contactId, fromStatus: oldStatus, toStatus: newStatus })
+
   revalidatePath("/planner")
   revalidatePath(`/contacts/${contactId}`)
 }

@@ -8,16 +8,18 @@ import {
   CheckSquareIcon,
   CheckCircleIcon,
   Trash2Icon,
+  ArrowRightIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { completeActivity, deleteActivity } from "@/app/(app)/contacts/[id]/actions"
 
 const TYPE_META = {
-  call:    { icon: PhoneIcon,       label: "Call",    color: "text-blue-500" },
-  meeting: { icon: CalendarIcon,    label: "Meeting", color: "text-violet-500" },
-  email:   { icon: MailIcon,        label: "Email",   color: "text-orange-500" },
-  task:    { icon: CheckSquareIcon, label: "Task",    color: "text-green-500" },
+  call:          { icon: PhoneIcon,       label: "Call",          color: "text-blue-500" },
+  meeting:       { icon: CalendarIcon,    label: "Meeting",       color: "text-violet-500" },
+  email:         { icon: MailIcon,        label: "Email",         color: "text-orange-500" },
+  task:          { icon: CheckSquareIcon, label: "Task",          color: "text-green-500" },
+  status_change: { icon: ArrowRightIcon,  label: "Status Change", color: "text-slate-400" },
 }
 
 function formatDue(iso) {

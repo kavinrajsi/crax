@@ -40,6 +40,7 @@ const navItems = [
   { href: "/analytics",                  label: "Analytics",       icon: BarChart2Icon },
   { href: "/logs",                       label: "Logs",            icon: ScrollTextIcon },
   { href: "/planner",                    label: "Planner",         icon: KanbanSquareIcon },
+  { href: "/automation",                 label: "Automation",      icon: BoltIcon },
   { href: "/settings/email-templates",   label: "Email Templates", icon: SettingsIcon },
   { href: "/profile",                    label: "Profile",         icon: UserIcon },
 ]
