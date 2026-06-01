@@ -18,6 +18,7 @@ import { ContactStatusSelect } from "@/components/contact-status-select"
 import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
 import { ContactCompanySelect } from "@/components/contact-company-select"
+import { ComposeEmailSheet } from "@/components/compose-email-sheet"
 
 export const dynamic = "force-dynamic"
 
@@ -36,12 +37,13 @@ function sourceDomain(url) {
 
 export default async function ContactDetailPage({ params }) {
   const { id } = await params
-  const [rows, notes, tags, activities, companies] = await Promise.all([
+  const [rows, notes, tags, activities, companies, templates] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_activities WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+    sql`SELECT * FROM public.email_templates ORDER BY created_at DESC`,
   ])
   const contact = rows[0]
 
@@ -69,7 +71,12 @@ export default async function ContactDetailPage({ params }) {
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">Contact #{contact.id}</p>
         </div>
-        <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} />
+        <div className="flex items-center gap-2 shrink-0">
+          {contact.email && (
+            <ComposeEmailSheet contact={contact} templates={templates} />
+          )}
+          <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} />
+        </div>
       </div>
 
       {/* Edit form (rendered inline below header when open) */}

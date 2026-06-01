@@ -9,6 +9,7 @@ import {
   CircleDollarSignIcon,
   BuildingIcon,
   BarChart2Icon,
+  SettingsIcon,
 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import {
@@ -32,14 +33,15 @@ import { SidebarUser } from "@/components/sidebar-user"
 export const dynamic = "force-dynamic"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
-  { href: "/data",      label: "Data",      icon: DatabaseIcon },
-  { href: "/deals",     label: "Deals",     icon: CircleDollarSignIcon },
-  { href: "/companies", label: "Companies", icon: BuildingIcon },
-  { href: "/analytics", label: "Analytics", icon: BarChart2Icon },
-  { href: "/logs",      label: "Logs",      icon: ScrollTextIcon },
-  { href: "/planner",   label: "Planner",   icon: KanbanSquareIcon },
-  { href: "/profile",   label: "Profile",   icon: UserIcon },
+  { href: "/dashboard",                  label: "Dashboard",       icon: LayoutDashboardIcon },
+  { href: "/data",                       label: "Data",            icon: DatabaseIcon },
+  { href: "/deals",                      label: "Deals",           icon: CircleDollarSignIcon },
+  { href: "/companies",                  label: "Companies",       icon: BuildingIcon },
+  { href: "/analytics",                  label: "Analytics",       icon: BarChart2Icon },
+  { href: "/logs",                       label: "Logs",            icon: ScrollTextIcon },
+  { href: "/planner",                    label: "Planner",         icon: KanbanSquareIcon },
+  { href: "/settings/email-templates",   label: "Email Templates", icon: SettingsIcon },
+  { href: "/profile",                    label: "Profile",         icon: UserIcon },
 ]
 
 export default async function AppLayout({ children }) {
