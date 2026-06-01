@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
   Sidebar,
   SidebarContent,
@@ -107,6 +108,7 @@ function SortableHead({ label, col, sort, onSort, className = "" }) {
 /* ─── main component ───────────────────────────────────────────────────── */
 
 export function DataPageClient({ contacts }) {
+  const router = useRouter()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sourceFilter, setSourceFilter] = useState("all")
@@ -297,7 +299,11 @@ export function DataPageClient({ contacts }) {
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/contacts/${row.id}`)}
+                  >
                     <TableCell className="text-muted-foreground text-xs">{row.id}</TableCell>
                     <TableCell>
                       <div className="font-medium whitespace-nowrap">{row.name || "—"}</div>

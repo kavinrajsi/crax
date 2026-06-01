@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   DndContext,
   DragOverlay,
@@ -39,6 +40,7 @@ function timeAgo(iso) {
 /* ─── Contact Card ────────────────────────────────────────────────────── */
 
 function ContactCard({ contact }) {
+  const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `contact-${contact.id}`,
     data: { type: "contact", contact },
@@ -54,13 +56,15 @@ function ContactCard({ contact }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="group rounded-lg border border-border bg-card p-3 shadow-sm text-xs"
+      className="group rounded-lg border border-border bg-card p-3 shadow-sm text-xs cursor-pointer hover:border-primary/40 transition-colors"
+      onClick={() => router.push(`/contacts/${contact.id}`)}
     >
       <div className="flex items-start gap-2">
         <span
           {...attributes}
           {...listeners}
           className="mt-0.5 shrink-0 text-muted-foreground/30 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+          onClick={(e) => e.stopPropagation()}
         >
           <GripVerticalIcon className="h-3.5 w-3.5" />
         </span>
