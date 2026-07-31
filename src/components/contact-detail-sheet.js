@@ -116,7 +116,11 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
                         className={field.wide ? "sm:col-span-2" : undefined}
                       >
                         <Field icon={field.icon} label={field.label}>
-                          <ContactFieldValue field={field} contact={displayedContact} />
+                          <ContactFieldValue
+                            value={displayedContact[field.key]}
+                            kind={field.kind}
+                            breakAll={field.breakAll}
+                          />
                         </Field>
                       </div>
                     ))}

@@ -26,7 +26,16 @@ function FieldCard({ field, contact, children }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {children ?? <ContactFieldValue field={field} contact={contact} />}
+        {/* Primitives only. `field` carries an icon component, and this is a
+            Server Component — passing the object whole threw "Functions cannot
+            be passed directly to Client Components" on every render. */}
+        {children ?? (
+          <ContactFieldValue
+            value={contact[field.key]}
+            kind={field.kind}
+            breakAll={field.breakAll}
+          />
+        )}
       </CardContent>
     </Card>
   )

@@ -8,15 +8,20 @@ import { isBlank } from "@/lib/contact-fields"
 /**
  * Renders one contact field according to its `kind`. Shared by the detail page
  * and the /data drawer so a field looks the same wherever it appears.
+ *
+ * Takes primitives only — never the field descriptor object. That object
+ * carries `icon`, a component function, and the detail page renders this from
+ * a Server Component: passing it whole threw "Functions cannot be passed
+ * directly to Client Components" on every render of /contacts/[id]. The icon
+ * belongs to the card header, which is server-rendered, so it has no business
+ * crossing the boundary at all.
  */
-export function ContactFieldValue({ field, contact }) {
-  const value = contact[field.key]
-
+export function ContactFieldValue({ value, kind, breakAll = false }) {
   if (isBlank(value)) {
     return <span className="text-sm text-muted-foreground">—</span>
   }
 
-  switch (field.kind) {
+  switch (kind) {
     case "url":
       return (
         <a
@@ -48,13 +53,9 @@ export function ContactFieldValue({ field, contact }) {
     case "longtext":
       // The enquiry body. Capped measure so it stays readable on a full-width
       // page, and whitespace preserved because these arrive as typed.
-      return (
-        <p className="text-sm whitespace-pre-wrap break-words max-w-prose">{value}</p>
-      )
+      return <p className="text-sm whitespace-pre-wrap break-words max-w-prose">{value}</p>
 
     default:
-      return (
-        <span className={`text-sm ${field.breakAll ? "break-all" : ""}`}>{value}</span>
-      )
+      return <span className={`text-sm ${breakAll ? "break-all" : ""}`}>{value}</span>
   }
 }
