@@ -101,7 +101,9 @@ export function CsvImportDialog({ onImported }) {
   }
 
   function handleImport() {
-    const rows = parsed.allRows.map((row) => {
+    // Optional chain is load-bearing: React Compiler hoists this property read
+    // into the render-phase memo dependency check, where `parsed` is still null.
+    const rows = (parsed?.allRows ?? []).map((row) => {
       const mapped = {}
       for (const [csvCol, field] of Object.entries(mapping)) {
         if (field && field !== "__skip__") {
