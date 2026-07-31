@@ -6,7 +6,6 @@ import {
   ScrollTextIcon,
   BoltIcon,
   KanbanSquareIcon,
-  CircleDollarSignIcon,
   BuildingIcon,
   BarChart2Icon,
   SettingsIcon,
@@ -35,7 +34,6 @@ export const dynamic = "force-dynamic"
 const navItems = [
   { href: "/dashboard",                  label: "Dashboard",       icon: LayoutDashboardIcon },
   { href: "/data",                       label: "Data",            icon: DatabaseIcon },
-  { href: "/deals",                      label: "Deals",           icon: CircleDollarSignIcon },
   { href: "/companies",                  label: "Companies",       icon: BuildingIcon },
   { href: "/analytics",                  label: "Analytics",       icon: BarChart2Icon },
   { href: "/logs",                       label: "Logs",            icon: ScrollTextIcon },

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { MailIcon, GlobeIcon, CircleDollarSignIcon, TrendingUpIcon, CheckSquareIcon, PhoneIcon, CalendarIcon, AlertCircleIcon } from "lucide-react"
+import { MailIcon, GlobeIcon, ScrollTextIcon, CheckSquareIcon, PhoneIcon, CalendarIcon, AlertCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   const { data: session } = await auth.getSession()
   const firstName = (session?.user?.name ?? session?.user?.email ?? "there").split(" ")[0]
 
-  const [contactRows, auditRows, sourceRows, recentLogs, dealRows, upcomingTasks] = await Promise.all([
+  const [contactRows, auditRows, sourceRows, recentLogs, upcomingTasks] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
@@ -58,12 +58,6 @@ export default async function DashboardPage() {
           AND ca.due_at <= NOW() + INTERVAL '7 days'
         ORDER BY ca.due_at ASC
         LIMIT 8`,
-    sql`SELECT
-          COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE stage != 'Closed-Lost')::int AS open_count,
-          COALESCE(SUM(value) FILTER (WHERE stage != 'Closed-Lost'), 0)::numeric AS pipeline_value,
-          COALESCE(SUM(value) FILTER (WHERE won_at >= date_trunc('month', NOW())), 0)::numeric AS won_this_month
-        FROM public.deals`,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0
@@ -80,22 +74,10 @@ export default async function DashboardPage() {
   const domainList = Object.entries(domainMap)
     .sort((a, b) => b[1] - a[1])
 
-  const pipelineValue = parseFloat(dealRows[0]?.pipeline_value ?? 0)
-  const wonThisMonth  = parseFloat(dealRows[0]?.won_this_month ?? 0)
-  const openDeals     = dealRows[0]?.open_count ?? 0
-
-  function formatCurrency(v) {
-    if (!v) return "₹0"
-    if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`
-    if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`
-    return `₹${v}`
-  }
-
   const stats = [
-    { label: "Total Contacts",  value: contactTotal,            icon: MailIcon,              sub: `${contactNew} new` },
-    { label: "Pipeline Value",  value: formatCurrency(pipelineValue), icon: CircleDollarSignIcon, sub: `${openDeals} open deals` },
-    { label: "Won This Month",  value: formatCurrency(wonThisMonth),  icon: TrendingUpIcon,   sub: "closed-won revenue" },
-    { label: "Unique Sources",  value: domainList.length,       icon: GlobeIcon,             sub: "distinct domains" },
+    { label: "Total Contacts",  value: contactTotal,      icon: MailIcon,        sub: `${contactNew} new` },
+    { label: "Unique Sources",  value: domainList.length, icon: GlobeIcon,       sub: "distinct domains" },
+    { label: "Audit Events",    value: auditTotal,        icon: ScrollTextIcon,  sub: `${loginCount} logins` },
   ]
 
   return (
@@ -106,7 +88,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (

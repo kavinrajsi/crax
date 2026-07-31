@@ -84,8 +84,8 @@ async function executeAction(rule, context) {
  * Evaluate all active automation rules for a given trigger event.
  * Silently logs failures to automation_rule_runs — never throws to caller.
  *
- * @param {string} trigger - 'contact_status_changed' | 'deal_stage_changed' | 'contact_created' | 'activity_completed'
- * @param {object} context - { contactId, dealId, fromStatus, toStatus, fromStage, toStage, activityId }
+ * @param {string} trigger - 'contact_status_changed' | 'contact_created' | 'activity_completed'
+ * @param {object} context - { contactId, fromStatus, toStatus, activityId }
  */
 export async function evaluateRules(trigger, context) {
   let rules

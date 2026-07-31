@@ -6,14 +6,6 @@ import { sql, EXCLUDED_EMAILS } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
-const STAGE_COLORS = {
-  Qualification: "#6366f1",
-  Proposal:      "#f59e0b",
-  Negotiation:   "#3b82f6",
-  "Closed-Won":  "#22c55e",
-  "Closed-Lost": "#ef4444",
-}
-
 const STATUS_COLORS = {
   New:        "#3b82f6",
   "follow-up":"#f97316",
@@ -23,29 +15,14 @@ const STATUS_COLORS = {
   fake:       "#a855f7",
 }
 
-function formatCurrency(v) {
-  if (!v) return "₹0"
-  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`
-  if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`
-  if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`
-  return `₹${Math.round(v)}`
-}
-
 export default async function AnalyticsPage() {
-  const [statusRows, stageRows, dailyRows, activityRows] = await Promise.all([
+  const [statusRows, dailyRows, activityRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count
       FROM public.contact_us
       WHERE email != ALL(${EXCLUDED_EMAILS})
       GROUP BY status
       ORDER BY count DESC
-    `,
-    sql`
-      SELECT stage,
-             COUNT(*)::int AS count,
-             COALESCE(SUM(value), 0)::numeric AS total_value
-      FROM public.deals
-      GROUP BY stage
     `,
     sql`
       SELECT DATE_TRUNC('day', created_at)::date AS day, COUNT(*)::int AS count
@@ -63,23 +40,9 @@ export default async function AnalyticsPage() {
     `,
   ])
 
-  // Win rate
-  const wonDeals  = stageRows.find((r) => r.stage === "Closed-Won")?.count ?? 0
-  const lostDeals = stageRows.find((r) => r.stage === "Closed-Lost")?.count ?? 0
-  const winRate   = wonDeals + lostDeals > 0 ? Math.round((wonDeals / (wonDeals + lostDeals)) * 100) : null
-
-  // Total pipeline value (excluding lost)
-  const pipelineValue = stageRows
-    .filter((r) => r.stage !== "Closed-Lost")
-    .reduce((s, r) => s + parseFloat(r.total_value), 0)
-
   // Contact status max for bar scaling
   const maxStatusCount = Math.max(...statusRows.map((r) => r.count), 1)
-
-  // Deal stage ordering
-  const STAGE_ORDER = ["Qualification", "Proposal", "Negotiation", "Closed-Won", "Closed-Lost"]
-  const stageMap = Object.fromEntries(stageRows.map((r) => [r.stage, r]))
-  const maxStageCount = Math.max(...stageRows.map((r) => r.count), 1)
+  const totalContacts = statusRows.reduce((s, r) => s + r.count, 0)
 
   // Last 30 days — fill missing days
   const dailyMap = Object.fromEntries(dailyRows.map((r) => [r.day.toISOString().slice(0, 10), r.count]))
@@ -100,27 +63,18 @@ export default async function AnalyticsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Analytics</h1>
-        <p className="text-sm text-muted-foreground mt-1">Sales pipeline and contact insights</p>
+        <p className="text-sm text-muted-foreground mt-1">Contact and activity insights</p>
       </div>
 
       {/* Summary stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader className="pb-1">
-            <CardDescription>Pipeline Value</CardDescription>
+            <CardDescription>Total Contacts</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="font-heading text-2xl font-semibold">{formatCurrency(pipelineValue)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">excl. Closed-Lost</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1">
-            <CardDescription>Win Rate</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-2xl font-semibold">{winRate != null ? `${winRate}%` : "—"}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{wonDeals} won · {lostDeals} lost</p>
+            <p className="font-heading text-2xl font-semibold">{totalContacts}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">across all statuses</p>
           </CardContent>
         </Card>
         <Card>
@@ -132,54 +86,9 @@ export default async function AnalyticsPage() {
             <p className="text-xs text-muted-foreground mt-0.5">last 30 days</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-1">
-            <CardDescription>Open Deals</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-2xl font-semibold">
-              {stageRows.filter((r) => r.stage !== "Closed-Won" && r.stage !== "Closed-Lost").reduce((s, r) => s + r.count, 0)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">across all active stages</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Deal Funnel */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Deal Funnel</CardTitle>
-            <CardDescription>Deals by pipeline stage</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {STAGE_ORDER.map((stage) => {
-              const row = stageMap[stage] ?? { count: 0, total_value: 0 }
-              const color = STAGE_COLORS[stage] ?? "#64748b"
-              const pct = maxStageCount > 0 ? (row.count / maxStageCount) * 100 : 0
-              return (
-                <div key={stage} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{stage}</span>
-                  <div className="flex-1 h-7 bg-muted rounded-lg overflow-hidden relative">
-                    <div
-                      className="h-full rounded-lg transition-all"
-                      style={{ width: `${pct}%`, backgroundColor: `${color}50`, minWidth: row.count > 0 ? "4px" : "0" }}
-                    />
-                    {row.count > 0 && (
-                      <span className="absolute inset-y-0 left-2.5 flex items-center text-xs font-medium gap-1.5">
-                        <span>{row.count}</span>
-                        {parseFloat(row.total_value) > 0 && (
-                          <span className="text-muted-foreground">· {formatCurrency(parseFloat(row.total_value))}</span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </CardContent>
-        </Card>
-
         {/* Contact Status Distribution */}
         <Card>
           <CardHeader>

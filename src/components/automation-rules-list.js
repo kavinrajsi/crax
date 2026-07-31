@@ -27,13 +27,11 @@ import { createRule, toggleRule, deleteRule } from "@/app/(app)/automation/actio
 
 const TRIGGER_OPTIONS = [
   { value: "contact_status_changed", label: "Contact status changed" },
-  { value: "deal_stage_changed",     label: "Deal stage changed" },
   { value: "contact_created",        label: "New contact created" },
   { value: "activity_completed",     label: "Activity completed" },
 ]
 
 const CONTACT_STATUSES = ["New", "follow-up", "win", "closed", "rejected", "fake"]
-const DEAL_STAGES      = ["Qualification", "Proposal", "Negotiation", "Closed-Won", "Closed-Lost"]
 
 const ACTION_OPTIONS = [
   { value: "create_task",            label: "Create a task" },
@@ -44,7 +42,6 @@ const ACTION_OPTIONS = [
 
 const TRIGGER_BADGE_COLORS = {
   contact_status_changed: "bg-blue-500/10 text-blue-600 border-blue-400/30",
-  deal_stage_changed:     "bg-amber-500/10 text-amber-600 border-amber-400/30",
   contact_created:        "bg-green-500/10 text-green-600 border-green-400/30",
   activity_completed:     "bg-violet-500/10 text-violet-600 border-violet-400/30",
 }
@@ -72,7 +69,6 @@ function NewRuleDialog({ templates, onCreated }) {
   const [name, setName] = useState("")
   const [trigger, setTrigger] = useState("contact_status_changed")
   const [filterToStatus, setFilterToStatus] = useState("")
-  const [filterToStage, setFilterToStage] = useState("")
   const [action, setAction] = useState("create_task")
   const [taskTitle, setTaskTitle] = useState("")
   const [taskDays, setTaskDays] = useState("3")
@@ -83,7 +79,6 @@ function NewRuleDialog({ templates, onCreated }) {
 
   function buildTriggerFilter() {
     if (trigger === "contact_status_changed" && filterToStatus) return { to_status: filterToStatus }
-    if (trigger === "deal_stage_changed"     && filterToStage)  return { to_stage: filterToStage }
     return {}
   }
 
@@ -132,7 +127,7 @@ function NewRuleDialog({ templates, onCreated }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Rule name <span className="text-destructive">*</span></Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Auto follow-up after deal proposal" disabled={isPending} required />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Auto follow-up on new contact" disabled={isPending} required />
           </div>
 
           {/* Trigger */}
@@ -155,18 +150,6 @@ function NewRuleDialog({ templates, onCreated }) {
                 <SelectContent>
                   <SelectItem value="">Any status</SelectItem>
                   {CONTACT_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {trigger === "deal_stage_changed" && (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">Only when stage changes to (optional)</Label>
-              <Select value={filterToStage} onValueChange={setFilterToStage}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any stage" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Any stage</SelectItem>
-                  {DEAL_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -298,9 +281,6 @@ export function AutomationRulesList({ initialRules, templates }) {
                     <ActionLabel action={rule.action_type} />
                     {rule.trigger_filter?.to_status && (
                       <span className="text-[10px] text-muted-foreground">to "{rule.trigger_filter.to_status}"</span>
-                    )}
-                    {rule.trigger_filter?.to_stage && (
-                      <span className="text-[10px] text-muted-foreground">to "{rule.trigger_filter.to_stage}"</span>
                     )}
                   </div>
                 </div>
