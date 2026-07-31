@@ -21,12 +21,21 @@ export function ContactEditForm({ contact }) {
     phone:   contact.phone   ?? "",
     company: contact.company ?? "",
   })
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
   function handleSave() {
+    setError(null)
     startTransition(async () => {
-      await updateContact(contact.id, fields)
-      setEditing(false)
+      try {
+        await updateContact(contact.id, fields)
+        setEditing(false)
+      } catch (err) {
+        // Previously the rejection was swallowed and setEditing(false) still
+        // ran, so a failed save looked exactly like a successful one.
+        console.error("[contact-edit] updateContact failed", { id: contact.id, err })
+        setError("Couldn't save those changes.")
+      }
     })
   }
 
@@ -68,6 +77,7 @@ export function ContactEditForm({ contact }) {
           />
         </div>
       ))}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2 justify-end mt-1">
         <Button variant="outline" size="sm" onClick={handleCancel} disabled={isPending}>
           <XIcon className="h-3.5 w-3.5" />

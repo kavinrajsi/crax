@@ -17,6 +17,7 @@ function initials(email) {
 export function CompanyNotesSection({ companyId, initialNotes }) {
   const [notes, setNotes] = useState(initialNotes)
   const [body, setBody] = useState("")
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef(null)
 
@@ -27,7 +28,17 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
     const optimistic = { id: Date.now(), company_id: companyId, author_email: "you", body: trimmed, created_at: new Date().toISOString() }
     setNotes((prev) => [...prev, optimistic])
     setBody("")
-    startTransition(() => addCompanyNote(companyId, trimmed))
+    setError(null)
+    startTransition(async () => {
+      try {
+        await addCompanyNote(companyId, trimmed)
+      } catch (err) {
+        console.error("[company-notes] addCompanyNote failed", { companyId, err })
+        setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
+        setBody(trimmed)
+        setError("Couldn't save that note. Your text has been restored.")
+      }
+    })
   }
 
   function handleKeyDown(e) {
@@ -68,6 +79,8 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
       {notes.length === 0 && (
         <p className="text-xs text-muted-foreground/60 text-center py-2">No notes yet.</p>
       )}
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <Textarea

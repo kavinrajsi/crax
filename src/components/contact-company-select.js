@@ -21,27 +21,48 @@ export function ContactCompanySelect({ contactId, initialCompanyId, companies, c
   const [isPending, startTransition] = useTransition()
 
   function handleChange(val) {
+    // Revert on failure: the select used to keep showing a link that was never
+    // written, because the transition discarded the promise.
+    const previous = companyId
     setCompanyId(val)
-    startTransition(() => linkContactToCompany(contactId, val ? parseInt(val) : null))
+    setDetectMsg(null)
+    startTransition(async () => {
+      try {
+        await linkContactToCompany(contactId, val ? parseInt(val) : null)
+      } catch (error) {
+        console.error("[contact-company] link failed", { contactId, val, error })
+        setCompanyId(previous)
+        setDetectMsg("Couldn't change the linked company.")
+      }
+    })
   }
 
   function handleDetect() {
     setDetectMsg(null)
     startTransition(async () => {
-      const result = await detectAndLinkCompany(contactId)
-      if (!result) {
-        setDetectMsg("No business domain found in email.")
-        return
+      try {
+        const result = await detectAndLinkCompany(contactId)
+        if (!result) {
+          setDetectMsg("No business domain found in email.")
+          return
+        }
+        setCompanyId(String(result.companyId))
+        // If it's a newly created company, add it to the local list so the Select shows it
+        if (result.created || !allCompanies.find((c) => c.id === result.companyId)) {
+          setAllCompanies((prev) => [
+            ...prev.filter((c) => c.id !== result.companyId),
+            { id: result.companyId, name: result.companyName },
+          ])
+        }
+        setDetectMsg(
+          result.created
+            ? `Created and linked "${result.companyName}"`
+            : `Linked to "${result.companyName}"`
+        )
+      } catch (error) {
+        console.error("[contact-company] detect failed", { contactId, error })
+        setDetectMsg("Couldn't detect a company from that email.")
       }
-      setCompanyId(String(result.companyId))
-      // If it's a newly created company, add it to the local list so the Select shows it
-      if (result.created || !allCompanies.find((c) => c.id === result.companyId)) {
-        setAllCompanies((prev) => [
-          ...prev.filter((c) => c.id !== result.companyId),
-          { id: result.companyId, name: result.companyName },
-        ])
-      }
-      setDetectMsg(result.created ? `Created and linked "${result.companyName}"` : `Linked to "${result.companyName}"`)
     })
   }
 

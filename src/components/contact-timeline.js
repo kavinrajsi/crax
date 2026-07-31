@@ -83,6 +83,19 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
     setActivities((prev) => prev.filter((a) => a.id !== activityId))
   }
 
+  /* ActivityItem applies nothing itself — this component owns the optimistic
+     state, so it is the one that has to put the activity back when the write
+     is rejected. */
+  function handleActivityFailed(activity, reason) {
+    setActivities((prev) => {
+      const withoutStale = prev.filter((a) => a.id !== activity.id)
+      return [...withoutStale, activity].sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      )
+    })
+    setError(reason)
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -122,6 +135,7 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
                   contactId={contactId}
                   onComplete={handleComplete}
                   onDelete={handleDelete}
+                  onFailed={handleActivityFailed}
                 />
               )}
             </div>

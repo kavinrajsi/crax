@@ -36,6 +36,7 @@ export function AddActivityDialog({ contactId, onAdded }) {
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
   const [dueAt, setDueAt] = useState("")
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(e) {
@@ -49,14 +50,22 @@ export function AddActivityDialog({ contactId, onAdded }) {
       due_at: dueAt || null,
     }
 
+    setError(null)
     startTransition(async () => {
-      await addActivity(contactId, payload)
-      onAdded?.({ ...payload, id: Date.now(), contact_id: contactId, created_at: new Date().toISOString(), completed_at: null })
-      setType("task")
-      setTitle("")
-      setBody("")
-      setDueAt("")
-      setOpen(false)
+      try {
+        await addActivity(contactId, payload)
+        onAdded?.({ ...payload, id: Date.now(), contact_id: contactId, created_at: new Date().toISOString(), completed_at: null })
+        setType("task")
+        setTitle("")
+        setBody("")
+        setDueAt("")
+        setOpen(false)
+      } catch (err) {
+        // onAdded is only called on success now — it used to run regardless,
+        // adding a timeline entry for an activity that was never stored.
+        console.error("[add-activity] addActivity failed", { contactId, err })
+        setError("Couldn't save that activity.")
+      }
     })
   }
 
@@ -128,6 +137,8 @@ export function AddActivityDialog({ contactId, onAdded }) {
               disabled={isPending}
             />
           </div>
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
           <DialogFooter showCloseButton>
             <Button type="submit" size="sm" disabled={!title.trim() || isPending}>

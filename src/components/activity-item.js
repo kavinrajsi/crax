@@ -36,20 +36,37 @@ function formatDue(iso) {
 }
 
 
-export function ActivityItem({ activity, contactId, onComplete, onDelete }) {
+export function ActivityItem({ activity, contactId, onComplete, onDelete, onFailed }) {
   const [isPending, startTransition] = useTransition()
   const meta = TYPE_META[activity.type] ?? TYPE_META.task
   const Icon = meta.icon
   const due = !activity.completed_at ? formatDue(activity.due_at) : null
 
+  /* The parent applies the optimistic change, so it also has to undo it. These
+     transitions used to drop the promise entirely: a failed complete or delete
+     left the row looking done or gone while the database still disagreed. */
   function handleComplete() {
     onComplete?.(activity.id)
-    startTransition(() => completeActivity(activity.id, contactId))
+    startTransition(async () => {
+      try {
+        await completeActivity(activity.id, contactId)
+      } catch (error) {
+        console.error("[activity] complete failed", { id: activity.id, error })
+        onFailed?.(activity, "Couldn't mark that activity complete.")
+      }
+    })
   }
 
   function handleDelete() {
     onDelete?.(activity.id)
-    startTransition(() => deleteActivity(activity.id, contactId))
+    startTransition(async () => {
+      try {
+        await deleteActivity(activity.id, contactId)
+      } catch (error) {
+        console.error("[activity] delete failed", { id: activity.id, error })
+        onFailed?.(activity, "Couldn't delete that activity.")
+      }
+    })
   }
 
   return (

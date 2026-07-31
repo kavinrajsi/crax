@@ -65,6 +65,7 @@ export function DataPageClient({ contacts, companies }) {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState("")
   // Seeded from ?attention=1 so the dashboard card deep-links into this view.
+  const [bulkError, setBulkError] = useState(null)
   const [onlyStale, setOnlyStale] = useState(searchParams.get("attention") === "1")
   const [isPending, startTransition] = useTransition()
   const rowLinkRef = useRef(null)
@@ -171,11 +172,19 @@ export function DataPageClient({ contacts, companies }) {
   function handleBulkStatus() {
     if (!bulkStatus || !selectedIds.size) return
     const ids = [...selectedIds]
+    setBulkError(null)
     startTransition(async () => {
-      await bulkUpdateStatus(ids, bulkStatus)
-      setSelectedIds(new Set())
-      setBulkStatus("")
-      router.refresh()
+      try {
+        await bulkUpdateStatus(ids, bulkStatus)
+        setSelectedIds(new Set())
+        setBulkStatus("")
+        router.refresh()
+      } catch (error) {
+        // The selection is kept so the user can retry rather than having to
+        // re-tick every row. Previously the failure cleared it silently.
+        console.error("[data] bulkUpdateStatus failed", { count: ids.length, error })
+        setBulkError(`Couldn't update ${ids.length} contact${ids.length === 1 ? "" : "s"}.`)
+      }
     })
   }
 
@@ -329,6 +338,7 @@ export function DataPageClient({ contacts, companies }) {
         {selectedIds.size > 0 && openContactId == null && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border border-border bg-background shadow-lg px-4 py-3">
             <span className="text-sm font-medium">{selectedIds.size} selected</span>
+            {bulkError && <span className="text-xs text-destructive">{bulkError}</span>}
             <Separator orientation="vertical" className="h-4" />
 
             <Button

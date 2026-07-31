@@ -22,6 +22,7 @@ export function CompanyForm({ company, onSaved, trigger }) {
   const [industry, setIndustry] = useState(company?.industry ?? "")
   const [website, setWebsite] = useState(company?.website ?? "")
   const [phone, setPhone] = useState(company?.phone ?? "")
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(e) {
@@ -33,16 +34,24 @@ export function CompanyForm({ company, onSaved, trigger }) {
       website: website.trim() || null,
       phone: phone.trim() || null,
     }
+    setError(null)
     startTransition(async () => {
-      if (editing) {
-        await updateCompany(company.id, fields)
-        onSaved?.({ ...company, ...fields })
-      } else {
-        const created = await createCompany(fields)
-        onSaved?.(created)
-        setName(""); setIndustry(""); setWebsite(""); setPhone("")
+      try {
+        if (editing) {
+          await updateCompany(company.id, fields)
+          onSaved?.({ ...company, ...fields })
+        } else {
+          const created = await createCompany(fields)
+          onSaved?.(created)
+          setName(""); setIndustry(""); setWebsite(""); setPhone("")
+        }
+        setOpen(false)
+      } catch (err) {
+        // Keep the dialog open with the user's input intact rather than
+        // closing it as though the save had worked.
+        console.error("[company-form] save failed", { editing, err })
+        setError(`Couldn't ${editing ? "update" : "create"} that company.`)
       }
-      setOpen(false)
     })
   }
 
@@ -88,6 +97,8 @@ export function CompanyForm({ company, onSaved, trigger }) {
             <Label className="text-xs">Phone</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" type="tel" disabled={isPending} />
           </div>
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
           <DialogFooter showCloseButton>
             <Button type="submit" size="sm" disabled={!name.trim() || isPending}>
