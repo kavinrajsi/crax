@@ -1,5 +1,4 @@
 import { sql } from "@/lib/db"
-import { evaluateRules } from "@/lib/automation"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function POST(request) {
@@ -85,7 +84,6 @@ export async function POST(request) {
     }
 
     await autoLinkCompany(contactId, email, company)
-    await evaluateRules("contact_created", { contactId })
   }
 
   return Response.json({ ok: true, contactId, isNew })

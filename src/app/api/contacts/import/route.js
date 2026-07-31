@@ -1,6 +1,5 @@
 import { sql } from "@/lib/db"
 import { auth } from "@/lib/auth"
-import { evaluateRules } from "@/lib/automation"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function POST(request) {
@@ -38,7 +37,6 @@ export async function POST(request) {
         inserted++
         const contactId = result[0].id
         await autoLinkCompany(contactId, email, company)
-        await evaluateRules("contact_created", { contactId })
       } else skipped++
     } catch {
       skipped++

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
-import { evaluateRules } from "@/lib/automation"
 
 /* ─── contact status ─────────────────────────────────────────────────── */
 
@@ -22,8 +21,6 @@ export async function updateContactStatus(contactId, newStatus, authorEmail = "s
       (${contactId}, ${authorEmail}, 'status_change', 'Status changed',
        ${`Status changed from ${oldStatus} to ${newStatus}`}, NOW())
   `
-
-  await evaluateRules("contact_status_changed", { contactId, fromStatus: oldStatus, toStatus: newStatus })
 
   revalidatePath("/planner")
   revalidatePath(`/contacts/${contactId}`)

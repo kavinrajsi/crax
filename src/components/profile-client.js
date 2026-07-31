@@ -130,13 +130,12 @@ function SecurityTab({ initialEmail }) {
 }
 
 const notifications = [
-  { id: "marketing", label: "Marketing emails", description: "Product updates, tips, and offers." },
   { id: "security", label: "Security alerts", description: "Login attempts and account changes." },
   { id: "activity", label: "Activity digest", description: "Weekly summary of your account activity." },
 ]
 
 function NotificationsTab() {
-  const [prefs, setPrefs] = useState({ marketing: false, security: true, activity: true })
+  const [prefs, setPrefs] = useState({ security: true, activity: true })
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 

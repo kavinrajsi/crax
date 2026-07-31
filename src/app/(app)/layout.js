@@ -1,15 +1,5 @@
 import Link from "next/link"
-import {
-  LayoutDashboardIcon,
-  UserIcon,
-  DatabaseIcon,
-  ScrollTextIcon,
-  BoltIcon,
-  KanbanSquareIcon,
-  BuildingIcon,
-  BarChart2Icon,
-  SettingsIcon,
-} from "lucide-react"
+import { BoltIcon } from "lucide-react"
 import { auth } from "@/lib/auth"
 import {
   Sidebar,
@@ -28,20 +18,9 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { SidebarUser } from "@/components/sidebar-user"
+import { AppNav } from "@/components/app-nav"
 
 export const dynamic = "force-dynamic"
-
-const navItems = [
-  { href: "/dashboard",                  label: "Dashboard",       icon: LayoutDashboardIcon },
-  { href: "/data",                       label: "Data",            icon: DatabaseIcon },
-  { href: "/companies",                  label: "Companies",       icon: BuildingIcon },
-  { href: "/analytics",                  label: "Analytics",       icon: BarChart2Icon },
-  { href: "/logs",                       label: "Logs",            icon: ScrollTextIcon },
-  { href: "/planner",                    label: "Planner",         icon: KanbanSquareIcon },
-  { href: "/automation",                 label: "Automation",      icon: BoltIcon },
-  { href: "/settings/email-templates",   label: "Email Templates", icon: SettingsIcon },
-  { href: "/profile",                    label: "Profile",         icon: UserIcon },
-]
 
 export default async function AppLayout({ children }) {
   const { data: session } = await auth.getSession()
@@ -78,19 +57,7 @@ export default async function AppLayout({ children }) {
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {navItems.map(({ href, label, icon: Icon }) => (
-                  <SidebarMenuItem key={href}>
-                    <SidebarMenuButton
-                      render={<Link href={href} />}
-                      tooltip={label}
-                    >
-                      <Icon />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
+              <AppNav />
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { auth } from "@/lib/auth"
-import { evaluateRules } from "@/lib/automation"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function addNote(contactId, body) {
@@ -64,7 +63,6 @@ export async function completeActivity(activityId, contactId) {
   await sql`
     UPDATE public.contact_activities SET completed_at = NOW() WHERE id = ${activityId}
   `
-  await evaluateRules("activity_completed", { contactId, activityId })
   revalidatePath(`/contacts/${contactId}`)
 }
 

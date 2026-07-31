@@ -2,19 +2,6 @@
 
 import { useState, useMemo, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +26,6 @@ import {
   ChevronsUpDownIcon,
   ChevronUpIcon,
   ChevronDownIcon,
-  FilterIcon,
   SearchIcon,
   DownloadIcon,
   XIcon,
@@ -122,8 +108,6 @@ function SortableHead({ label, col, sort, onSort, className = "" }) {
 export function DataPageClient({ contacts }) {
   const router = useRouter()
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [sourceFilter, setSourceFilter] = useState("all")
   const [sort, setSort] = useState({ col: "created_at", dir: "desc" })
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState("")
@@ -137,20 +121,8 @@ export function DataPageClient({ contacts }) {
     )
   }
 
-  const statuses = useMemo(
-    () => [...new Set(contacts.map((r) => r.status).filter(Boolean))],
-    [contacts]
-  )
-
-  const sources = useMemo(
-    () => [...new Set(contacts.map((r) => sourcePath(r.source_url)).filter(Boolean))],
-    [contacts]
-  )
-
   const rows = useMemo(() => {
     let filtered = contacts
-    if (statusFilter !== "all") filtered = filtered.filter((r) => r.status === statusFilter)
-    if (sourceFilter !== "all") filtered = filtered.filter((r) => sourcePath(r.source_url) === sourceFilter)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
@@ -162,7 +134,7 @@ export function DataPageClient({ contacts }) {
       )
     }
     return sortRows(filtered, sort.col, sort.dir)
-  }, [contacts, statusFilter, sourceFilter, search, sort])
+  }, [contacts, search, sort])
 
   const allVisibleSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id))
 
@@ -201,109 +173,13 @@ export function DataPageClient({ contacts }) {
   }
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "260px" }}>
-      {/* Filter sidebar */}
-      <Sidebar collapsible="none" className="border-r">
-        <SidebarHeader className="border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <FilterIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters</span>
-            {(statusFilter !== "all" || sourceFilter !== "all") && (
-              <button
-                onClick={() => { setStatusFilter("all"); setSourceFilter("all") }}
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent>
-          {/* Status filter */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Status</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton isActive={statusFilter === "all"} onClick={() => setStatusFilter("all")}>
-                    <span>All</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{contacts.length}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {statuses.map((s) => (
-                  <SidebarMenuItem key={s}>
-                    <SidebarMenuButton isActive={statusFilter === s} onClick={() => setStatusFilter(s)}>
-                      <span>{s}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {contacts.filter((r) => r.status === s).length}
-                      </span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <Separator />
-
-          {/* Source filter */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Source</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton isActive={sourceFilter === "all"} onClick={() => setSourceFilter("all")}>
-                    <span>All</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{contacts.length}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {sources.map((s) => (
-                  <SidebarMenuItem key={s}>
-                    <SidebarMenuButton
-                      isActive={sourceFilter === s}
-                      onClick={() => setSourceFilter(s)}
-                      className="h-auto py-1.5"
-                    >
-                      <span className="truncate text-xs leading-snug">{s}</span>
-                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                        {contacts.filter((r) => sourcePath(r.source_url) === s).length}
-                      </span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
-
-      {/* Main content */}
-      <SidebarInset>
+    <div className="flex flex-col w-full">
         {/* Sticky header */}
         <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background px-4 py-3">
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-sm font-medium">Contacts</span>
             <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
           </div>
-
-          {/* Active filter badges */}
-          {(statusFilter !== "all" || sourceFilter !== "all") && (
-            <div className="flex items-center gap-1.5">
-              {statusFilter !== "all" && (
-                <Badge variant="outline" className="text-xs gap-1">
-                  {statusFilter}
-                  <button onClick={() => setStatusFilter("all")} className="hover:text-destructive leading-none">×</button>
-                </Badge>
-              )}
-              {sourceFilter !== "all" && (
-                <Badge variant="outline" className="text-xs gap-1 max-w-[180px]">
-                  <span className="truncate">{sourceFilter}</span>
-                  <button onClick={() => setSourceFilter("all")} className="hover:text-destructive leading-none shrink-0">×</button>
-                </Badge>
-              )}
-            </div>
-          )}
 
           <div className="ml-auto flex items-center gap-2">
             {/* Export all */}
@@ -357,7 +233,7 @@ export function DataPageClient({ contacts }) {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
-                    No records match the selected filters.
+                    No records found.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -447,7 +323,6 @@ export function DataPageClient({ contacts }) {
             </button>
           </div>
         )}
-      </SidebarInset>
-    </SidebarProvider>
+    </div>
   )
 }
