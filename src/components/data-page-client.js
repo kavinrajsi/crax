@@ -26,10 +26,12 @@ import {
   SearchIcon,
   DownloadIcon,
   XIcon,
+  AlarmClockIcon,
 } from "lucide-react"
 import { bulkUpdateStatus } from "@/app/(app)/data/actions"
 import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
+import { needsAttention, daysSinceTouch, STALE_AFTER_DAYS } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 
 const STATUS_COLORS = {
@@ -40,6 +42,19 @@ const STATUS_COLORS = {
 
 const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake", "test"]
 
+/** Age since the last note or activity, red once the lead is stale. */
+function LastTouchCell({ row }) {
+  const days = daysSinceTouch(row)
+  if (days == null) return <span className="text-muted-foreground">—</span>
+  const stale = needsAttention(row)
+  const label = days === 0 ? "today" : days === 1 ? "1 day" : `${days} days`
+  return (
+    <span className={stale ? "text-destructive font-medium" : "text-muted-foreground"}>
+      {label}
+    </span>
+  )
+}
+
 /* ─── main component ───────────────────────────────────────────────────── */
 
 export function DataPageClient({ contacts, companies }) {
@@ -49,6 +64,8 @@ export function DataPageClient({ contacts, companies }) {
   const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState("")
+  // Seeded from ?attention=1 so the dashboard card deep-links into this view.
+  const [onlyStale, setOnlyStale] = useState(searchParams.get("attention") === "1")
   const [isPending, startTransition] = useTransition()
   const rowLinkRef = useRef(null)
 
@@ -94,8 +111,8 @@ export function DataPageClient({ contacts, companies }) {
     setOpenContactId(contactId)
   }
 
-  // checkbox + id + name/email + phone/company + status + date
-  const columnCount = 6
+  // checkbox + id + name/email + phone/company + status + date + last touch
+  const columnCount = 7
 
 
   function toggleSort(column) {
@@ -108,8 +125,11 @@ export function DataPageClient({ contacts, companies }) {
     )
   }
 
+  const staleCount = useMemo(() => contacts.filter(needsAttention).length, [contacts])
+
   const rows = useMemo(() => {
     let filtered = contacts
+    if (onlyStale) filtered = filtered.filter(needsAttention)
     if (search) {
       const query = search.toLowerCase()
       filtered = filtered.filter(
@@ -121,7 +141,7 @@ export function DataPageClient({ contacts, companies }) {
       )
     }
     return sortRows(filtered, sort.column, sort.direction)
-  }, [contacts, search, sort])
+  }, [contacts, search, sort, onlyStale])
 
   const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedIds.has(row.id))
 
@@ -170,6 +190,26 @@ export function DataPageClient({ contacts, companies }) {
 
           <div className="ml-auto flex items-center gap-2">
 
+            {/* Needs attention */}
+            <Button
+              variant={onlyStale ? "default" : "outline"}
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setOnlyStale((v) => !v)}
+              aria-pressed={onlyStale}
+              title={`Open leads with no note or activity for ${STALE_AFTER_DAYS}+ days`}
+              disabled={staleCount === 0 && !onlyStale}
+            >
+              <AlarmClockIcon className="h-3.5 w-3.5" />
+              Needs attention
+              <Badge
+                variant={onlyStale ? "secondary" : "outline"}
+                className="text-[10px] px-1.5 py-0 tabular-nums"
+              >
+                {staleCount}
+              </Badge>
+            </Button>
+
             {/* Export all */}
             <Button
               variant="outline"
@@ -212,6 +252,7 @@ export function DataPageClient({ contacts, companies }) {
                 <SortableHead label="Phone / Company" column="phone"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Status"       column="status"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Date"         column="created_at" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                <SortableHead label="Last touch"   column="last_touch" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -271,6 +312,9 @@ export function DataPageClient({ contacts, companies }) {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDate(row.created_at, { compact: true })}
+                    </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      <LastTouchCell row={row} />
                     </TableCell>
                   </TableRow>
                 ))

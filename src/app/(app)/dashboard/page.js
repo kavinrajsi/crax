@@ -1,10 +1,12 @@
-import { MailIcon, GlobeIcon } from "lucide-react"
+import Link from "next/link"
+import { MailIcon, GlobeIcon, AlarmClockIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { requireUser } from "@/lib/dal"
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
 import { sourceDomain } from "@/lib/table-utils"
+import { RESOLVED_STATUSES, STALE_AFTER_DAYS } from "@/lib/follow-up"
 
 export const dynamic = "force-dynamic"
 
@@ -13,7 +15,7 @@ export default async function DashboardPage() {
   const user = await requireUser()
   const firstName = (user.name ?? user.email).split(" ")[0]
 
-  const [contactRows, sourceRows] = await Promise.all([
+  const [contactRows, sourceRows, staleRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
@@ -26,6 +28,18 @@ export default async function DashboardPage() {
           AND email != ALL(${EXCLUDED_EMAILS})
         GROUP BY source_url
         ORDER BY cnt DESC`,
+    /* Open leads with no note or activity for STALE_AFTER_DAYS. Must match
+       needsAttention() in lib/follow-up, which the /data filter uses — if the
+       two disagree this card sends you to a list that does not match it. */
+    sql`SELECT COUNT(*)::int AS stale
+        FROM public.contact_us cu
+        WHERE cu.email != ALL(${EXCLUDED_EMAILS})
+          AND cu.status <> ALL(${RESOLVED_STATUSES})
+          AND GREATEST(
+                cu.created_at,
+                COALESCE((SELECT MAX(created_at) FROM public.contact_notes      n WHERE n.contact_id = cu.id), cu.created_at),
+                COALESCE((SELECT MAX(created_at) FROM public.contact_activities a WHERE a.contact_id = cu.id), cu.created_at)
+              ) < NOW() - MAKE_INTERVAL(days => ${STALE_AFTER_DAYS})`,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0
@@ -40,9 +54,19 @@ export default async function DashboardPage() {
   const domainList = Object.entries(domainMap)
     .sort((a, b) => b[1] - a[1])
 
+  const staleCount = staleRows[0]?.stale ?? 0
+
   const stats = [
     { label: "Total Contacts",  value: contactTotal,      icon: MailIcon,  sub: `${contactNew} new` },
     { label: "Unique Sources",  value: domainList.length, icon: GlobeIcon, sub: "distinct domains" },
+    {
+      label: "Needs Attention",
+      value: staleCount,
+      icon: AlarmClockIcon,
+      sub: `open, untouched ${STALE_AFTER_DAYS}+ days`,
+      href: "/data?attention=1",
+      alert: staleCount > 0,
+    },
   ]
 
   return (
@@ -53,18 +77,29 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label}>
+            <Card
+              key={stat.label}
+              className={stat.alert ? "border-destructive/40" : undefined}
+            >
               <CardHeader className="flex-row items-center justify-between pb-1">
                 <CardDescription>{stat.label}</CardDescription>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className={`h-4 w-4 ${stat.alert ? "text-destructive" : "text-muted-foreground"}`} />
               </CardHeader>
               <CardContent className="flex flex-col gap-0.5">
-                <span className="font-heading text-2xl font-semibold">{stat.value ?? "—"}</span>
-                <span className="text-xs text-muted-foreground">{stat.sub}</span>
+                <span className={`font-heading text-2xl font-semibold ${stat.alert ? "text-destructive" : ""}`}>
+                  {stat.value ?? "—"}
+                </span>
+                {stat.href ? (
+                  <Link href={stat.href} className="text-xs text-primary hover:underline w-fit">
+                    {stat.sub} →
+                  </Link>
+                ) : (
+                  <span className="text-xs text-muted-foreground">{stat.sub}</span>
+                )}
               </CardContent>
             </Card>
           )
