@@ -67,7 +67,7 @@ export default async function ContactDetailPage({ params }) {
             </h1>
             <ContactEditForm contact={contact} />
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">Contact #{contact.id}</p>
+          <p className="text-sm text-muted-foreground mt-1">Contact #{contact.id}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} />

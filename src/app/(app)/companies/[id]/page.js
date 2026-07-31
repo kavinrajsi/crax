@@ -36,7 +36,7 @@ export default async function CompanyDetailPage({ params }) {
   if (!company) notFound()
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6">
       {/* Back */}
       <Link
         href="/companies"
@@ -48,24 +48,26 @@ export default async function CompanyDetailPage({ params }) {
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted border border-border">
-              <BuildingIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <h1 className="font-heading text-2xl font-semibold tracking-tight">{company.name}</h1>
+            <BuildingIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <h1 className="font-heading text-2xl font-semibold tracking-tight truncate">
+              {company.name}
+            </h1>
           </div>
           {company.industry && (
-            <p className="text-sm text-muted-foreground mt-1 ml-11">{company.industry}</p>
+            <p className="text-sm text-muted-foreground mt-1">{company.industry}</p>
           )}
         </div>
-        <CompanyForm company={company} />
+        <div className="flex items-center gap-2 shrink-0">
+          <CompanyForm company={company} />
+        </div>
       </div>
 
       <Separator />
 
       {/* Info cards */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
@@ -97,15 +99,15 @@ export default async function CompanyDetailPage({ params }) {
       </div>
 
       {/* Contacts */}
-      <div className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <UsersIcon className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Contacts</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">Contacts</h2>
           <Badge variant="secondary" className="text-xs">{contacts.length}</Badge>
         </div>
 
         {contacts.length === 0 ? (
-          <p className="text-xs text-muted-foreground/60 py-3">
+          <p className="text-xs text-muted-foreground/60 text-center py-4">
             No contacts linked to this company yet. Link contacts from their detail page.
           </p>
         ) : (
@@ -125,7 +127,7 @@ export default async function CompanyDetailPage({ params }) {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       <Separator />
 

@@ -218,7 +218,7 @@ export function DealsBoard({ deals: initialDeals, contacts, companies }) {
                 <div
                   id={`stage-${stage.key}`}
                   className="flex flex-col gap-2 overflow-y-auto p-2 min-h-[80px]"
-                  style={{ maxHeight: "calc(100vh - 300px)" }}
+                  style={{ maxHeight: "calc(100vh - 260px)" }}
                 >
                   <SortableContext
                     items={stageDeals.map((d) => `deal-${d.id}`)}

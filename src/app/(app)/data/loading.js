@@ -7,7 +7,7 @@ import { PageHeading, TableSkeleton } from "@/components/skeletons"
  */
 export default function DataLoading() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <PageHeading titleWidth="w-24" subWidth="w-80" />
         {/* CsvImportDialog trigger, size="sm" */}

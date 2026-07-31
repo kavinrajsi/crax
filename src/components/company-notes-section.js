@@ -48,7 +48,7 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Notes</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">Notes</h2>
         {notes.length > 0 && (
           <span className="text-xs text-muted-foreground">{notes.length} note{notes.length !== 1 ? "s" : ""}</span>
         )}

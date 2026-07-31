@@ -137,7 +137,7 @@ export function LogsView({ logs }) {
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12 text-sm">
                     No events match your filters.
                   </TableCell>
                 </TableRow>

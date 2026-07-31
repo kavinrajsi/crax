@@ -7,7 +7,7 @@ import { BackLink, FieldCardSkeleton, ThreadSkeleton } from "@/components/skelet
  */
 export default function CompanyDetailLoading() {
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <BackLink width="w-36" />
 
       <div className="flex items-start justify-between gap-4">

@@ -12,7 +12,7 @@ const CARDS_PER_COLUMN = [3, 2, 2, 1, 1, 1, 1]
 
 export default function PlannerLoading() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeading titleWidth="w-28" subWidth="w-72" />
 
       {/* Tabs root is flex flex-col gap-2 when horizontal */}

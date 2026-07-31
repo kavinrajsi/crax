@@ -100,7 +100,7 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Timeline</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">Timeline</h2>
         <div className="flex items-center gap-2">
           {items.length > 0 && (
             <span className="text-xs text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</span>

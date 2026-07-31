@@ -108,7 +108,7 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
                   per-surface: two columns here, up to four on the page. */}
               {CONTACT_FIELD_GROUPS.map((group) => (
                 <div key={group.title} className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold text-muted-foreground">{group.title}</h3>
+                  <h2 className="text-sm font-semibold text-muted-foreground">{group.title}</h2>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {group.fields.map((field) => (
                       <div

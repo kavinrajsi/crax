@@ -267,7 +267,7 @@ export function DataPageClient({ contacts, companies }) {
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columnCount} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={columnCount} className="text-center text-muted-foreground py-12 text-sm">
                     No records found.
                   </TableCell>
                 </TableRow>
