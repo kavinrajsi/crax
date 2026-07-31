@@ -51,6 +51,16 @@ export default async function DashboardPage() {
   const domainList = Object.entries(domainMap)
     .sort((a, b) => b[1] - a[1])
 
+  /* Bars are scaled against the largest domain, not contactTotal.
+     contactTotal counts contacts with no source_url at all, so no bar could
+     ever reach full width: the top domain rendered at 56 of 80px and
+     everything below third place collapsed to 1px, which reads as identical.
+     Guarding the divisor also keeps an empty database from producing
+     `width: NaNpx`. */
+  const maxDomainCount = domainList[0]?.[1] ?? 0
+  const barWidth = (count) =>
+    maxDomainCount > 0 ? Math.max(4, Math.round((count / maxDomainCount) * 80)) : 0
+
   const staleCount = staleRows[0]?.stale ?? 0
 
   const stats = [
@@ -111,23 +121,29 @@ export default async function DashboardPage() {
             <CardDescription>Total submissions grouped by domain</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ul>
-              {domainList.map(([domain, count], i) => (
-                <li key={domain}>
-                  {i > 0 && <Separator />}
-                  <div className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm truncate">{domain}</span>
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
-                      <div
-                        className="h-1.5 rounded-full bg-primary/40"
-                        style={{ width: `${Math.round((count / contactTotal) * 80)}px` }}
-                      />
-                      <Badge variant="secondary" className="text-xs tabular-nums">{count}</Badge>
+            {domainList.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No contacts with a source yet.
+              </p>
+            ) : (
+              <ul>
+                {domainList.map(([domain, count], i) => (
+                  <li key={domain}>
+                    {i > 0 && <Separator />}
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      <span className="text-sm truncate">{domain}</span>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <div
+                          className="h-1.5 rounded-full bg-primary/40"
+                          style={{ width: `${barWidth(count)}px` }}
+                        />
+                        <Badge variant="secondary" className="text-xs tabular-nums">{count}</Badge>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
