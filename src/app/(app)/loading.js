@@ -1,20 +1,23 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { PageHeading } from "@/components/skeletons"
 
 /**
- * Shown while a force-dynamic page runs its queries. Without this, navigation
- * inside the (app) group blocked on the database with no visual feedback.
+ * Fallback for any route in this group that has no loading.js of its own.
+ * Every current route has one, so this normally never renders — it exists so
+ * that adding a route doesn't silently reintroduce the "click, nothing happens
+ * until the query returns" gap.
+ *
+ * Deliberately resembles no particular page: a shape that half-matches causes
+ * more visible reflow than a neutral block. Route-specific skeletons belong in
+ * the route's own loading.js.
+ *
+ * The root src/app/loading.js does not cover this case — Next will not unmount
+ * a shared layout to show an ancestor fallback.
  */
 export default function AppLoading() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-4 w-72" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <PageHeading />
       <Skeleton className="h-64 w-full" />
     </div>
   )

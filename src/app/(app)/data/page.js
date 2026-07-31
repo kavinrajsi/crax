@@ -10,18 +10,23 @@ export default async function DataPage() {
   await requireUser()
 
   const [contacts, companies] = await Promise.all([
-    /* last_touch drives the "needs attention" filter: the newest note or
-       activity on the contact, falling back to created_at so a lead nobody has
-       worked ages from when it arrived. Written inline rather than interpolated
-       from a constant — every query in this codebase is a tagged template with
-       no string interpolation, and that is worth keeping. */
+    /* has_touch drives the "needs attention" filter: has anyone left a note or
+       logged an activity at all. last_touch is display only, for the age shown
+       in the Last touch column. Written inline rather than interpolated from a
+       constant — every query in this codebase is a tagged template with no
+       string interpolation, and that is worth keeping. */
     sql`
       SELECT cu.*,
              GREATEST(
                cu.created_at,
                COALESCE((SELECT MAX(created_at) FROM public.contact_notes      n WHERE n.contact_id = cu.id), cu.created_at),
                COALESCE((SELECT MAX(created_at) FROM public.contact_activities a WHERE a.contact_id = cu.id), cu.created_at)
-             ) AS last_touch
+             ) AS last_touch,
+             (
+               EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
+               OR
+               EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)
+             ) AS has_touch
       FROM public.contact_us cu
       WHERE cu.email != ALL(${EXCLUDED_EMAILS})
       ORDER BY cu.created_at DESC

@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { requireUser } from "@/lib/dal"
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
 import { sourceDomain } from "@/lib/table-utils"
-import { RESOLVED_STATUSES, STALE_AFTER_DAYS } from "@/lib/follow-up"
+import { RESOLVED_STATUSES } from "@/lib/follow-up"
 
 export const dynamic = "force-dynamic"
 
@@ -28,18 +28,15 @@ export default async function DashboardPage() {
           AND email != ALL(${EXCLUDED_EMAILS})
         GROUP BY source_url
         ORDER BY cnt DESC`,
-    /* Open leads with no note or activity for STALE_AFTER_DAYS. Must match
-       needsAttention() in lib/follow-up, which the /data filter uses — if the
-       two disagree this card sends you to a list that does not match it. */
+    /* Open leads nobody has worked. Must match needsAttention() in
+       lib/follow-up, which the /data filter uses — if the two disagree this
+       card sends you to a list that does not match it. */
     sql`SELECT COUNT(*)::int AS stale
         FROM public.contact_us cu
         WHERE cu.email != ALL(${EXCLUDED_EMAILS})
           AND cu.status <> ALL(${RESOLVED_STATUSES})
-          AND GREATEST(
-                cu.created_at,
-                COALESCE((SELECT MAX(created_at) FROM public.contact_notes      n WHERE n.contact_id = cu.id), cu.created_at),
-                COALESCE((SELECT MAX(created_at) FROM public.contact_activities a WHERE a.contact_id = cu.id), cu.created_at)
-              ) < NOW() - MAKE_INTERVAL(days => ${STALE_AFTER_DAYS})`,
+          AND NOT EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
+          AND NOT EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)`,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0
@@ -63,7 +60,7 @@ export default async function DashboardPage() {
       label: "Needs Attention",
       value: staleCount,
       icon: AlarmClockIcon,
-      sub: `open, untouched ${STALE_AFTER_DAYS}+ days`,
+      sub: "open, never worked",
       href: "/data?attention=1",
       alert: staleCount > 0,
     },

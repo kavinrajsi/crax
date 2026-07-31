@@ -31,7 +31,7 @@ import {
 import { bulkUpdateStatus } from "@/app/(app)/data/actions"
 import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
-import { needsAttention, daysSinceTouch, STALE_AFTER_DAYS } from "@/lib/follow-up"
+import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 
 const STATUS_COLORS = {
@@ -197,7 +197,7 @@ export function DataPageClient({ contacts, companies }) {
               className="h-8 gap-1.5 text-xs"
               onClick={() => setOnlyStale((v) => !v)}
               aria-pressed={onlyStale}
-              title={`Open leads with no note or activity for ${STALE_AFTER_DAYS}+ days`}
+              title="Open leads nobody has left a note or activity on"
               disabled={staleCount === 0 && !onlyStale}
             >
               <AlarmClockIcon className="h-3.5 w-3.5" />
