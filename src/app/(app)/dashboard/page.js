@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { MailIcon, GlobeIcon, ScrollTextIcon, CheckSquareIcon, PhoneIcon, CalendarIcon, AlertCircleIcon } from "lucide-react"
+import { MailIcon, GlobeIcon, CheckSquareIcon, PhoneIcon, CalendarIcon, AlertCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -33,14 +33,11 @@ export default async function DashboardPage() {
   const { data: session } = await auth.getSession()
   const firstName = (session?.user?.name ?? session?.user?.email ?? "there").split(" ")[0]
 
-  const [contactRows, auditRows, sourceRows, recentLogs, upcomingTasks] = await Promise.all([
+  const [contactRows, sourceRows, recentLogs, upcomingTasks] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
         WHERE email != ALL(${EXCLUDED_EMAILS})`,
-    sql`SELECT COUNT(*)::int AS total,
-              COUNT(*) FILTER (WHERE action = 'login')::int AS logins
-        FROM public.audit_logs`,
     sql`SELECT source_url, COUNT(*)::int AS cnt
         FROM public.contact_us
         WHERE source_url IS NOT NULL AND source_url <> ''
@@ -62,8 +59,6 @@ export default async function DashboardPage() {
 
   const contactTotal = contactRows[0]?.total ?? 0
   const contactNew   = contactRows[0]?.new_count ?? 0
-  const auditTotal   = auditRows[0]?.total ?? 0
-  const loginCount   = auditRows[0]?.logins ?? 0
 
   // Roll up by domain
   const domainMap = {}
@@ -75,9 +70,8 @@ export default async function DashboardPage() {
     .sort((a, b) => b[1] - a[1])
 
   const stats = [
-    { label: "Total Contacts",  value: contactTotal,      icon: MailIcon,        sub: `${contactNew} new` },
-    { label: "Unique Sources",  value: domainList.length, icon: GlobeIcon,       sub: "distinct domains" },
-    { label: "Audit Events",    value: auditTotal,        icon: ScrollTextIcon,  sub: `${loginCount} logins` },
+    { label: "Total Contacts",  value: contactTotal,      icon: MailIcon,  sub: `${contactNew} new` },
+    { label: "Unique Sources",  value: domainList.length, icon: GlobeIcon, sub: "distinct domains" },
   ]
 
   return (
@@ -88,7 +82,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (

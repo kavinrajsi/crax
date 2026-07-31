@@ -42,7 +42,6 @@ export default async function AnalyticsPage() {
 
   // Contact status max for bar scaling
   const maxStatusCount = Math.max(...statusRows.map((r) => r.count), 1)
-  const totalContacts = statusRows.reduce((s, r) => s + r.count, 0)
 
   // Last 30 days — fill missing days
   const dailyMap = Object.fromEntries(dailyRows.map((r) => [r.day.toISOString().slice(0, 10), r.count]))
@@ -64,28 +63,6 @@ export default async function AnalyticsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Analytics</h1>
         <p className="text-sm text-muted-foreground mt-1">Contact and activity insights</p>
-      </div>
-
-      {/* Summary stats */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-1">
-            <CardDescription>Total Contacts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-2xl font-semibold">{totalContacts}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">across all statuses</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1">
-            <CardDescription>New Contacts (30d)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-2xl font-semibold">{totalNewContacts}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">last 30 days</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
