@@ -26,11 +26,9 @@ import {
   SearchIcon,
   DownloadIcon,
   XIcon,
-  Rows2Icon,
-  Rows3Icon,
 } from "lucide-react"
 import { bulkUpdateStatus } from "@/app/(app)/data/actions"
-import { sortRows, formatDate, truncate, sourcePath } from "@/lib/table-utils"
+import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 
@@ -42,10 +40,6 @@ const STATUS_COLORS = {
 
 const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake", "test"]
 
-/* Columns dropped in compact density. Their data stays reachable on the
-   contact detail page, so hiding them here loses nothing. */
-const COMPACT_HIDDEN_COLUMNS = ["phone", "source_url", "needs"]
-
 /* ─── main component ───────────────────────────────────────────────────── */
 
 export function DataPageClient({ contacts, companies }) {
@@ -55,7 +49,6 @@ export function DataPageClient({ contacts, companies }) {
   const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState("")
-  const [compact, setCompact] = useState(true)
   const [isPending, startTransition] = useTransition()
   const rowLinkRef = useRef(null)
 
@@ -101,20 +94,9 @@ export function DataPageClient({ contacts, companies }) {
     setOpenContactId(contactId)
   }
 
-  // checkbox + id + name/email + company + status + date, plus the wide columns
-  const columnCount = compact ? 6 : 9
+  // checkbox + id + name/email + company + status + date
+  const columnCount = 6
 
-  function toggleCompact() {
-    setCompact((wasCompact) => {
-      const nextCompact = !wasCompact
-      // Dropping a column while it drives the sort would silently reorder rows
-      // with no header to undo it, so fall back to the default sort.
-      if (nextCompact && COMPACT_HIDDEN_COLUMNS.includes(sort.column)) {
-        setSort({ column: "created_at", direction: "desc" })
-      }
-      return nextCompact
-    })
-  }
 
   function toggleSort(column) {
     setSort((prevSort) =>
@@ -187,20 +169,6 @@ export function DataPageClient({ contacts, companies }) {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Density */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={toggleCompact}
-              aria-pressed={compact}
-              title={compact ? "Switch to comfortable rows" : "Switch to compact rows"}
-            >
-              {compact
-                ? <Rows3Icon className="h-3.5 w-3.5" />
-                : <Rows2Icon className="h-3.5 w-3.5" />}
-              {compact ? "Comfortable" : "Compact"}
-            </Button>
 
             {/* Export all */}
             <Button
@@ -230,7 +198,7 @@ export function DataPageClient({ contacts, companies }) {
         <ScrollArea className="w-full">
           <Table>
             <TableHeader>
-              <TableRow className={compact ? "[&>th]:h-8 [&>th]:text-xs" : ""}>
+              <TableRow className="[&>th]:h-8 [&>th]:text-xs">
                 <TableHead className="sticky top-0 z-10 bg-background w-10">
                   <input
                     type="checkbox"
@@ -241,10 +209,7 @@ export function DataPageClient({ contacts, companies }) {
                 </TableHead>
                 <SortableHead label="ID"           column="id"         sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background w-12" />
                 <SortableHead label="Name / Email" column="name"       sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
-                {!compact && <SortableHead label="Phone"  column="phone"      sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
                 <SortableHead label="Company"      column="company"    sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
-                {!compact && <SortableHead label="Source" column="source_url" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
-                {!compact && <SortableHead label="Needs"  column="needs"      sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
                 <SortableHead label="Status"       column="status"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Date"         column="created_at" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
               </TableRow>
@@ -260,7 +225,7 @@ export function DataPageClient({ contacts, companies }) {
                 rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${compact ? "[&>td]:py-1" : ""}`}
+                    className="cursor-pointer hover:bg-muted/50 [&>td]:py-1"
                     data-selected={selectedIds.has(row.id) || undefined}
                     onClick={(event) => handleRowClick(event, row.id)}
                   >
@@ -284,43 +249,25 @@ export function DataPageClient({ contacts, companies }) {
                         onClick={(event) => handleRowLinkClick(event, row.id)}
                         className="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        {compact ? (
-                          <div className="whitespace-nowrap text-xs">
-                            <span className="font-medium">{row.name || "—"}</span>
-                            {row.email && (
-                              <span className="text-muted-foreground"> · {row.email}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <div className="font-medium whitespace-nowrap">{row.name || "—"}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{row.email || "—"}</div>
-                          </>
-                        )}
+                        <div className="whitespace-nowrap text-xs">
+                          <span className="font-medium">{row.name || "—"}</span>
+                          {row.email && (
+                            <span className="text-muted-foreground"> · {row.email}</span>
+                          )}
+                        </div>
                       </a>
                     </TableCell>
-                    {!compact && (
-                      <TableCell className="text-xs whitespace-nowrap">{row.phone || "—"}</TableCell>
-                    )}
                     <TableCell className="text-xs">{truncate(row.company) || "—"}</TableCell>
-                    {!compact && (
-                      <TableCell className="text-xs text-muted-foreground">{sourcePath(row.source_url)}</TableCell>
-                    )}
-                    {!compact && (
-                      <TableCell className="text-xs">
-                        {Array.isArray(row.needs) && row.needs.length > 0 ? row.needs.join(", ") : "—"}
-                      </TableCell>
-                    )}
                     <TableCell>
                       <Badge
                         variant={STATUS_COLORS[row.status] ?? "outline"}
-                        className={compact ? "text-[10px] px-1.5 py-0" : "text-xs"}
+                        className="text-[10px] px-1.5 py-0"
                       >
                         {row.status || "—"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDate(row.created_at, { compact })}
+                      {formatDate(row.created_at, { compact: true })}
                     </TableCell>
                   </TableRow>
                 ))
