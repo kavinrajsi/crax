@@ -77,7 +77,11 @@ function ContactCard({ contact }) {
           {contact.phone && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <PhoneIcon className="h-3 w-3 shrink-0" />
-              <span>{contact.phone}</span>
+              {/* truncate like the other fields: without overflow:hidden a flex
+                  item cannot shrink below its content, and the column body's
+                  overflow-y-auto promotes overflow-x to auto — so one long value
+                  would give this single column its own horizontal scrollbar. */}
+              <span className="truncate">{contact.phone}</span>
             </div>
           )}
 
@@ -208,7 +212,11 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
             <div
               key={col.key}
               id={`col-${col.key}`}
-              className="flex w-72 shrink-0 flex-col rounded-xl border border-border bg-muted/40"
+              /* flex-1 so all seven columns share the width instead of a fixed
+                 w-72 that forced 2088px and scrolled sideways below ~2400px.
+                 min-w keeps them legible on narrow screens — below ~1150px the
+                 parent's overflow-x-auto takes over rather than crushing them. */
+              className="flex flex-1 min-w-[9rem] flex-col rounded-xl border border-border bg-muted/40"
             >
               {/* Column header */}
               <div className="flex items-center gap-2 px-3 py-2.5">
