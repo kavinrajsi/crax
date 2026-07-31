@@ -32,6 +32,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# security assessments — these name the unprotected routes and the ungated
+# actions. This repo is public; do not commit them.
+ASSESSMENT.md
+DATA-ROW-DRAWER.md
 
 # vercel
 .vercel
