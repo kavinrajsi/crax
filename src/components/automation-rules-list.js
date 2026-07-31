@@ -31,7 +31,7 @@ const TRIGGER_OPTIONS = [
   { value: "activity_completed",     label: "Activity completed" },
 ]
 
-const CONTACT_STATUSES = ["New", "follow-up", "win", "closed", "rejected", "fake"]
+const CONTACT_STATUSES = ["New", "follow-up", "win", "closed", "rejected", "fake", "test"]
 
 const ACTION_OPTIONS = [
   { value: "create_task",            label: "Create a task" },

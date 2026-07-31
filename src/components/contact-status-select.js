@@ -17,6 +17,7 @@ const STATUS_OPTIONS = [
   { value: "closed",    label: "Closed",    color: "#64748b" },
   { value: "rejected",  label: "Rejected",  color: "#ef4444" },
   { value: "fake",      label: "Fake",      color: "#a855f7" },
+  { value: "test",      label: "Test",      color: "#14b8a6" },
 ]
 
 export function ContactStatusSelect({ contactId, initialStatus }) {

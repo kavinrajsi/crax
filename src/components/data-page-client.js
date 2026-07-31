@@ -77,7 +77,7 @@ const STATUS_COLORS = {
   Closed:    "destructive",
 }
 
-const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake"]
+const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake", "test"]
 
 /* ─── sort ─────────────────────────────────────────────────────────────── */
 

@@ -13,6 +13,7 @@ const STATUS_COLORS = {
   closed:     "#64748b",
   rejected:   "#ef4444",
   fake:       "#a855f7",
+  test:       "#14b8a6",
 }
 
 export default async function AnalyticsPage() {

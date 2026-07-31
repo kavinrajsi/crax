@@ -13,6 +13,7 @@ const STATUS_COLUMNS = [
   { key: "closed",    label: "Closed",    color: "#64748b" },
   { key: "rejected",  label: "Rejected",  color: "#ef4444" },
   { key: "fake",      label: "Fake",      color: "#a855f7" },
+  { key: "test",      label: "Test",      color: "#14b8a6" },
 ]
 
 export default async function PlannerPage() {
