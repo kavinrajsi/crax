@@ -14,11 +14,10 @@ import {
 } from "@/components/ui/table"
 import {
   SearchIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
 } from "lucide-react"
 import { sortRows, formatDate, timeAgo } from "@/lib/table-utils"
 import { SortableHead, useSort } from "@/components/sortable-head"
+import { JsonViewer } from "@/components/json-viewer"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
@@ -50,30 +49,6 @@ const ACTION_STYLES = {
 /* ─── SortableHead ─────────────────────────────────────────────────────── */
 
 
-/* ─── JsonCell ─────────────────────────────────────────────────────────── */
-
-function JsonCell({ data }) {
-  const [open, setOpen] = useState(false)
-  if (!data) return <span className="text-muted-foreground text-xs">—</span>
-  const preview = JSON.stringify(data)
-  const short = preview.length > 30 ? preview.slice(0, 30) + "…" : preview
-  return (
-    <div className="max-w-[200px]">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {open ? <ChevronDownIcon className="h-3 w-3 shrink-0" /> : <ChevronRightIcon className="h-3 w-3 shrink-0" />}
-        <span className="font-mono truncate">{short}</span>
-      </button>
-      {open && (
-        <pre className="mt-1 rounded bg-muted p-2 text-[11px] font-mono text-foreground overflow-x-auto whitespace-pre-wrap break-all max-w-xs">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-    </div>
-  )
-}
 
 /* ─── LogsView ─────────────────────────────────────────────────────────── */
 
@@ -201,7 +176,7 @@ export function LogsView({ logs }) {
                       )}
                     </TableCell>
 
-                    <TableCell className="pt-3"><JsonCell data={row.after} /></TableCell>
+                    <TableCell className="pt-3"><JsonViewer className="max-w-[200px]" data={row.after} /></TableCell>
 
                     <TableCell className="text-xs text-muted-foreground pt-3 whitespace-nowrap">
                       {row.ip_address || "—"}

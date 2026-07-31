@@ -1,30 +1,36 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import {
-  ArrowLeftIcon,
-  MailIcon,
-  PhoneIcon,
-  BuildingIcon,
-  GlobeIcon,
-  CalendarIcon,
-  TagIcon,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { ArrowLeftIcon, TagIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { sql } from "@/lib/db"
+import { requireUser } from "@/lib/dal"
+import { CONTACT_FIELD_GROUPS } from "@/lib/contact-fields"
+import { ContactFieldValue } from "@/components/contact-field-value"
 import { ContactTimeline } from "@/components/contact-timeline"
 import { ContactStatusSelect } from "@/components/contact-status-select"
 import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
 import { ContactCompanySelect } from "@/components/contact-company-select"
 
-import { requireUser } from "@/lib/dal"
-import { formatDate, sourceDomain } from "@/lib/table-utils"
-
 export const dynamic = "force-dynamic"
 
-
+function FieldCard({ field, contact, children }) {
+  const Icon = field.icon
+  return (
+    <Card className={field.wide ? "col-span-full" : undefined}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5" />
+          {field.label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {children ?? <ContactFieldValue field={field} contact={contact} />}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default async function ContactDetailPage({ params }) {
   await requireUser()
@@ -42,7 +48,7 @@ export default async function ContactDetailPage({ params }) {
   if (!contact) notFound()
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6">
       {/* Back link */}
       <Link
         href="/data"
@@ -68,149 +74,52 @@ export default async function ContactDetailPage({ params }) {
         </div>
       </div>
 
-      {/* Edit form (rendered inline below header when open) */}
-
       <Separator />
 
-      {/* Detail cards */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Email */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <MailIcon className="h-3.5 w-3.5" />
-              Email
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm break-all">{contact.email || "—"}</p>
-          </CardContent>
-        </Card>
+      {/* Every column on contact_us, grouped. Driven by CONTACT_FIELD_GROUPS so
+          this page and the /data drawer cannot drift apart. */}
+      {CONTACT_FIELD_GROUPS.map((group) => (
+        <section key={group.title} className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">{group.title}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {group.fields.map((field) => (
+              <FieldCard key={field.key} field={field} contact={contact} />
+            ))}
 
-        {/* Phone */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <PhoneIcon className="h-3.5 w-3.5" />
-              Phone
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{contact.phone || "—"}</p>
-          </CardContent>
-        </Card>
-
-        {/* Company (text field from form) */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <BuildingIcon className="h-3.5 w-3.5" />
-              Company
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{contact.company || "—"}</p>
-          </CardContent>
-        </Card>
-
-        {/* Company link (CRM entity) */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <BuildingIcon className="h-3.5 w-3.5" />
-              Linked Company
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ContactCompanySelect
-              contactId={contact.id}
-              initialCompanyId={contact.company_id}
-              companies={companies}
-              contactEmail={contact.email}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Source */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <GlobeIcon className="h-3.5 w-3.5" />
-              Source
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {contact.source_url ? (
-              <a
-                href={contact.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline break-all"
+            {/* Editable controls live in their own cards alongside the group
+                they belong to, rather than in the field list. */}
+            {group.title === "Contact" && (
+              <FieldCard
+                field={{ key: "company_id", label: "Linked Company", icon: group.fields[3].icon }}
+                contact={contact}
               >
-                {sourceDomain(contact.source_url)}
-              </a>
-            ) : (
-              <p className="text-sm">—</p>
+                <ContactCompanySelect
+                  contactId={contact.id}
+                  initialCompanyId={contact.company_id}
+                  companies={companies}
+                  contactEmail={contact.email}
+                />
+              </FieldCard>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Needs */}
-        <Card className="sm:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <TagIcon className="h-3.5 w-3.5" />
-              Needs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Array.isArray(contact.needs) && contact.needs.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {contact.needs.map((n) => (
-                  <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">—</p>
+            {group.title === "Enquiry" && (
+              <FieldCard field={{ key: "tags", label: "Tags", icon: TagIcon }} contact={contact}>
+                <ContactTags contactId={contact.id} initialTags={tags} />
+              </FieldCard>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Tags */}
-        <Card className="sm:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <TagIcon className="h-3.5 w-3.5" />
-              Tags
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ContactTags contactId={contact.id} initialTags={tags} />
-          </CardContent>
-        </Card>
-
-        {/* Created at */}
-        <Card className="sm:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Submitted
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{formatDate(contact.created_at)}</p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </section>
+      ))}
 
       <Separator />
 
-      {/* Timeline */}
-      <ContactTimeline
-        contactId={contact.id}
-        initialNotes={notes}
-        initialActivities={activities}
-      />
+      {/* Timeline keeps a measure: prose needs one even when the page does not. */}
+      <div className="max-w-3xl">
+        <ContactTimeline
+          contactId={contact.id}
+          initialNotes={notes}
+          initialActivities={activities}
+        />
+      </div>
     </div>
   )
 }

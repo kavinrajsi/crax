@@ -1,0 +1,99 @@
+import {
+  MailIcon,
+  PhoneIcon,
+  BuildingIcon,
+  BriefcaseIcon,
+  MessageSquareIcon,
+  TagIcon,
+  GlobeIcon,
+  MegaphoneIcon,
+  MousePointerClickIcon,
+  MapPinIcon,
+  NetworkIcon,
+  CalendarIcon,
+  BracesIcon,
+} from "lucide-react"
+
+/**
+ * Every displayable column on public.contact_us, in one place.
+ *
+ * Both the detail page and the /data row drawer render from this list, so they
+ * cannot drift apart the way they had — the drawer was showing 8 of 25 columns
+ * and `message` was rendered nowhere in the app at all, despite 91 of 121
+ * contacts having one.
+ *
+ * Deliberately NOT "use client": contacts/[id]/page.js is a server component,
+ * and a "use client" module's exports would arrive there as client references
+ * rather than values. Same constraint documented in src/lib/table-utils.js.
+ *
+ * Columns intentionally absent, because they are not plain read-only fields:
+ *   id          → the "Contact #{id}" subtitle
+ *   name        → the <h1>
+ *   status      → <ContactStatusSelect>, an editable control
+ *   company_id  → <ContactCompanySelect>, an editable control
+ * Everything else on the table appears below. If you add a column, add it here
+ * or scripts/check-contact-fields.mjs will fail.
+ */
+
+/**
+ * kind drives rendering:
+ *   text (default) · url · date · array · json
+ * wide: true spans the full grid row (long-form content).
+ */
+export const CONTACT_FIELD_GROUPS = [
+  {
+    title: "Contact",
+    fields: [
+      { key: "email", label: "Email", icon: MailIcon, breakAll: true },
+      { key: "phone", label: "Phone", icon: PhoneIcon },
+      { key: "role", label: "Role", icon: BriefcaseIcon },
+      { key: "company", label: "Company", icon: BuildingIcon },
+    ],
+  },
+  {
+    title: "Enquiry",
+    fields: [
+      { key: "message", label: "Message", icon: MessageSquareIcon, wide: true, kind: "longtext" },
+      { key: "needs", label: "Needs", icon: TagIcon, kind: "array" },
+    ],
+  },
+  {
+    title: "Attribution",
+    fields: [
+      { key: "source_url", label: "Source", icon: GlobeIcon, kind: "url" },
+      { key: "utm_source", label: "UTM Source", icon: MegaphoneIcon },
+      { key: "utm_medium", label: "UTM Medium", icon: MegaphoneIcon },
+      { key: "utm_campaign", label: "UTM Campaign", icon: MegaphoneIcon },
+      { key: "utm_term", label: "UTM Term", icon: MegaphoneIcon },
+      { key: "utm_content", label: "UTM Content", icon: MegaphoneIcon },
+      { key: "gclid", label: "gclid", icon: MousePointerClickIcon, breakAll: true },
+      { key: "wbraid", label: "wbraid", icon: MousePointerClickIcon, breakAll: true },
+      { key: "gbraid", label: "gbraid", icon: MousePointerClickIcon, breakAll: true },
+      { key: "fbclid", label: "fbclid", icon: MousePointerClickIcon, breakAll: true },
+      { key: "msclkid", label: "msclkid", icon: MousePointerClickIcon, breakAll: true },
+    ],
+  },
+  {
+    title: "Request",
+    fields: [
+      { key: "ip_address", label: "IP Address", icon: NetworkIcon },
+      { key: "location", label: "Location", icon: MapPinIcon },
+      { key: "created_at", label: "Submitted", icon: CalendarIcon, kind: "date" },
+      { key: "raw_payload", label: "Raw Payload", icon: BracesIcon, wide: true, kind: "json" },
+    ],
+  },
+]
+
+/** Columns rendered by a dedicated control rather than a generic field. */
+export const HANDLED_ELSEWHERE = ["id", "name", "status", "company_id"]
+
+/** Flat list, for tests and for surfaces that don't want the grouping. */
+export const CONTACT_FIELDS = CONTACT_FIELD_GROUPS.flatMap((group) => group.fields)
+
+/** True when the value should render as the em-dash placeholder. */
+export function isBlank(value) {
+  if (value == null) return true
+  if (Array.isArray(value)) return value.length === 0
+  if (typeof value === "object") return Object.keys(value).length === 0
+  return String(value).trim() === ""
+}

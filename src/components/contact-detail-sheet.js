@@ -1,16 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import {
-  MailIcon,
-  PhoneIcon,
-  BuildingIcon,
-  GlobeIcon,
-  CalendarIcon,
-  TagIcon,
-  ExternalLinkIcon,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { BuildingIcon, TagIcon, ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,7 +18,8 @@ import { ContactStatusSelect } from "@/components/contact-status-select"
 import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
 import { ContactCompanySelect } from "@/components/contact-company-select"
-import { formatDate, sourceDomain } from "@/lib/table-utils"
+import { CONTACT_FIELD_GROUPS } from "@/lib/contact-fields"
+import { ContactFieldValue } from "@/components/contact-field-value"
 
 
 
@@ -111,72 +103,58 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
                   would collide with the timeline's key below. */}
               <ContactEditForm key={`edit-${displayedContact.id}`} contact={displayedContact} />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field icon={MailIcon} label="Email">
-                  <span className="break-all">{displayedContact.email || "—"}</span>
-                </Field>
+              {/* Same CONTACT_FIELD_GROUPS as /contacts/[id], so the drawer can
+                  never show fewer columns than the full page again. Layout stays
+                  per-surface: two columns here, up to four on the page. */}
+              {CONTACT_FIELD_GROUPS.map((group) => (
+                <div key={group.title} className="flex flex-col gap-3">
+                  <h3 className="text-xs font-semibold text-muted-foreground">{group.title}</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {group.fields.map((field) => (
+                      <div
+                        key={field.key}
+                        className={field.wide ? "sm:col-span-2" : undefined}
+                      >
+                        <Field icon={field.icon} label={field.label}>
+                          <ContactFieldValue field={field} contact={displayedContact} />
+                        </Field>
+                      </div>
+                    ))}
 
-                <Field icon={PhoneIcon} label="Phone">
-                  {displayedContact.phone || "—"}
-                </Field>
+                    {group.title === "Contact" && (
+                      <div className="sm:col-span-2">
+                        <Field icon={BuildingIcon} label="Linked Company">
+                          <ContactCompanySelect
+                            key={`company-${displayedContact.id}`}
+                            contactId={displayedContact.id}
+                            initialCompanyId={displayedContact.company_id}
+                            companies={companies}
+                            contactEmail={displayedContact.email}
+                          />
+                        </Field>
+                      </div>
+                    )}
 
-                <Field icon={BuildingIcon} label="Company">
-                  {displayedContact.company || "—"}
-                </Field>
-
-                <Field icon={GlobeIcon} label="Source">
-                  {displayedContact.source_url ? (
-                    <a
-                      href={displayedContact.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {sourceDomain(displayedContact.source_url)}
-                    </a>
-                  ) : "—"}
-                </Field>
-
-                <Field icon={CalendarIcon} label="Submitted">
-                  {formatDate(displayedContact.created_at)}
-                </Field>
-
-                <Field icon={TagIcon} label="Needs">
-                  {Array.isArray(displayedContact.needs) && displayedContact.needs.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {displayedContact.needs.map((need) => (
-                        <Badge key={need} variant="secondary" className="text-xs">{need}</Badge>
-                      ))}
-                    </div>
-                  ) : <span className="text-muted-foreground">—</span>}
-                </Field>
-              </div>
-
-              <Separator />
-
-              <Field icon={BuildingIcon} label="Linked Company">
-                <ContactCompanySelect
-                  key={`company-${displayedContact.id}`}
-                  contactId={displayedContact.id}
-                  initialCompanyId={displayedContact.company_id}
-                  companies={companies}
-                  contactEmail={displayedContact.email}
-                />
-              </Field>
-
-              <Field icon={TagIcon} label="Tags">
-                {contactDetail?.loadFailed ? (
-                  <p className="text-xs text-muted-foreground">Couldn&apos;t load tags.</p>
-                ) : contactDetail ? (
-                  <ContactTags
-                    key={`tags-${displayedContact.id}`}
-                    contactId={displayedContact.id}
-                    initialTags={contactDetail.tags}
-                  />
-                ) : (
-                  <Skeleton className="h-7 w-56" />
-                )}
-              </Field>
+                    {group.title === "Enquiry" && (
+                      <div className="sm:col-span-2">
+                        <Field icon={TagIcon} label="Tags">
+                          {contactDetail?.loadFailed ? (
+                            <p className="text-xs text-muted-foreground">Couldn&apos;t load tags.</p>
+                          ) : contactDetail ? (
+                            <ContactTags
+                              key={`tags-${displayedContact.id}`}
+                              contactId={displayedContact.id}
+                              initialTags={contactDetail.tags}
+                            />
+                          ) : (
+                            <Skeleton className="h-7 w-56" />
+                          )}
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
 
               <Separator />
 
