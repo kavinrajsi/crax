@@ -94,7 +94,7 @@ export function DataPageClient({ contacts, companies }) {
     setOpenContactId(contactId)
   }
 
-  // checkbox + id + name/email + company + status + date
+  // checkbox + id + name/email + phone/company + status + date
   const columnCount = 6
 
 
@@ -208,8 +208,8 @@ export function DataPageClient({ contacts, companies }) {
                   />
                 </TableHead>
                 <SortableHead label="ID"           column="id"         sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background w-12" />
-                <SortableHead label="Name / Email" column="name"       sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
-                <SortableHead label="Company"      column="company"    sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                <SortableHead label="Name / Email"   column="name"       sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                <SortableHead label="Phone / Company" column="phone"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Status"       column="status"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Date"         column="created_at" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
               </TableRow>
@@ -249,15 +249,18 @@ export function DataPageClient({ contacts, companies }) {
                         onClick={(event) => handleRowLinkClick(event, row.id)}
                         className="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <div className="whitespace-nowrap text-xs">
-                          <span className="font-medium">{row.name || "—"}</span>
-                          {row.email && (
-                            <span className="text-muted-foreground"> · {row.email}</span>
-                          )}
+                        <div className="whitespace-nowrap text-xs leading-tight">
+                          <div className="font-medium">{row.name || "—"}</div>
+                          <div className="text-muted-foreground">{row.email || "—"}</div>
                         </div>
                       </a>
                     </TableCell>
-                    <TableCell className="text-xs">{truncate(row.company) || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="whitespace-nowrap leading-tight">
+                        <div>{row.phone || "—"}</div>
+                        <div className="text-muted-foreground">{truncate(row.company)}</div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={STATUS_COLORS[row.status] ?? "outline"}
