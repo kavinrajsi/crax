@@ -212,11 +212,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
             <div
               key={col.key}
               id={`col-${col.key}`}
-              /* flex-1 so all seven columns share the width instead of a fixed
-                 w-72 that forced 2088px and scrolled sideways below ~2400px.
-                 min-w keeps them legible on narrow screens — below ~1150px the
-                 parent's overflow-x-auto takes over rather than crushing them. */
-              className="flex flex-1 min-w-[9rem] flex-col rounded-xl border border-border bg-muted/40"
+              className="flex w-72 shrink-0 flex-col rounded-xl border border-border bg-muted/40"
             >
               {/* Column header */}
               <div className="flex items-center gap-2 px-3 py-2.5">
