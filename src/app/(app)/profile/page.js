@@ -1,15 +1,15 @@
-import { auth } from "@/lib/auth"
+import { requireUser } from "@/lib/dal"
 import { ProfileClient } from "@/components/profile-client"
 
 export const dynamic = "force-dynamic"
 
 export default async function ProfilePage() {
-  const { data: session } = await auth.getSession()
+  const user = await requireUser()
 
   return (
     <ProfileClient
-      initialName={session?.user?.name ?? ""}
-      initialEmail={session?.user?.email ?? ""}
+      initialName={user.name ?? ""}
+      initialEmail={user.email ?? ""}
     />
   )
 }

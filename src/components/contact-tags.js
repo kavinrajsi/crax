@@ -9,6 +9,7 @@ import { addTag, removeTag } from "@/app/(app)/contacts/[id]/actions"
 export function ContactTags({ contactId, initialTags }) {
   const [tags, setTags] = useState(initialTags)
   const [input, setInput] = useState("")
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
   function handleKeyDown(e) {
@@ -22,12 +23,33 @@ export function ContactTags({ contactId, initialTags }) {
     const optimistic = { id: Date.now(), contact_id: contactId, tag, created_at: new Date().toISOString() }
     setTags((prev) => [...prev, optimistic])
     setInput("")
-    startTransition(() => addTag(contactId, tag))
+    setError(null)
+    // Revert on failure — an optimistic tag that never saved looked identical to
+    // a saved one until the page was reloaded.
+    startTransition(async () => {
+      try {
+        await addTag(contactId, tag)
+      } catch (err) {
+        console.error("[contact-tags] addTag failed", { contactId, tag, err })
+        setTags((prev) => prev.filter((t) => t.id !== optimistic.id))
+        setError(`Couldn't add "${tag}".`)
+      }
+    })
   }
 
   function handleRemove(tagId) {
+    const removed = tags.find((t) => t.id === tagId)
     setTags((prev) => prev.filter((t) => t.id !== tagId))
-    startTransition(() => removeTag(tagId))
+    setError(null)
+    startTransition(async () => {
+      try {
+        await removeTag(tagId)
+      } catch (err) {
+        console.error("[contact-tags] removeTag failed", { tagId, err })
+        if (removed) setTags((prev) => [...prev, removed])
+        setError(`Couldn't remove "${removed?.tag ?? "tag"}".`)
+      }
+    })
   }
 
   return (
@@ -49,6 +71,7 @@ export function ContactTags({ contactId, initialTags }) {
           <span className="text-xs text-muted-foreground/50">No tags yet</span>
         )}
       </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <Input
         placeholder="Type a tag and press Enter…"
         value={input}

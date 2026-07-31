@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { BoltIcon } from "lucide-react"
-import { auth } from "@/lib/auth"
+import { requireUser } from "@/lib/dal"
 import {
   Sidebar,
   SidebarContent,
@@ -23,8 +23,10 @@ import { AppNav } from "@/components/app-nav"
 export const dynamic = "force-dynamic"
 
 export default async function AppLayout({ children }) {
-  const { data: session } = await auth.getSession()
-  const user = session?.user ?? null
+  // Gates every route in the (app) group. Previously this read the session and
+  // fell through to a "Guest" render, which served the full contact table to
+  // anonymous visitors.
+  const user = await requireUser()
 
   return (
     <SidebarProvider>
@@ -65,8 +67,8 @@ export default async function AppLayout({ children }) {
         {/* User */}
         <SidebarFooter>
           <SidebarUser
-            displayName={user?.name ?? user?.email ?? "Guest"}
-            email={user?.email ?? ""}
+            displayName={user.name ?? user.email}
+            email={user.email ?? ""}
           />
         </SidebarFooter>
 

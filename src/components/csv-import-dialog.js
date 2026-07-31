@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useTransition, useRef } from "react"
-import { UploadIcon, CheckCircleIcon } from "lucide-react"
+import { UploadIcon, CheckCircleIcon, AlertTriangleIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -114,15 +113,27 @@ export function CsvImportDialog({ onImported }) {
     })
 
     startTransition(async () => {
-      const res = await fetch("/api/contacts/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows }),
-      })
-      const data = await res.json()
-      setResult(data)
-      setStep("result")
-      onImported?.()
+      try {
+        const res = await fetch("/api/contacts/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows }),
+        })
+        // res.ok was never checked, so a 401 or 500 was reported as a success
+        // with `inserted: undefined`.
+        if (!res.ok) {
+          const detail = res.status === 401 ? "Your session expired — sign in again." : ""
+          throw new Error(`Import failed (${res.status}). ${detail}`.trim())
+        }
+        const data = await res.json()
+        setResult(data)
+        setStep("result")
+        onImported?.()
+      } catch (error) {
+        console.error("[csv-import] request failed", error)
+        setResult({ error: error.message })
+        setStep("result")
+      }
     })
   }
 
@@ -149,7 +160,7 @@ export function CsvImportDialog({ onImported }) {
           <DialogTitle>
             {step === "upload" && "Import Contacts from CSV"}
             {step === "map" && `Map Columns — ${parsed?.allRows.length} rows detected`}
-            {step === "result" && "Import Complete"}
+            {step === "result" && (result?.error ? "Import Failed" : "Import Complete")}
           </DialogTitle>
         </DialogHeader>
 
@@ -229,20 +240,46 @@ export function CsvImportDialog({ onImported }) {
         {/* Step 3: Result */}
         {step === "result" && result && (
           <div className="flex flex-col items-center gap-4 py-4">
-            <CheckCircleIcon className="h-12 w-12 text-green-500" />
-            <div className="flex gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-green-600">{result.inserted}</p>
-                <p className="text-xs text-muted-foreground">imported</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-muted-foreground">{result.skipped}</p>
-                <p className="text-xs text-muted-foreground">skipped</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Skipped rows have duplicate emails or missing name and email.
-            </p>
+            {result.error ? (
+              <>
+                <AlertTriangleIcon className="h-12 w-12 text-destructive" />
+                <p className="text-sm text-center max-w-sm">{result.error}</p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Nothing was imported. Your file is unchanged — try again.
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircleIcon className="h-12 w-12 text-green-500" />
+                <div className="flex gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">{result.inserted}</p>
+                    <p className="text-xs text-muted-foreground">imported</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-muted-foreground">{result.skipped}</p>
+                    <p className="text-xs text-muted-foreground">skipped</p>
+                  </div>
+                  {result.failed > 0 && (
+                    <div>
+                      <p className="text-2xl font-bold text-destructive">{result.failed}</p>
+                      <p className="text-xs text-muted-foreground">failed</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Skipped rows have duplicate emails or missing name and email.
+                  {result.failed > 0 && " Failed rows hit a database error."}
+                </p>
+                {result.errors?.length > 0 && (
+                  <ul className="text-xs text-destructive/80 w-full max-w-sm space-y-0.5">
+                    {result.errors.map((e, i) => (
+                      <li key={i} className="truncate">{e}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
             <Button size="sm" onClick={() => handleClose(false)}>Done</Button>
           </div>
         )}

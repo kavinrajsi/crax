@@ -9,16 +9,8 @@ import { SendIcon, MessageSquareIcon } from "lucide-react"
 import { addNote } from "@/app/(app)/contacts/[id]/actions"
 import { AddActivityDialog } from "@/components/add-activity-dialog"
 import { ActivityItem } from "@/components/activity-item"
+import { timeAgo } from "@/lib/table-utils"
 
-function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "just now"
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
 
 function initials(email) {
   return (email || "?").split("@")[0].slice(0, 2).toUpperCase()
@@ -36,6 +28,7 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
   const [notes, setNotes] = useState(initialNotes)
   const [activities, setActivities] = useState(initialActivities)
   const [noteBody, setNoteBody] = useState("")
+  const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef(null)
 
@@ -54,7 +47,20 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
     }
     setNotes((prev) => [...prev, optimistic])
     setNoteBody("")
-    startTransition(() => addNote(contactId, trimmed))
+    setError(null)
+    /* Restore the draft on failure. Previously the promise was dropped, so a
+       failed save cleared the textarea and left the note rendered as if it had
+       persisted — the user only found out on reload, with the text gone. */
+    startTransition(async () => {
+      try {
+        await addNote(contactId, trimmed)
+      } catch (err) {
+        console.error("[contact-timeline] addNote failed", { contactId, err })
+        setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
+        setNoteBody(trimmed)
+        setError("Couldn't save that note. Your text has been restored.")
+      }
+    })
   }
 
   function handleNoteKeyDown(e) {
@@ -132,6 +138,7 @@ export function ContactTimeline({ contactId, initialNotes, initialActivities }) 
       <Separator />
 
       {/* Quick note input */}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <form onSubmit={handleNoteSubmit} className="flex flex-col gap-2">
         <Textarea
           ref={textareaRef}

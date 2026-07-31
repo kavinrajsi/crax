@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -10,7 +9,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
@@ -18,30 +16,13 @@ import {
   SearchIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  ChevronsUpDownIcon,
-  ChevronUpIcon,
 } from "lucide-react"
+import { sortRows, formatDate, timeAgo } from "@/lib/table-utils"
+import { SortableHead, useSort } from "@/components/sortable-head"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
-function formatDate(iso) {
-  if (!iso) return "—"
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  })
-}
 
-function timeAgo(iso) {
-  if (!iso) return ""
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "just now"
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
 
 function shortUA(ua) {
   if (!ua) return "—"
@@ -63,57 +44,11 @@ const ACTION_STYLES = {
 
 /* ─── sort helpers ─────────────────────────────────────────────────────── */
 
-function getValue(row, key) {
-  const v = row[key]
-  if (v === null || v === undefined) return ""
-  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return new Date(v).getTime()
-  return typeof v === "string" ? v.toLowerCase() : v
-}
 
-function sortRows(rows, col, dir) {
-  if (!col) return rows
-  return [...rows].sort((a, b) => {
-    const av = getValue(a, col)
-    const bv = getValue(b, col)
-    if (av < bv) return dir === "asc" ? -1 : 1
-    if (av > bv) return dir === "asc" ? 1 : -1
-    return 0
-  })
-}
 
-function useSort(defaultCol = "created_at", defaultDir = "desc") {
-  const [sort, setSort] = useState({ col: defaultCol, dir: defaultDir })
-  function toggle(col) {
-    setSort((prev) =>
-      prev.col === col
-        ? prev.dir === "asc"
-          ? { col, dir: "desc" }
-          : { col: null, dir: "asc" }
-        : { col, dir: "asc" }
-    )
-  }
-  return { sort, toggle }
-}
 
 /* ─── SortableHead ─────────────────────────────────────────────────────── */
 
-function SortableHead({ label, col, sort, onSort, className = "" }) {
-  const active = sort.col === col
-  const Icon = active
-    ? sort.dir === "asc" ? ChevronUpIcon : ChevronDownIcon
-    : ChevronsUpDownIcon
-  return (
-    <TableHead
-      className={`cursor-pointer select-none whitespace-nowrap sticky top-0 bg-card ${className}`}
-      onClick={() => onSort(col)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <Icon className={`h-3 w-3 ${active ? "text-foreground" : "text-muted-foreground/50"}`} />
-      </span>
-    </TableHead>
-  )
-}
 
 /* ─── JsonCell ─────────────────────────────────────────────────────────── */
 
@@ -145,7 +80,7 @@ function JsonCell({ data }) {
 export function LogsView({ logs }) {
   const [search, setSearch] = useState("")
   const [actionFilter, setActionFilter] = useState("all")
-  const { sort, toggle } = useSort("created_at", "desc")
+  const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
 
   const presentActions = useMemo(
     () => ["all", ...new Set(logs.map((r) => r.action))],
@@ -166,7 +101,7 @@ export function LogsView({ logs }) {
           String(r.id).includes(q)
       )
     }
-    return sortRows(filtered, sort.col, sort.dir)
+    return sortRows(filtered, sort.column, sort.direction)
   }, [logs, actionFilter, search, sort])
 
   return (
@@ -214,14 +149,14 @@ export function LogsView({ logs }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableHead label="ID"         col="id"           sort={sort} onSort={toggle} className="w-12" />
-                <SortableHead label="Timestamp"  col="created_at"   sort={sort} onSort={toggle} />
-                <SortableHead label="Action"     col="action"       sort={sort} onSort={toggle} />
-                <SortableHead label="Actor"      col="actor_email"  sort={sort} onSort={toggle} />
-                <SortableHead label="Target"     col="target_table" sort={sort} onSort={toggle} />
-                <SortableHead label="After"      col="after"        sort={sort} onSort={toggle} />
-                <SortableHead label="IP"         col="ip_address"   sort={sort} onSort={toggle} />
-                <SortableHead label="Browser/OS" col="user_agent"   sort={sort} onSort={toggle} />
+                <SortableHead label="ID"         column="id"           sort={sort} onSort={toggleSort} className="sticky top-0 bg-card w-12" />
+                <SortableHead label="Timestamp"  column="created_at"   sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="Action"     column="action"       sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="Actor"      column="actor_email"  sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="Target"     column="target_table" sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="After"      column="after"        sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="IP"         column="ip_address"   sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
+                <SortableHead label="Browser/OS" column="user_agent"   sort={sort} onSort={toggleSort} className="sticky top-0 bg-card" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -237,7 +172,7 @@ export function LogsView({ logs }) {
                     <TableCell className="text-muted-foreground text-xs pt-3">{row.id}</TableCell>
 
                     <TableCell className="text-xs pt-3 whitespace-nowrap">
-                      <div className="font-medium text-foreground">{formatDate(row.created_at)}</div>
+                      <div className="font-medium text-foreground">{formatDate(row.created_at, { seconds: true })}</div>
                       <div className="text-muted-foreground mt-0.5">{timeAgo(row.created_at)}</div>
                     </TableCell>
 

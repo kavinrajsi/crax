@@ -20,22 +20,11 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { GripVerticalIcon, MailIcon, PhoneIcon, BuildingIcon, GlobeIcon } from "lucide-react"
 import { updateContactStatus } from "@/app/(app)/planner/actions"
+import { sourceDomain, timeAgo } from "@/lib/table-utils"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
-function sourceDomain(url) {
-  try { return new URL(url).hostname.replace("www.", "") }
-  catch { return url || "" }
-}
 
-function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return "today"
-  if (days === 1) return "1d ago"
-  if (days < 30) return `${days}d ago`
-  return `${Math.floor(days / 30)}mo ago`
-}
 
 /* ─── Contact Card ────────────────────────────────────────────────────── */
 
@@ -104,7 +93,7 @@ function ContactCard({ contact }) {
           {contact.source_url && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <GlobeIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{sourceDomain(contact.source_url)}</span>
+              <span className="truncate">{sourceDomain(contact.source_url, "")}</span>
             </div>
           )}
 
@@ -138,6 +127,7 @@ function OverlayCard({ contact }) {
 export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
   const [contacts, setContacts] = useState(initialContacts)
   const [activeContact, setActiveContact] = useState(null)
+  const [error, setError] = useState(null)
   const [, startTransition] = useTransition()
 
   const sensors = useSensors(
@@ -175,13 +165,25 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
 
     if (newStatus === contact.status) return
 
-    // Optimistic update
+    /* Optimistic update, with a rollback. The transition used to discard the
+       returned promise entirely, so a rejected action left the card sitting in
+       its new column forever — the UI claimed a status the database never got. */
+    const previousStatus = contact.status
     setContacts((prev) =>
       prev.map((c) => c.id === contact.id ? { ...c, status: newStatus } : c)
     )
+    setError(null)
 
-    startTransition(() => {
-      updateContactStatus(contact.id, newStatus)
+    startTransition(async () => {
+      try {
+        await updateContactStatus(contact.id, newStatus)
+      } catch (err) {
+        console.error("[contacts-kanban] status update failed", err)
+        setContacts((prev) =>
+          prev.map((c) => c.id === contact.id ? { ...c, status: previousStatus } : c)
+        )
+        setError(`Couldn't move ${contact.name || "contact"} to ${newStatus}.`)
+      }
     })
   }
 
@@ -192,6 +194,11 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
+      {error && (
+        <p className="mb-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
       <div className="flex gap-3 overflow-x-auto pb-4">
         {statusColumns.map((col) => {
           const colContacts = contactsForStatus(col.key)

@@ -19,22 +19,16 @@ import { ContactEditForm } from "@/components/contact-edit-form"
 import { ContactTags } from "@/components/contact-tags"
 import { ContactCompanySelect } from "@/components/contact-company-select"
 
+import { requireUser } from "@/lib/dal"
+import { formatDate, sourceDomain } from "@/lib/table-utils"
+
 export const dynamic = "force-dynamic"
 
-function formatDate(iso) {
-  if (!iso) return "—"
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  })
-}
 
-function sourceDomain(url) {
-  try { return new URL(url).hostname.replace("www.", "") }
-  catch { return url || "—" }
-}
 
 export default async function ContactDetailPage({ params }) {
+  await requireUser()
+
   const { id } = await params
   const [rows, notes, tags, activities, companies] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,

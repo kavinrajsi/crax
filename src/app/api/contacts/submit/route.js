@@ -2,9 +2,19 @@ import { sql } from "@/lib/db"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function POST(request) {
-  // Optional secret auth
+  /* Optional secret auth — deliberately fail-OPEN so live form intake keeps
+     working while WEBHOOK_SECRET is being coordinated with the form owner.
+     Until it is set, anyone can insert rows into public.contact_us and
+     contact_activities and trigger company auto-creation below. Set
+     WEBHOOK_SECRET in .env.local and in Vercel, then change the condition to
+     `if (!secret || header !== secret)` to close it. */
   const secret = process.env.WEBHOOK_SECRET
-  if (secret && request.headers.get("x-webhook-secret") !== secret) {
+  const providedSecret = request.headers.get("x-webhook-secret")
+  if (!secret) {
+    console.error(
+      "[SECURITY] WEBHOOK_SECRET is unset — accepting an unauthenticated POST to /api/contacts/submit"
+    )
+  } else if (providedSecret !== secret) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 

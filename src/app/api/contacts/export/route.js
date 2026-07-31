@@ -1,9 +1,8 @@
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
-import { auth } from "@/lib/auth"
+import { getUserOrNull } from "@/lib/dal"
 
 export async function GET(request) {
-  const { data: session } = await auth.getSession()
-  if (!session?.user) {
+  if (!(await getUserOrNull())) {
     return new Response("Unauthorized", { status: 401 })
   }
 
@@ -12,12 +11,25 @@ export async function GET(request) {
 
   let contacts
   if (idsParam) {
-    const ids = idsParam.split(",").map(Number).filter(Boolean)
+    /* `.filter(Boolean)` used to sit here, which silently dropped id 0 and
+       coerced garbage to NaN — `?ids=abc` returned HTTP 200 and a headers-only
+       CSV with no indication anything was wrong. Validate and 400 instead. */
+    const raw = idsParam.split(",")
+    // Match the digits explicitly rather than trusting Number(): `Number.isInteger`
+    // alone accepts 1e20, which then overflows the int4 column and 500s.
+    const valid = raw.every((t) => /^\d{1,9}$/.test(t.trim()))
+    if (!valid) {
+      return Response.json(
+        { error: "The ids parameter must be a comma-separated list of positive integers." },
+        { status: 400 }
+      )
+    }
+    const ids = raw.map((t) => Number(t.trim()))
     contacts = await sql`
       SELECT id, name, email, phone, company, source_url, status,
              array_to_string(needs, ', ') AS needs_str, created_at
       FROM public.contact_us
-      WHERE id = ANY(${ids})
+      WHERE id = ANY(${ids}) AND email != ALL(${EXCLUDED_EMAILS})
       ORDER BY created_at DESC
     `
   } else {

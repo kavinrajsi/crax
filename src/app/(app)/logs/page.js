@@ -3,6 +3,8 @@ import { LogsView } from "@/components/logs-view"
 import { LogInIcon, EyeIcon, ListIcon, UsersIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 
+import { requireUser } from "@/lib/dal"
+
 export const dynamic = "force-dynamic"
 
 const statDef = [
@@ -34,6 +36,8 @@ const statDef = [
 ]
 
 export default async function LogsPage() {
+  await requireUser()
+
   const logs = await sql`
     SELECT * FROM public.audit_logs ORDER BY created_at DESC
   `

@@ -2,15 +2,14 @@
 
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
-import { auth } from "@/lib/auth"
+import { requireUserOrThrow } from "@/lib/dal"
 
 export async function createCompany(fields) {
-  const { data: session } = await auth.getSession()
-  const ownerEmail = session?.user?.email ?? "anonymous"
+  const user = await requireUserOrThrow()
   const { name, industry, website, phone } = fields
   const [company] = await sql`
     INSERT INTO public.companies (name, industry, website, phone, owner_email)
-    VALUES (${name}, ${industry ?? null}, ${website ?? null}, ${phone ?? null}, ${ownerEmail})
+    VALUES (${name}, ${industry ?? null}, ${website ?? null}, ${phone ?? null}, ${user.email})
     RETURNING *
   `
   revalidatePath("/companies")
@@ -18,6 +17,7 @@ export async function createCompany(fields) {
 }
 
 export async function updateCompany(companyId, fields) {
+  await requireUserOrThrow()
   const { name, industry, website, phone } = fields
   await sql`
     UPDATE public.companies
@@ -32,11 +32,13 @@ export async function updateCompany(companyId, fields) {
 }
 
 export async function deleteCompany(companyId) {
+  await requireUserOrThrow()
   await sql`DELETE FROM public.companies WHERE id = ${companyId}`
   revalidatePath("/companies")
 }
 
 export async function linkContactToCompany(contactId, companyId) {
+  await requireUserOrThrow()
   await sql`
     UPDATE public.contact_us SET company_id = ${companyId ?? null} WHERE id = ${contactId}
   `
@@ -45,13 +47,12 @@ export async function linkContactToCompany(contactId, companyId) {
 }
 
 export async function addCompanyNote(companyId, body) {
+  const user = await requireUserOrThrow()
   const trimmed = body?.trim()
   if (!trimmed) return
-  const { data: session } = await auth.getSession()
-  const authorEmail = session?.user?.email ?? "anonymous"
   await sql`
     INSERT INTO public.company_notes (company_id, author_email, body)
-    VALUES (${companyId}, ${authorEmail}, ${trimmed})
+    VALUES (${companyId}, ${user.email}, ${trimmed})
   `
   revalidatePath(`/companies/${companyId}`)
 }

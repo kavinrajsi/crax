@@ -3,6 +3,8 @@ import { KanbanBoard } from "@/components/kanban-board"
 import { ContactsKanban } from "@/components/contacts-kanban"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { requireUser } from "@/lib/dal"
+
 export const dynamic = "force-dynamic"
 
 // Fixed column order for contact statuses
@@ -17,6 +19,8 @@ const STATUS_COLUMNS = [
 ]
 
 export default async function PlannerPage() {
+  await requireUser()
+
   const [boards, columns, cards, contacts] = await Promise.all([
     sql`SELECT * FROM public.kanban_boards ORDER BY created_at`,
     sql`SELECT * FROM public.kanban_columns ORDER BY position`,

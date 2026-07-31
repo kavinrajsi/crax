@@ -2,10 +2,17 @@ import { sql, EXCLUDED_EMAILS } from "@/lib/db"
 import { DataPageClient } from "@/components/data-page-client"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 
+import { requireUser } from "@/lib/dal"
+
 export const dynamic = "force-dynamic"
 
 export default async function DataPage() {
-  const contacts = await sql`SELECT * FROM public.contact_us WHERE email != ALL(${EXCLUDED_EMAILS}) ORDER BY created_at DESC`
+  await requireUser()
+
+  const [contacts, companies] = await Promise.all([
+    sql`SELECT * FROM public.contact_us WHERE email != ALL(${EXCLUDED_EMAILS}) ORDER BY created_at DESC`,
+    sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+  ])
 
   return (
     <div className="flex flex-col gap-4">
@@ -19,7 +26,7 @@ export default async function DataPage() {
         <CsvImportDialog />
       </div>
       <div className="rounded-xl border border-border overflow-hidden">
-        <DataPageClient contacts={contacts} />
+        <DataPageClient contacts={contacts} companies={companies} />
       </div>
     </div>
   )

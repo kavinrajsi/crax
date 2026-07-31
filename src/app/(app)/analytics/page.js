@@ -1,8 +1,8 @@
-import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+
+import { requireUser } from "@/lib/dal"
 
 export const dynamic = "force-dynamic"
 
@@ -17,6 +17,8 @@ const STATUS_COLORS = {
 }
 
 export default async function AnalyticsPage() {
+  await requireUser()
+
   const [statusRows, dailyRows, activityRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count

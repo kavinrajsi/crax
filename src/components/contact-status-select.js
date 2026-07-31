@@ -22,12 +22,23 @@ const STATUS_OPTIONS = [
 
 export function ContactStatusSelect({ contactId, initialStatus }) {
   const [status, setStatus] = useState(initialStatus ?? "New")
+  const [failed, setFailed] = useState(false)
   const [, startTransition] = useTransition()
 
   function handleChange(newStatus) {
+    // Optimistic, with a revert — the transition previously dropped the promise,
+    // so a failed write left the badge showing a status the database never had.
+    const previousStatus = status
     setStatus(newStatus)
-    startTransition(() => {
-      updateContactStatus(contactId, newStatus)
+    setFailed(false)
+    startTransition(async () => {
+      try {
+        await updateContactStatus(contactId, newStatus)
+      } catch (error) {
+        console.error("[contact-status] update failed", { contactId, newStatus, error })
+        setStatus(previousStatus)
+        setFailed(true)
+      }
     })
   }
 
@@ -35,6 +46,7 @@ export function ContactStatusSelect({ contactId, initialStatus }) {
   const color = current?.color ?? "#64748b"
 
   return (
+    <div className="flex flex-col items-end gap-1">
     <Select value={status} onValueChange={handleChange}>
       <SelectTrigger
         className="h-7 text-xs font-medium border w-36"
@@ -58,5 +70,9 @@ export function ContactStatusSelect({ contactId, initialStatus }) {
         ))}
       </SelectContent>
     </Select>
+    {failed && (
+      <span className="text-[10px] text-destructive">Couldn&apos;t save — reverted.</span>
+    )}
+    </div>
   )
 }

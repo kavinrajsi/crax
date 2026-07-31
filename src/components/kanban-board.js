@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useOptimistic, useTransition } from "react"
+import { useState, useTransition } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -43,7 +43,6 @@ import {
   PencilIcon,
   GripVerticalIcon,
   KanbanSquareIcon,
-  ChevronDownIcon,
 } from "lucide-react"
 import {
   createBoard,
@@ -274,6 +273,7 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
   const [columns, setColumns] = useState(initialColumns)
   const [cards, setCards] = useState(initialCards)
   const [activeBoardId, setActiveBoardId] = useState(initialBoards[0]?.id ?? null)
+  const [boardError, setBoardError] = useState(null)
   const [, startTransition] = useTransition()
 
   // DnD state
@@ -347,13 +347,23 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
         newOrder = [...without, { ...card, column_id: targetColId }]
       }
 
+      // Snapshot for rollback — the transition used to drop the promise, so a
+      // rejected move left the card in the wrong column permanently.
+      const previousCards = cards
+      setBoardError(null)
       setCards((prev) => [
         ...prev.filter((c) => c.column_id !== targetColId && c.id !== card.id),
         ...newOrder.map((c, i) => ({ ...c, position: i })),
       ])
 
-      startTransition(() => {
-        moveCard(card.id, targetColId, newOrder.map((c) => c.id))
+      startTransition(async () => {
+        try {
+          await moveCard(card.id, targetColId, newOrder.map((c) => c.id))
+        } catch (err) {
+          console.error("[kanban] moveCard failed", err)
+          setCards(previousCards)
+          setBoardError("Couldn't move that card. It has been put back.")
+        }
       })
       return
     }
@@ -363,12 +373,20 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
       const oldIdx = boardColumns.findIndex((c) => `col-${c.id}` === active.id)
       const newIdx = boardColumns.findIndex((c) => `col-${c.id}` === over.id)
       const reordered = arrayMove(boardColumns, oldIdx, newIdx)
+      const previousColumns = columns
+      setBoardError(null)
       setColumns((prev) => [
         ...prev.filter((c) => c.board_id !== activeBoardId),
         ...reordered.map((c, i) => ({ ...c, position: i })),
       ])
-      startTransition(() => {
-        reorderColumns(reordered.map((c) => c.id))
+      startTransition(async () => {
+        try {
+          await reorderColumns(reordered.map((c) => c.id))
+        } catch (err) {
+          console.error("[kanban] reorderColumns failed", err)
+          setColumns(previousColumns)
+          setBoardError("Couldn't reorder columns. The order has been put back.")
+        }
       })
     }
   }
@@ -377,16 +395,31 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
   async function handleCreateBoard() {
     if (!newBoardName.trim()) return
     setBoardSaving(true)
-    const board = await createBoard(newBoardName.trim())
-    setBoards((p) => [...p, board])
-    setActiveBoardId(board.id)
-    setNewBoardName("")
-    setNewBoardOpen(false)
-    setBoardSaving(false)
+    setBoardError(null)
+    try {
+      const board = await createBoard(newBoardName.trim())
+      setBoards((p) => [...p, board])
+      setActiveBoardId(board.id)
+      setNewBoardName("")
+      setNewBoardOpen(false)
+    } catch (err) {
+      console.error("[kanban] createBoard failed", err)
+      setBoardError("Couldn't create that board.")
+    } finally {
+      // finally, not the happy path — a throw used to leave this true forever,
+      // wedging the dialog open with a permanently disabled Save button.
+      setBoardSaving(false)
+    }
   }
 
   async function handleDeleteBoard(boardId) {
-    await deleteBoard(boardId)
+    try {
+      await deleteBoard(boardId)
+    } catch (err) {
+      console.error("[kanban] deleteBoard failed", err)
+      setBoardError("Couldn't delete that board.")
+      return
+    }
     setBoards((p) => p.filter((b) => b.id !== boardId))
     setColumns((p) => p.filter((c) => c.board_id !== boardId))
     setCards((p) => {
@@ -459,6 +492,11 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
 
   return (
     <div className="flex flex-col gap-4 min-h-0">
+      {boardError && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {boardError}
+        </p>
+      )}
       {/* Board selector bar */}
       <div className="flex items-center gap-2 flex-wrap">
         {boards.map((b) => (

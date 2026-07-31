@@ -19,59 +19,21 @@ import {
   SearchIcon,
   Trash2Icon,
   GlobeIcon,
-  ChevronsUpDownIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
 } from "lucide-react"
+import { sortRows } from "@/lib/table-utils"
+import { SortableHead, useSort } from "@/components/sortable-head"
 
-function getValue(row, key) {
-  const v = row[key]
-  if (v == null) return ""
-  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return new Date(v).getTime()
-  return typeof v === "string" ? v.toLowerCase() : v
-}
 
-function sortRows(rows, col, dir) {
-  if (!col) return rows
-  return [...rows].sort((a, b) => {
-    const av = getValue(a, col)
-    const bv = getValue(b, col)
-    if (av < bv) return dir === "asc" ? -1 : 1
-    if (av > bv) return dir === "asc" ? 1 : -1
-    return 0
-  })
-}
 
-function SortableHead({ label, col, sort, onSort, className = "" }) {
-  const active = sort.col === col
-  const Icon = active ? (sort.dir === "asc" ? ChevronUpIcon : ChevronDownIcon) : ChevronsUpDownIcon
-  return (
-    <TableHead
-      className={`cursor-pointer select-none whitespace-nowrap ${className}`}
-      onClick={() => onSort(col)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <Icon className={`h-3 w-3 ${active ? "text-foreground" : "text-muted-foreground/40"}`} />
-      </span>
-    </TableHead>
-  )
-}
 
 export function CompaniesTable({ companies: initialCompanies }) {
   const router = useRouter()
   const [companies, setCompanies] = useState(initialCompanies)
   const [search, setSearch] = useState("")
-  const [sort, setSort] = useState({ col: "created_at", dir: "desc" })
+  const [error, setError] = useState(null)
+  const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
   const [isPending, startTransition] = useTransition()
 
-  function toggleSort(col) {
-    setSort((prev) =>
-      prev.col === col
-        ? prev.dir === "asc" ? { col, dir: "desc" } : { col: null, dir: "asc" }
-        : { col, dir: "asc" }
-    )
-  }
 
   const filtered = companies.filter((c) => {
     if (!search) return true
@@ -83,12 +45,24 @@ export function CompaniesTable({ companies: initialCompanies }) {
     )
   })
 
-  const rows = sortRows(filtered, sort.col, sort.dir)
+  const rows = sortRows(filtered, sort.column, sort.direction)
 
   function handleDelete(e, companyId) {
     e.stopPropagation()
+    // Snapshot before the optimistic removal — a failed delete used to leave the
+    // company missing from the table while still present in the database.
+    const previous = companies
     setCompanies((prev) => prev.filter((c) => c.id !== companyId))
-    startTransition(() => deleteCompany(companyId))
+    setError(null)
+    startTransition(async () => {
+      try {
+        await deleteCompany(companyId)
+      } catch (err) {
+        console.error("[companies-table] deleteCompany failed", { companyId, err })
+        setCompanies(previous)
+        setError("Couldn't delete that company. It has been restored.")
+      }
+    })
   }
 
   function handleCreated(company) {
@@ -97,6 +71,11 @@ export function CompaniesTable({ companies: initialCompanies }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {error && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
@@ -119,11 +98,11 @@ export function CompaniesTable({ companies: initialCompanies }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <SortableHead label="Company"  col="name"          sort={sort} onSort={toggleSort} />
-              <SortableHead label="Industry" col="industry"      sort={sort} onSort={toggleSort} />
-              <SortableHead label="Website"  col="website"       sort={sort} onSort={toggleSort} />
-              <SortableHead label="Phone"    col="phone"         sort={sort} onSort={toggleSort} />
-              <SortableHead label="Contacts" col="contact_count" sort={sort} onSort={toggleSort} className="w-24 text-center" />
+              <SortableHead label="Company"  column="name"          sort={sort} onSort={toggleSort} />
+              <SortableHead label="Industry" column="industry"      sort={sort} onSort={toggleSort} />
+              <SortableHead label="Website"  column="website"       sort={sort} onSort={toggleSort} />
+              <SortableHead label="Phone"    column="phone"         sort={sort} onSort={toggleSort} />
+              <SortableHead label="Contacts" column="contact_count" sort={sort} onSort={toggleSort} className="w-24 text-center" />
               <TableHead className="w-16" />
             </TableRow>
           </TableHeader>

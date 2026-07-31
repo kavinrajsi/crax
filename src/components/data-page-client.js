@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useMemo, useRef, useTransition } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
@@ -23,9 +23,6 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import {
-  ChevronsUpDownIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
   SearchIcon,
   DownloadIcon,
   XIcon,
@@ -33,33 +30,9 @@ import {
   Rows3Icon,
 } from "lucide-react"
 import { bulkUpdateStatus } from "@/app/(app)/data/actions"
-
-/* ─── helpers ─────────────────────────────────────────────────────────── */
-
-function formatDate(iso, compact = false) {
-  if (!iso) return "—"
-  return new Date(iso).toLocaleString("en-IN", compact
-    ? { day: "2-digit", month: "short" }
-    : {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-}
-
-function sourcePath(url) {
-  try {
-    const u = new URL(url)
-    const path = u.pathname.replace(/\/$/, "") || "/"
-    return u.hostname.replace("www.", "") + path
-  } catch {
-    return url || "—"
-  }
-}
-
-function truncate(str, n = 20) {
-  if (!str) return "—"
-  return str.length > n ? str.slice(0, n) + "…" : str
-}
+import { sortRows, formatDate, truncate, sourcePath } from "@/lib/table-utils"
+import { SortableHead } from "@/components/sortable-head"
+import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 
 const STATUS_COLORS = {
   New:       "secondary",
@@ -71,110 +44,118 @@ const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake",
 
 /* Columns dropped in compact density. Their data stays reachable on the
    contact detail page, so hiding them here loses nothing. */
-const COMPACT_HIDDEN_COLS = ["phone", "source_url", "needs"]
-
-/* ─── sort ─────────────────────────────────────────────────────────────── */
-
-function getValue(row, key) {
-  const v = row[key]
-  if (v === null || v === undefined) return ""
-  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return new Date(v).getTime()
-  return typeof v === "string" ? v.toLowerCase() : v
-}
-
-function sortRows(rows, col, dir) {
-  if (!col) return rows
-  return [...rows].sort((a, b) => {
-    const av = getValue(a, col)
-    const bv = getValue(b, col)
-    if (av < bv) return dir === "asc" ? -1 : 1
-    if (av > bv) return dir === "asc" ? 1 : -1
-    return 0
-  })
-}
-
-function SortableHead({ label, col, sort, onSort, className = "" }) {
-  const active = sort.col === col
-  const Icon = active
-    ? sort.dir === "asc" ? ChevronUpIcon : ChevronDownIcon
-    : ChevronsUpDownIcon
-  return (
-    <TableHead
-      className={`sticky top-0 z-10 cursor-pointer select-none whitespace-nowrap bg-background ${className}`}
-      onClick={() => onSort(col)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <Icon className={`h-3 w-3 ${active ? "text-foreground" : "text-muted-foreground/40"}`} />
-      </span>
-    </TableHead>
-  )
-}
+const COMPACT_HIDDEN_COLUMNS = ["phone", "source_url", "needs"]
 
 /* ─── main component ───────────────────────────────────────────────────── */
 
-export function DataPageClient({ contacts }) {
+export function DataPageClient({ contacts, companies }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
-  const [sort, setSort] = useState({ col: "created_at", dir: "desc" })
+  const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkStatus, setBulkStatus] = useState("")
   const [compact, setCompact] = useState(true)
   const [isPending, startTransition] = useTransition()
+  const rowLinkRef = useRef(null)
+
+  /* Drawer open state lives in the URL, but written with the native History API
+     rather than router.push: /data is force-dynamic, so a push would re-run the
+     whole SELECT server-side just to carry a query param page.js never reads.
+     Next integrates history.pushState with useSearchParams, so this still
+     re-renders and Back still works — with zero server traffic. */
+  const contactParam = searchParams.get("contact")
+  const openContactId = contactParam ? Number(contactParam) : null
+
+  function setOpenContactId(contactId) {
+    const nextParams = new URLSearchParams(searchParams.toString())
+    if (contactId == null) nextParams.delete("contact")
+    else nextParams.set("contact", String(contactId))
+    const queryString = nextParams.toString()
+    const url = queryString ? `?${queryString}` : "/data"
+    // Asymmetric on purpose: if closing also pushed, Back would land on
+    // ?contact=<id> and re-open the drawer.
+    if (contactId == null) window.history.replaceState(null, "", url)
+    else window.history.pushState(null, "", url)
+  }
+
+  // Look up from `contacts`, not `rows`, so filtering doesn't close the drawer,
+  // and so an RSC refresh (revalidatePath) hands the sheet fresh values.
+  const openContact =
+    openContactId == null
+      ? null
+      : contacts.find((contact) => contact.id === openContactId) ?? null
+
+  function handleRowLinkClick(event, contactId) {
+    // The anchor owns both paths — letting this bubble to the row would open
+    // the drawer on top of a cmd-click that already spawned a new tab.
+    event.stopPropagation()
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    rowLinkRef.current = event.currentTarget
+    setOpenContactId(contactId)
+  }
+
+  function handleRowClick(event, contactId) {
+    rowLinkRef.current = event.currentTarget.querySelector("a[data-row-link]")
+    setOpenContactId(contactId)
+  }
 
   // checkbox + id + name/email + company + status + date, plus the wide columns
-  const colCount = compact ? 6 : 9
+  const columnCount = compact ? 6 : 9
 
   function toggleCompact() {
-    setCompact((prev) => {
-      const next = !prev
+    setCompact((wasCompact) => {
+      const nextCompact = !wasCompact
       // Dropping a column while it drives the sort would silently reorder rows
       // with no header to undo it, so fall back to the default sort.
-      if (next && COMPACT_HIDDEN_COLS.includes(sort.col)) {
-        setSort({ col: "created_at", dir: "desc" })
+      if (nextCompact && COMPACT_HIDDEN_COLUMNS.includes(sort.column)) {
+        setSort({ column: "created_at", direction: "desc" })
       }
-      return next
+      return nextCompact
     })
   }
 
-  function toggleSort(col) {
-    setSort((prev) =>
-      prev.col === col
-        ? prev.dir === "asc" ? { col, dir: "desc" } : { col: null, dir: "asc" }
-        : { col, dir: "asc" }
+  function toggleSort(column) {
+    setSort((prevSort) =>
+      prevSort.column === column
+        ? prevSort.direction === "asc"
+          ? { column, direction: "desc" }
+          : { column: null, direction: "asc" }
+        : { column, direction: "asc" }
     )
   }
 
   const rows = useMemo(() => {
     let filtered = contacts
     if (search) {
-      const q = search.toLowerCase()
+      const query = search.toLowerCase()
       filtered = filtered.filter(
-        (r) =>
-          r.name?.toLowerCase().includes(q) ||
-          r.email?.toLowerCase().includes(q) ||
-          r.company?.toLowerCase().includes(q) ||
-          r.phone?.includes(q)
+        (contact) =>
+          contact.name?.toLowerCase().includes(query) ||
+          contact.email?.toLowerCase().includes(query) ||
+          contact.company?.toLowerCase().includes(query) ||
+          contact.phone?.includes(query)
       )
     }
-    return sortRows(filtered, sort.col, sort.dir)
+    return sortRows(filtered, sort.column, sort.direction)
   }, [contacts, search, sort])
 
-  const allVisibleSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id))
+  const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedIds.has(row.id))
 
   function toggleSelectAll() {
     if (allVisibleSelected) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(rows.map((r) => r.id)))
+      setSelectedIds(new Set(rows.map((row) => row.id)))
     }
   }
 
-  function toggleRow(id) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
+  function toggleRow(contactId) {
+    setSelectedIds((prevSelected) => {
+      const nextSelected = new Set(prevSelected)
+      nextSelected.has(contactId) ? nextSelected.delete(contactId) : nextSelected.add(contactId)
+      return nextSelected
     })
   }
 
@@ -238,7 +219,7 @@ export function DataPageClient({ contacts }) {
               <Input
                 placeholder="Search name, email, phone…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(event) => setSearch(event.target.value)}
                 className="pl-8 h-8 w-56 text-xs"
               />
             </div>
@@ -258,20 +239,20 @@ export function DataPageClient({ contacts }) {
                     className="h-4 w-4 rounded border-border cursor-pointer"
                   />
                 </TableHead>
-                <SortableHead label="ID"           col="id"         sort={sort} onSort={toggleSort} className="w-12" />
-                <SortableHead label="Name / Email" col="name"       sort={sort} onSort={toggleSort} />
-                {!compact && <SortableHead label="Phone"  col="phone"      sort={sort} onSort={toggleSort} />}
-                <SortableHead label="Company"      col="company"    sort={sort} onSort={toggleSort} />
-                {!compact && <SortableHead label="Source" col="source_url" sort={sort} onSort={toggleSort} />}
-                {!compact && <SortableHead label="Needs"  col="needs"      sort={sort} onSort={toggleSort} />}
-                <SortableHead label="Status"       col="status"     sort={sort} onSort={toggleSort} />
-                <SortableHead label="Date"         col="created_at" sort={sort} onSort={toggleSort} />
+                <SortableHead label="ID"           column="id"         sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background w-12" />
+                <SortableHead label="Name / Email" column="name"       sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                {!compact && <SortableHead label="Phone"  column="phone"      sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
+                <SortableHead label="Company"      column="company"    sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                {!compact && <SortableHead label="Source" column="source_url" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
+                {!compact && <SortableHead label="Needs"  column="needs"      sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />}
+                <SortableHead label="Status"       column="status"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                <SortableHead label="Date"         column="created_at" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={colCount} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={columnCount} className="text-center text-muted-foreground py-12">
                     No records found.
                   </TableCell>
                 </TableRow>
@@ -281,8 +262,9 @@ export function DataPageClient({ contacts }) {
                     key={row.id}
                     className={`cursor-pointer hover:bg-muted/50 ${compact ? "[&>td]:py-1" : ""}`}
                     data-selected={selectedIds.has(row.id) || undefined}
+                    onClick={(event) => handleRowClick(event, row.id)}
                   >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(event) => event.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(row.id)}
@@ -290,35 +272,46 @@ export function DataPageClient({ contacts }) {
                         className="h-4 w-4 rounded border-border cursor-pointer"
                       />
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>{row.id}</TableCell>
-                    <TableCell onClick={() => router.push(`/contacts/${row.id}`)}>
-                      {compact ? (
-                        <div className="whitespace-nowrap text-xs">
-                          <span className="font-medium">{row.name || "—"}</span>
-                          {row.email && (
-                            <span className="text-muted-foreground"> · {row.email}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          <div className="font-medium whitespace-nowrap">{row.name || "—"}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{row.email || "—"}</div>
-                        </>
-                      )}
+                    <TableCell className="text-muted-foreground text-xs">{row.id}</TableCell>
+                    <TableCell>
+                      {/* Plain <a>, not next/link — Link would prefetch every visible
+                          row's detail page for what is now the exception path. It is
+                          also the whole keyboard story (focusable, Enter opens) and
+                          makes cmd-click open the full page in a new tab. */}
+                      <a
+                        href={`/contacts/${row.id}`}
+                        data-row-link=""
+                        onClick={(event) => handleRowLinkClick(event, row.id)}
+                        className="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {compact ? (
+                          <div className="whitespace-nowrap text-xs">
+                            <span className="font-medium">{row.name || "—"}</span>
+                            {row.email && (
+                              <span className="text-muted-foreground"> · {row.email}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="font-medium whitespace-nowrap">{row.name || "—"}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{row.email || "—"}</div>
+                          </>
+                        )}
+                      </a>
                     </TableCell>
                     {!compact && (
-                      <TableCell className="text-xs whitespace-nowrap" onClick={() => router.push(`/contacts/${row.id}`)}>{row.phone || "—"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{row.phone || "—"}</TableCell>
                     )}
-                    <TableCell className="text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>{truncate(row.company) || "—"}</TableCell>
+                    <TableCell className="text-xs">{truncate(row.company) || "—"}</TableCell>
                     {!compact && (
-                      <TableCell className="text-xs text-muted-foreground" onClick={() => router.push(`/contacts/${row.id}`)}>{sourcePath(row.source_url)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{sourcePath(row.source_url)}</TableCell>
                     )}
                     {!compact && (
-                      <TableCell className="text-xs" onClick={() => router.push(`/contacts/${row.id}`)}>
+                      <TableCell className="text-xs">
                         {Array.isArray(row.needs) && row.needs.length > 0 ? row.needs.join(", ") : "—"}
                       </TableCell>
                     )}
-                    <TableCell onClick={() => router.push(`/contacts/${row.id}`)}>
+                    <TableCell>
                       <Badge
                         variant={STATUS_COLORS[row.status] ?? "outline"}
                         className={compact ? "text-[10px] px-1.5 py-0" : "text-xs"}
@@ -326,8 +319,8 @@ export function DataPageClient({ contacts }) {
                         {row.status || "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap" onClick={() => router.push(`/contacts/${row.id}`)}>
-                      {formatDate(row.created_at, compact)}
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDate(row.created_at, { compact })}
                     </TableCell>
                   </TableRow>
                 ))
@@ -337,8 +330,9 @@ export function DataPageClient({ contacts }) {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        {/* Bulk action bar */}
-        {selectedIds.size > 0 && (
+        {/* Bulk action bar — hidden while the drawer is up; it is fixed z-50 like
+            the sheet, so it would sit blurred under the overlay and focus-trapped away. */}
+        {selectedIds.size > 0 && openContactId == null && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border border-border bg-background shadow-lg px-4 py-3">
             <span className="text-sm font-medium">{selectedIds.size} selected</span>
             <Separator orientation="vertical" className="h-4" />
@@ -359,8 +353,8 @@ export function DataPageClient({ contacts }) {
                   <SelectValue placeholder="Set status…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -382,6 +376,16 @@ export function DataPageClient({ contacts }) {
             </button>
           </div>
         )}
+
+        {/* Gate on the row, not the id: a pasted ?contact=<deleted id> would
+            otherwise mount an empty overlay. */}
+        <ContactDetailSheet
+          contact={openContact}
+          companies={companies}
+          open={openContact != null}
+          onOpenChange={(nextOpen) => { if (!nextOpen) setOpenContactId(null) }}
+          finalFocusRef={rowLinkRef}
+        />
     </div>
   )
 }

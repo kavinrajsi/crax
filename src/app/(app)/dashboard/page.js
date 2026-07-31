@@ -2,28 +2,28 @@ import { MailIcon, GlobeIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { auth } from "@/lib/auth"
+import { requireUser } from "@/lib/dal"
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sourceDomain } from "@/lib/table-utils"
 
 export const dynamic = "force-dynamic"
 
-function sourceDomain(url) {
-  try { return new URL(url).hostname.replace("www.", "") }
-  catch { return url || "unknown" }
-}
 
 export default async function DashboardPage() {
-  const { data: session } = await auth.getSession()
-  const firstName = (session?.user?.name ?? session?.user?.email ?? "there").split(" ")[0]
+  const user = await requireUser()
+  const firstName = (user.name ?? user.email).split(" ")[0]
 
   const [contactRows, sourceRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
         FROM public.contact_us
         WHERE email != ALL(${EXCLUDED_EMAILS})`,
+    // Must carry the same EXCLUDED_EMAILS filter as the total above, or the two
+    // cards count different populations and never reconcile.
     sql`SELECT source_url, COUNT(*)::int AS cnt
         FROM public.contact_us
         WHERE source_url IS NOT NULL AND source_url <> ''
+          AND email != ALL(${EXCLUDED_EMAILS})
         GROUP BY source_url
         ORDER BY cnt DESC`,
   ])
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   // Roll up by domain
   const domainMap = {}
   for (const { source_url, cnt } of sourceRows) {
-    const domain = sourceDomain(source_url)
+    const domain = sourceDomain(source_url, "unknown")
     domainMap[domain] = (domainMap[domain] ?? 0) + cnt
   }
   const domainList = Object.entries(domainMap)
