@@ -39,6 +39,19 @@ yarn-error.log*
 ASSESSMENT.md
 DATA-ROW-DRAWER.md
 
+# sql — local dumps, backups and scratch queries stay out of the repo.
+# The two exceptions below are load-bearing and must remain tracked:
+#   db/schema.sql      — scripts/check-constraints.mjs and
+#                        scripts/check-contact-fields.mjs read it whenever
+#                        DATABASE_URL is unset, which is exactly how CI's
+#                        secret-free `verify` job runs them.
+#   db/migrations/*.sql — the record of what has actually been applied. If a
+#                        new migration is ignored here, schema.sql drifts stale
+#                        and the constraint guard passes against old truth.
+*.sql
+!db/schema.sql
+!db/migrations/*.sql
+
 # vercel
 .vercel
 
