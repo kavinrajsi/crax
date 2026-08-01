@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { BoltIcon } from "lucide-react"
-import { requireUser } from "@/lib/dal"
+import { isCurrentUserAdmin, requireUser } from "@/lib/dal"
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,10 @@ export default async function AppLayout({ children }) {
   // fell through to a "Guest" render, which served the full contact table to
   // anonymous visitors.
   const user = await requireUser()
+
+  /* Decides whether the Admin entry is drawn, nothing more. getSession() is
+     memoized for the render, so this costs no extra round trip. */
+  const isAdmin = await isCurrentUserAdmin()
 
   return (
     <SidebarProvider>
@@ -59,7 +63,7 @@ export default async function AppLayout({ children }) {
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
-              <AppNav />
+              <AppNav isAdmin={isAdmin} />
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>

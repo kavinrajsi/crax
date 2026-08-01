@@ -1,7 +1,8 @@
 import "server-only"
 import { cache } from "react"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
+import { isAdminEmail } from "@/lib/admin"
 
 /**
  * Data Access Layer — the authorization boundary for this app.
@@ -16,6 +17,10 @@ import { auth } from "@/lib/auth"
  *   - a page should redirect to /login
  *   - a server action should throw (it has no page to redirect)
  *   - a route handler must return a 401 Response
+ *
+ * Authentication is otherwise binary: any signed-in user may read and write
+ * every row. The one exception is the super-admin area under /admin, gated by
+ * requireAdmin() below.
  */
 
 /**
@@ -57,4 +62,28 @@ export async function requireUserOrThrow() {
 export async function getUserOrNull() {
   const session = await getSession()
   return session?.user ?? null
+}
+
+/**
+ * The /admin area. Signed-out callers still redirect to /login; a signed-in
+ * non-admin gets a 404 rather than a 403, so the area's existence is not
+ * confirmed to an account that cannot use it.
+ *
+ * Every /admin page calls this for itself. Hiding the nav entry (see
+ * src/app/(app)/layout.js) is presentation, not a control — the URL is
+ * guessable and a Client Component cannot enforce anything.
+ */
+export async function requireAdmin() {
+  const user = await requireUser()
+  if (!isAdminEmail(user.email, process.env.SUPER_ADMIN_EMAILS)) notFound()
+  return user
+}
+
+/**
+ * For deciding whether to *render* something admin-only, where a 404 would be
+ * wrong — the sidebar, mainly. Never use it as the gate on the data itself.
+ */
+export async function isCurrentUserAdmin() {
+  const session = await getSession()
+  return isAdminEmail(session?.user?.email, process.env.SUPER_ADMIN_EMAILS)
 }

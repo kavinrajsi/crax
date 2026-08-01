@@ -20,6 +20,16 @@ import { sql } from "@/lib/db"
  */
 
 /**
+ * How many rows any page ships to the browser.
+ *
+ * One constant because three surfaces render this table — /logs, /admin/users
+ * (which cites the number) and /admin/users/[id] — and a page whose caption
+ * claims a bound the query does not apply is exactly the class of lie this
+ * module was written to stop.
+ */
+export const LOG_PAGE_LIMIT = 200
+
+/**
  * @param {object} user      from requireUserOrThrow()
  * @param {string} action    verb, e.g. "contact.update", "company.delete"
  * @param {object} [target]

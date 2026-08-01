@@ -11,6 +11,7 @@ import {
   BuildingIcon,
   BarChart2Icon,
   HandshakeIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
@@ -29,12 +30,25 @@ const navItems = [
   { href: "/profile",   label: "Profile",   icon: UserIcon },
 ]
 
-export function AppNav() {
+/** Super admins only. Appended, so it sits below the shared items. */
+const adminNavItems = [
+  { href: "/admin/users", label: "All Users", icon: ShieldCheckIcon },
+]
+
+/**
+ * @param {boolean} [isAdmin]  from isCurrentUserAdmin() in the layout.
+ *
+ * Presentation only. Hiding the entry spares a non-admin a dead link; it grants
+ * nothing and blocks nothing. /admin/* is gated by requireAdmin() on each page,
+ * which is where the decision actually holds.
+ */
+export function AppNav({ isAdmin = false }) {
   const pathname = usePathname()
+  const items = isAdmin ? [...navItems, ...adminNavItems] : navItems
 
   return (
     <SidebarMenu>
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         // Prefix match so /companies stays lit on /companies/123, with the
         // trailing slash keeping /data from matching /dashboard.
         const isActive = pathname === href || pathname.startsWith(`${href}/`)
