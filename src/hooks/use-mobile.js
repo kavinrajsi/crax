@@ -14,11 +14,12 @@ export const MOBILE_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`
  * rendered the desktop layout and then re-rendered, because the initial state
  * was undefined until the effect ran.
  *
- * The three pieces are exported separately so they can be tested without a
- * browser. Driving this through a real narrow viewport turned out not to be
- * possible in the automation environment — window.innerWidth stayed pinned at
- * its original value however the window was resized — so the parts are verified
- * directly instead: see test/use-mobile.test.mjs.
+ * The three pieces are exported separately so they can be driven without a
+ * browser. They were covered by test/use-mobile.test.mjs until 2026-08-01;
+ * that test is gone and the CSS breakpoints were never verified in a real
+ * browser either, because window.innerWidth stayed pinned at its original value
+ * however the automation environment resized the window. Treat the exact
+ * breakpoint behaviour as unverified.
  */
 
 /** Subscribes to breakpoint changes. Returns the unsubscribe function. */

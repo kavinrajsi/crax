@@ -23,9 +23,11 @@
  * attention" card and the /data filter would agree with each other and both be
  * wrong, which is the failure mode this module's own header warns about.
  */
-/* A relative specifier, not the "@/lib/..." alias used elsewhere in src/lib:
-   test/follow-up.test.mjs imports this module under plain `node --test`, which
-   has no knowledge of jsconfig's path alias and would fail to resolve it. */
+/* A relative specifier, not the "@/lib/..." alias used elsewhere in src/lib.
+   It was required while test/follow-up.test.mjs loaded this module under plain
+   `node --test`, which cannot resolve jsconfig's path alias. That test was
+   deleted on 2026-08-01, so either form works now; left relative because it is
+   the one that keeps working outside the Next bundler. */
 import { RESOLVED_STATUS_KEYS } from "./contact-statuses.js"
 
 export const RESOLVED_STATUSES = RESOLVED_STATUS_KEYS

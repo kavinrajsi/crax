@@ -6,8 +6,9 @@
  * that exact mismatch: contact_activities.type allowed only
  * call/meeting/email/task while the code inserted 'status_change', so every
  * status change threw after updating the row and the table stayed empty for
- * months. scripts/check-constraints.mjs exists so that cannot repeat, and it
- * checks every CHECK constraint rather than only this one.
+ * months. The guard that made that impossible to repeat was deleted on
+ * 2026-08-01, so this is back to being a hand-held invariant: these keys and
+ * deals_stage_check must be changed in the same commit.
  */
 
 export const DEAL_STAGES = [

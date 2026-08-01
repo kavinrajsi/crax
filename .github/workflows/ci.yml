@@ -1,24 +1,28 @@
 name: CI
 
-# Two bugs reached production in one week that `npm run lint` and `npm run
-# build` both passed clean, because nothing ran automatically. There were no
-# workflows, no git hooks, and `npm run smoke` / `npm run check` fired only when
-# a human typed them.
+# Lint and build. That is the whole bar.
+#
+# This workflow previously also ran `npm test` (75 unit tests), a mutation
+# harness that reintroduced each historical bug and required the corresponding
+# check to go red, three constraint guards, and a smoke test against the live
+# site. All of that was deleted on 2026-08-01 by request; the commit that
+# removed it holds the full contents if any of it is wanted back.
+#
+# What that means in practice: a build passing here proves the code compiles and
+# lints. It does not prove the app runs. The four bugs that prompted the removed
+# checks — a CHECK constraint rejecting a value the code always wrote, a lucide
+# icon crossing the Server/Client boundary, isBlank treating every Date as
+# blank, and an import route that had never inserted a row — were all valid
+# JavaScript that lint and build accepted. Nothing here would catch their
+# equivalents today.
 
 on:
   push:
     branches: ["**"]
   pull_request:
-  # 09:00 UTC, deliberately not 08:00 — that slot belonged to the digest cron,
-  # which was removed for never having run successfully.
-  schedule:
-    - cron: "0 9 * * *"
-  workflow_dispatch:
 
 jobs:
-  # ── everything that needs no secret ─────────────────────────────────────
   verify:
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,27 +35,14 @@ jobs:
       # postinstall runs scripts/patch-neon-auth.mjs, which exits non-zero if
       # the code it patches has moved. That is deliberate: a package bump that
       # fixes the upstream bug should fail loudly here rather than silently.
+      # It is now the only automated check with any knowledge of runtime
+      # behaviour.
       - run: npm ci
 
-      # The baseline is zero. It was 1 error + 1 warning until this workflow was
-      # written, and eslint exits non-zero on any error, so CI would have been
-      # red on its first run. Both are fixed rather than tolerated.
-      # --max-warnings=0 lives in the lint script itself, not here — a check
-      # that is stricter in CI than on a developer's machine recreates the
-      # local/CI gap this whole effort exists to close.
+      # The baseline is zero. --max-warnings=0 lives in the lint script itself,
+      # not here — a check that is stricter in CI than on a developer's machine
+      # recreates the local/CI gap.
       - run: npm run lint
-
-      - run: npm test
-
-      # Proves the tests and the constraint guard can still go red. A suite
-      # that cannot fail is worse than no suite, because it reports success.
-      - run: npm run test:mutations
-
-      # No DATABASE_URL here on purpose. These scripts connect when they see
-      # one, so the placeholder below would make them fail on a refused
-      # connection rather than fall back to the checked-in db/schema.sql and
-      # db/migrations. The live half runs in smoke-production.
-      - run: npm run check
 
       # Placeholders, not secrets. `neon()` and createNeonAuth parse these at
       # module load and the build fails without them, but nothing connects or
@@ -69,69 +60,3 @@ jobs:
           DATABASE_URL: postgres://ci:ci@localhost/ci
           NEON_AUTH_BASE_URL: https://auth.example.invalid
           NEON_AUTH_COOKIE_SECRET: ci-placeholder-not-used-at-build-time
-
-  # ── smoke the live site ─────────────────────────────────────────────────
-  # This ran on deployment_status against each preview until 2026-08-01, and in
-  # that form it never once executed `npm run smoke`. All three secrets existed
-  # at repository scope and the job still logged SMOKE_EMAIL as empty and took
-  # the warning-and-skip branch (runs 30715493987 and 30715958305). Rather than
-  # keep guessing at why that event does not receive them, this now runs on
-  # events that certainly do.
-  #
-  # The previous version of this comment said signing in and posting malformed
-  # bodies "neither belongs in production". That decision is reversed here, and
-  # on measurement rather than nerve: with no DATABASE_URL every check that
-  # creates a contact skips itself (scripts/smoke.mjs), and the malformed posts
-  # are rejected before any write. The only production side effect is one
-  # auth.login row in audit_logs per run, which is the price of the signed-in
-  # half running at all — and that half is the only thing that catches a Server
-  # Component which throws, since Next answers those with HTTP 200.
-  smoke-production:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
-
-      - run: npm ci
-
-      # Secrets are not available to `if:` at job level, so the check happens
-      # here. A missing secret must not look like a passing smoke test — this
-      # raises a visible warning and skips the run instead of going quietly
-      # green.
-      - id: secrets
-        env:
-          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
-          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
-        run: |
-          if [ -z "$SMOKE_EMAIL" ] || [ -z "$SMOKE_PASSWORD" ]; then
-            echo "::warning::SMOKE_EMAIL / SMOKE_PASSWORD are not set — the smoke test did not run. Add them in Settings → Secrets and variables → Actions."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: steps.secrets.outputs.ready == 'true'
-        env:
-          # The production alias, not a deployment URL. Deployment URLs change
-          # every push; this one is stable and is what a visitor actually loads.
-          SMOKE_BASE_URL: https://crax.madarth.com
-          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
-          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
-          # No VERCEL_AUTOMATION_BYPASS_SECRET. Deployment protection covers
-          # preview URLs, not the production alias — an anonymous request to it
-          # answers 200 or 307 today. The repository secret stays in place for
-          # whenever a preview is smoked again.
-          #
-          # The half that catches render errors must actually run.
-          SMOKE_REQUIRE_AUTH: "1"
-          # DATABASE_URL is deliberately NOT provided, and here that is load
-          # bearing rather than merely cautious: it is what keeps this job from
-          # writing to the production database. Without one, the intake checks
-          # that create a contact skip themselves loudly instead of inserting
-          # rows they would then have to delete.
-        run: npm run smoke

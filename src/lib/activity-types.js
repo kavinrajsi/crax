@@ -6,8 +6,9 @@
  * allowed call/meeting/email/task while updateContactStatus and
  * bulkUpdateStatus always inserted 'status_change', so every status change
  * threw after updating the row and the table sat empty for months.
- * db/migrations/001 widened it; scripts/check-constraints.mjs makes sure the
- * two can never drift apart again.
+ * db/migrations/001 widened it. The guard that compared this list against the
+ * constraint was deleted on 2026-08-01, so keeping the two in step is now
+ * manual: change this array and contact_activities_type_check together.
  *
  * `system: true` means the app writes it, not a person choosing from a menu.
  * The distinction matters: the dialog must not offer 'status_change', but the

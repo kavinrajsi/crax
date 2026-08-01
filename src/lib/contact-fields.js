@@ -31,8 +31,10 @@ import {
  *   name        → the <h1>
  *   status      → <ContactStatusSelect>, an editable control
  *   company_id  → <ContactCompanySelect>, an editable control
- * Everything else on the table appears below. If you add a column, add it here
- * or scripts/check-contact-fields.mjs will fail.
+ * Everything else on the table appears below. If you add a column, add it here —
+ * the script that used to fail when you forgot was deleted on 2026-08-01, so a
+ * missing column now just renders nowhere, silently. That is exactly how
+ * `message` went unrendered while 91 of 121 contacts had one.
  */
 
 /**

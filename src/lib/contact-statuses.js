@@ -12,8 +12,8 @@
  * always inserted 'status_change', so every status change threw after updating
  * the row and the table sat empty for months. The difference here is the
  * opposite failure — no constraint at all rather than a wrong one — so the fix
- * is a constraint plus this module, and scripts/check-constraints.mjs holds the
- * two together.
+ * is a constraint plus this module. The script that held the two together was
+ * deleted on 2026-08-01; the constraint itself is still live in the database.
  *
  * The vocabulary already existed in FIVE places that had begun to drift:
  *
@@ -36,8 +36,10 @@
  * src/lib/table-utils.js and src/lib/contact-fields.js.
  *
  * The keys below MUST match contact_us_status_check in
- * db/migrations/004-constrain-contact-status.sql. scripts/check-constraints.mjs
- * fails on drift in either direction.
+ * db/migrations/004-constrain-contact-status.sql, which is applied to the live
+ * database. Adding a key here without widening the CHECK makes every write of
+ * that status throw; removing one the database still allows leaves rows no code
+ * path renders. Nothing checks this — change both together.
  */
 
 /**

@@ -15,8 +15,10 @@
  * address one known row, and filtering them would make an internal contact
  * silently unopenable or let it be inserted twice.
  *
- * This list stays the single source of truth: scripts/check-visible-contacts.mjs
- * fails when the view and this array disagree in either direction.
+ * This list stays the single source of truth, but nothing enforces that any
+ * more — the guard comparing it against the view was deleted on 2026-08-01.
+ * Change this array and db/migrations/003-create-visible-contacts.sql together,
+ * and re-run the CREATE OR REPLACE VIEW against the database.
  *
  * Deliberately in its own module rather than in src/lib/db.js, which calls
  * `neon()` at import time and so throws for any script running without a
