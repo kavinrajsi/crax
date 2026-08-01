@@ -9,17 +9,16 @@ on:
   push:
     branches: ["**"]
   pull_request:
-  # Vercel reports each deployment through the Deployments API, so this fires
-  # once a deployment finishes building. The workflow file used is the one at
-  # the deployment's own ref, not the default branch — verified: a preview of
-  # branch ci/stop-bugs-reaching-production ran this job twelve minutes before
-  # ci.yml existed on main at all.
-  deployment_status:
+  # 09:00 UTC, deliberately not 08:00 — that slot belonged to the digest cron,
+  # which was removed for never having run successfully.
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
 
 jobs:
   # ── everything that needs no secret ─────────────────────────────────────
   verify:
-    if: github.event_name != 'deployment_status'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,8 +49,8 @@ jobs:
 
       # No DATABASE_URL here on purpose. These scripts connect when they see
       # one, so the placeholder below would make them fail on a refused
-      # connection rather than fall back to the checked-in db/schema.sql. The
-      # live half runs in smoke-preview.
+      # connection rather than fall back to the checked-in db/schema.sql and
+      # db/migrations. The live half runs in smoke-production.
       - run: npm run check
 
       # Placeholders, not secrets. `neon()` and createNeonAuth parse these at
@@ -71,18 +70,24 @@ jobs:
           NEON_AUTH_BASE_URL: https://auth.example.invalid
           NEON_AUTH_COOKIE_SECRET: ci-placeholder-not-used-at-build-time
 
-  # ── smoke the preview deployment Vercel just built ──────────────────────
-  # Preview only. Vercel raises deployment_status for production deployments
-  # too, so guarding on state alone would point this job at the live site on
-  # every push to main: it signs in, which writes an auth.login row, and POSTs
-  # deliberately malformed bodies to the public intake endpoint. Neither belongs
-  # in production. `environment` is exactly "Preview" or "Production" — checked
-  # against real payloads from this repo's deployments, not assumed.
-  smoke-preview:
-    if: >-
-      github.event_name == 'deployment_status' &&
-      github.event.deployment_status.state == 'success' &&
-      github.event.deployment_status.environment == 'Preview'
+  # ── smoke the live site ─────────────────────────────────────────────────
+  # This ran on deployment_status against each preview until 2026-08-01, and in
+  # that form it never once executed `npm run smoke`. All three secrets existed
+  # at repository scope and the job still logged SMOKE_EMAIL as empty and took
+  # the warning-and-skip branch (runs 30715493987 and 30715958305). Rather than
+  # keep guessing at why that event does not receive them, this now runs on
+  # events that certainly do.
+  #
+  # The previous version of this comment said signing in and posting malformed
+  # bodies "neither belongs in production". That decision is reversed here, and
+  # on measurement rather than nerve: with no DATABASE_URL every check that
+  # creates a contact skips itself (scripts/smoke.mjs), and the malformed posts
+  # are rejected before any write. The only production side effect is one
+  # auth.login row in audit_logs per run, which is the price of the signed-in
+  # half running at all — and that half is the only thing that catches a Server
+  # Component which throws, since Next answers those with HTTP 200.
+  smoke-production:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -112,20 +117,21 @@ jobs:
 
       - if: steps.secrets.outputs.ready == 'true'
         env:
-          SMOKE_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          # The production alias, not a deployment URL. Deployment URLs change
+          # every push; this one is stable and is what a visitor actually loads.
+          SMOKE_BASE_URL: https://crax.madarth.com
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
-          # Preview deployments sit behind Vercel deployment protection. Without
-          # this every request answers with the SSO page and the run fails for a
-          # reason that has nothing to do with the code. Enable it under Vercel
-          # → Project → Settings → Deployment Protection → Protection Bypass for
-          # Automation.
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # No VERCEL_AUTOMATION_BYPASS_SECRET. Deployment protection covers
+          # preview URLs, not the production alias — an anonymous request to it
+          # answers 200 or 307 today. The repository secret stays in place for
+          # whenever a preview is smoked again.
+          #
           # The half that catches render errors must actually run.
           SMOKE_REQUIRE_AUTH: "1"
-          # DATABASE_URL is deliberately NOT provided. Previews share the
-          # production database, and the intake checks that create a contact
-          # need a connection to delete it again. Without one they skip loudly
-          # and the read-only checks still run, which is the safer trade for a
-          # job triggered by every push.
+          # DATABASE_URL is deliberately NOT provided, and here that is load
+          # bearing rather than merely cautious: it is what keeps this job from
+          # writing to the production database. Without one, the intake checks
+          # that create a contact skip themselves loudly instead of inserting
+          # rows they would then have to delete.
         run: npm run smoke
