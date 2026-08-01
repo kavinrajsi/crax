@@ -1,4 +1,4 @@
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { KanbanBoard } from "@/components/kanban-board"
 import { ContactsKanban } from "@/components/contacts-kanban"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -26,8 +26,7 @@ export default async function PlannerPage() {
     sql`SELECT * FROM public.kanban_columns ORDER BY position`,
     sql`SELECT * FROM public.kanban_cards ORDER BY position`,
     sql`SELECT id, name, email, phone, company, source_url, status, needs, created_at
-        FROM public.contact_us
-        WHERE email != ALL(${EXCLUDED_EMAILS})
+        FROM public.visible_contacts
         ORDER BY created_at DESC`,
   ])
 

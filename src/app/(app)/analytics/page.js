@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 
 import { requireUser } from "@/lib/dal"
 
@@ -22,16 +22,14 @@ export default async function AnalyticsPage() {
   const [statusRows, dailyRows, activityRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count
-      FROM public.contact_us
-      WHERE email != ALL(${EXCLUDED_EMAILS})
+      FROM public.visible_contacts
       GROUP BY status
       ORDER BY count DESC
     `,
     sql`
       SELECT DATE_TRUNC('day', created_at)::date AS day, COUNT(*)::int AS count
-      FROM public.contact_us
+      FROM public.visible_contacts
       WHERE created_at >= NOW() - INTERVAL '30 days'
-        AND email != ALL(${EXCLUDED_EMAILS})
       GROUP BY day
       ORDER BY day ASC
     `,

@@ -1,4 +1,4 @@
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { CompaniesTable } from "@/components/companies-table"
 
 import { requireUser } from "@/lib/dal"
@@ -12,9 +12,8 @@ export default async function CompaniesPage() {
     SELECT c.*,
            COUNT(cu.id)::int AS contact_count
     FROM public.companies c
-    LEFT JOIN public.contact_us cu
+    LEFT JOIN public.visible_contacts cu
            ON cu.company_id = c.id
-          AND cu.email != ALL(${EXCLUDED_EMAILS})
     GROUP BY c.id
     ORDER BY c.created_at DESC
   `

@@ -1,4 +1,4 @@
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { requireUser } from "@/lib/dal"
 import { DealsBoard } from "@/components/deals-board"
 
@@ -15,8 +15,8 @@ export default async function DealsPage() {
       LEFT JOIN public.companies  co ON co.id = d.company_id
       ORDER BY d.position ASC, d.created_at DESC
     `,
-    sql`SELECT id, name, email FROM public.contact_us
-        WHERE email != ALL(${EXCLUDED_EMAILS}) ORDER BY created_at DESC`,
+    sql`SELECT id, name, email FROM public.visible_contacts
+        ORDER BY created_at DESC`,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
   ])
 

@@ -1,4 +1,4 @@
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 import { recordAudit } from "@/lib/audit"
 import { resolveExportColumns } from "@/lib/export-columns"
@@ -93,8 +93,7 @@ export async function GET(request) {
       SELECT cu.*,
              split_part(regexp_replace(cu.source_url, ${SOURCE_DOMAIN_RE}, ''), '/', 1) AS source_domain,
              array_to_string(cu.needs, ', ') AS needs_str
-      FROM public.contact_us cu
-      WHERE cu.email != ALL(${EXCLUDED_EMAILS})
+      FROM public.visible_contacts cu
     ) c
     WHERE (${ids}::int[] IS NULL OR c.id = ANY(${ids}))
       AND (${domains}::text[] IS NULL OR c.source_domain = ANY(${domains}))

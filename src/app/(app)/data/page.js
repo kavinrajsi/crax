@@ -1,4 +1,4 @@
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { DataPageClient } from "@/components/data-page-client"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 
@@ -34,8 +34,7 @@ export default async function DataPage() {
                OR
                EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)
              ) AS has_touch
-      FROM public.contact_us cu
-      WHERE cu.email != ALL(${EXCLUDED_EMAILS})
+      FROM public.visible_contacts cu
       ORDER BY cu.created_at DESC
     `,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,

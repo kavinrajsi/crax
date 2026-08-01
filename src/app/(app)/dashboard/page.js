@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { requireUser } from "@/lib/dal"
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { sourceDomain } from "@/lib/table-utils"
 import { RESOLVED_STATUSES } from "@/lib/follow-up"
 
@@ -18,23 +18,21 @@ export default async function DashboardPage() {
   const [contactRows, sourceRows, staleRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
-        FROM public.contact_us
-        WHERE email != ALL(${EXCLUDED_EMAILS})`,
-    // Must carry the same EXCLUDED_EMAILS filter as the total above, or the two
-    // cards count different populations and never reconcile.
+        FROM public.visible_contacts`,
+    // Same view as the total above. These two cards once counted different
+    // populations, because one carried the exclusion filter by hand and the
+    // other did not; selecting from the view is what stops that recurring.
     sql`SELECT source_url, COUNT(*)::int AS cnt
-        FROM public.contact_us
+        FROM public.visible_contacts
         WHERE source_url IS NOT NULL AND source_url <> ''
-          AND email != ALL(${EXCLUDED_EMAILS})
         GROUP BY source_url
         ORDER BY cnt DESC`,
     /* Open leads nobody has worked. Must match needsAttention() in
        lib/follow-up, which the /data filter uses — if the two disagree this
        card sends you to a list that does not match it. */
     sql`SELECT COUNT(*)::int AS stale
-        FROM public.contact_us cu
-        WHERE cu.email != ALL(${EXCLUDED_EMAILS})
-          AND cu.status <> ALL(${RESOLVED_STATUSES})
+        FROM public.visible_contacts cu
+        WHERE cu.status <> ALL(${RESOLVED_STATUSES})
           AND NOT EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
           AND NOT EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)`,
   ])

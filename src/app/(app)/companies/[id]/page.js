@@ -10,7 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { sql, EXCLUDED_EMAILS } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { CompanyForm } from "@/components/company-form"
 import { CompanyNotesSection } from "@/components/company-notes-section"
 
@@ -25,9 +25,10 @@ export default async function CompanyDetailPage({ params }) {
 
   const [rows, contacts, notes] = await Promise.all([
     sql`SELECT * FROM public.companies WHERE id = ${id} LIMIT 1`,
-    // Filtered so this list agrees with the contact_count on /companies.
-    sql`SELECT id, name, email, status FROM public.contact_us
-        WHERE company_id = ${id} AND email != ALL(${EXCLUDED_EMAILS})
+    // The same view /companies counts through, so this list and the
+    // contact_count beside it cannot disagree.
+    sql`SELECT id, name, email, status FROM public.visible_contacts
+        WHERE company_id = ${id}
         ORDER BY created_at DESC`,
     sql`SELECT * FROM public.company_notes WHERE company_id = ${id} ORDER BY created_at ASC`,
   ])
