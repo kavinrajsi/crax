@@ -4,19 +4,15 @@ import { ContactsKanban } from "@/components/contacts-kanban"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { requireUser } from "@/lib/dal"
+import { CONTACT_STATUSES } from "@/lib/contact-statuses"
 
 export const dynamic = "force-dynamic"
 
-// Fixed column order for contact statuses
-const STATUS_COLUMNS = [
-  { key: "New",       label: "New",       color: "#3b82f6" },
-  { key: "follow-up", label: "Follow-up", color: "#f97316" },
-  { key: "win",       label: "Win",       color: "#22c55e" },
-  { key: "closed",    label: "Closed",    color: "#64748b" },
-  { key: "rejected",  label: "Rejected",  color: "#ef4444" },
-  { key: "fake",      label: "Fake",      color: "#a855f7" },
-  { key: "test",      label: "Test",      color: "#14b8a6" },
-]
+/* Column order is the vocabulary's own order, from src/lib/contact-statuses.js.
+   This list used to be maintained here by hand alongside four other copies —
+   a status added to the CHECK but forgotten here would simply have no column,
+   so its contacts would vanish from the board with nothing reporting it. */
+const STATUS_COLUMNS = CONTACT_STATUSES
 
 export default async function PlannerPage() {
   await requireUser()

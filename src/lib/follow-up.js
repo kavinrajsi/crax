@@ -13,8 +13,22 @@
  * disagree — the mistake EXCLUDED_EMAILS made across nine call sites.
  */
 
-/** Statuses that mean the lead is finished. Anything else is still open. */
-export const RESOLVED_STATUSES = ["win", "closed", "rejected", "fake", "test"]
+/**
+ * Statuses that mean the lead is finished. Anything else is still open.
+ *
+ * Re-exported from src/lib/contact-statuses.js rather than listed again. This
+ * list and the four copies of the vocabulary elsewhere were maintained by hand,
+ * and two had already drifted. A status added there but forgotten here would
+ * make every lead in it count as open forever — the dashboard's "needs
+ * attention" card and the /data filter would agree with each other and both be
+ * wrong, which is the failure mode this module's own header warns about.
+ */
+/* A relative specifier, not the "@/lib/..." alias used elsewhere in src/lib:
+   test/follow-up.test.mjs imports this module under plain `node --test`, which
+   has no knowledge of jsconfig's path alias and would fail to resolve it. */
+import { RESOLVED_STATUS_KEYS } from "./contact-statuses.js"
+
+export const RESOLVED_STATUSES = RESOLVED_STATUS_KEYS
 
 export function isOpen(contact) {
   return !RESOLVED_STATUSES.includes(contact.status)
