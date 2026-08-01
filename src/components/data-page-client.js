@@ -33,6 +33,7 @@ import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
+import { CsvExportDialog } from "@/components/csv-export-dialog"
 
 const STATUS_COLORS = {
   New:       "secondary",
@@ -57,7 +58,7 @@ function LastTouchCell({ row }) {
 
 /* ─── main component ───────────────────────────────────────────────────── */
 
-export function DataPageClient({ contacts, companies }) {
+export function DataPageClient({ contacts, companies, contactTags }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
@@ -219,16 +220,9 @@ export function DataPageClient({ contacts, companies }) {
               </Badge>
             </Button>
 
-            {/* Export all */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => handleExport(null)}
-            >
-              <DownloadIcon className="h-3.5 w-3.5" />
-              Export CSV
-            </Button>
+            {/* Export — opens the filter/column dialog. Leaving it untouched
+                exports everything, which is what this button used to do. */}
+            <CsvExportDialog contacts={contacts} contactTags={contactTags} />
 
             {/* Search */}
             <div className="relative">

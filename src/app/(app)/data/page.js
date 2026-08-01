@@ -6,10 +6,16 @@ import { requireUser } from "@/lib/dal"
 
 export const dynamic = "force-dynamic"
 
+/* Kept identical to the expression in src/app/api/contacts/export/route.js: the
+   export dialog builds its source filter options from the column derived here,
+   so an option that does not round-trip to the same value there would match
+   nothing. String.raw matters — a plain template literal turns `\.` into `.`. */
+const SOURCE_DOMAIN_RE = String.raw`^https?://(www\.)?`
+
 export default async function DataPage() {
   await requireUser()
 
-  const [contacts, companies] = await Promise.all([
+  const [contacts, companies, contactTags] = await Promise.all([
     /* has_touch drives the "needs attention" filter: has anyone left a note or
        logged an activity at all. last_touch is display only, for the age shown
        in the Last touch column. Written inline rather than interpolated from a
@@ -17,6 +23,7 @@ export default async function DataPage() {
        string interpolation, and that is worth keeping. */
     sql`
       SELECT cu.*,
+             split_part(regexp_replace(cu.source_url, ${SOURCE_DOMAIN_RE}, ''), '/', 1) AS source_domain,
              GREATEST(
                cu.created_at,
                COALESCE((SELECT MAX(created_at) FROM public.contact_notes      n WHERE n.contact_id = cu.id), cu.created_at),
@@ -32,6 +39,10 @@ export default async function DataPage() {
       ORDER BY cu.created_at DESC
     `,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+    /* Tag membership, not just the distinct tag list: the export dialog shows a
+       live match count, and it cannot count a tag filter without knowing which
+       contacts carry which tag. One row per (contact, tag) — a handful today. */
+    sql`SELECT contact_id, tag FROM public.contact_tags ORDER BY tag ASC`,
   ])
 
   return (
@@ -46,7 +57,7 @@ export default async function DataPage() {
         <CsvImportDialog />
       </div>
       <div className="rounded-xl border border-border overflow-hidden">
-        <DataPageClient contacts={contacts} companies={companies} />
+        <DataPageClient contacts={contacts} companies={companies} contactTags={contactTags} />
       </div>
     </div>
   )
