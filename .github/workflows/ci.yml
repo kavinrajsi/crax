@@ -10,9 +10,10 @@ on:
     branches: ["**"]
   pull_request:
   # Vercel reports each deployment through the Deployments API, so this fires
-  # once a preview finishes building. Note that GitHub only dispatches
-  # deployment_status against the workflow file on the DEFAULT branch — a change
-  # to the smoke-preview job below is not exercised until it is merged.
+  # once a deployment finishes building. The workflow file used is the one at
+  # the deployment's own ref, not the default branch — verified: a preview of
+  # branch ci/stop-bugs-reaching-production ran this job twelve minutes before
+  # ci.yml existed on main at all.
   deployment_status:
 
 jobs:
