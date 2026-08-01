@@ -2,14 +2,43 @@ import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
+/**
+ * CSV import.
+ *
+ * This route had never successfully imported a row. It used
+ * `ON CONFLICT (email) DO NOTHING`, but contact_us.email carries only a
+ * NON-unique index, so Postgres rejected the statement at parse-analysis with
+ * 42P10 — "no unique or exclusion constraint matching the ON CONFLICT
+ * specification" — before executing anything. Every row hit the catch,
+ * incremented `failed`, and the route still answered HTTP 200.
+ *
+ * Deduplication is now an explicit SELECT, matching what the submit route
+ * already does. That is a check-then-act race: two concurrent imports of the
+ * same address can both miss and both insert. Accepted deliberately — a UNIQUE
+ * index on email is the real fix, and it cannot be added until the 10 existing
+ * duplicate-email groups are resolved, which is a decision about live data.
+ */
+
+/** Trim to a string, never null — name/email/phone are NOT NULL with no default. */
+function str(value) {
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim()
+}
+
 export async function POST(request) {
   if (!(await getUserOrNull())) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { rows } = await request.json()
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const { rows } = body ?? {}
   if (!Array.isArray(rows) || rows.length === 0) {
-    return Response.json({ inserted: 0, skipped: 0 })
+    return Response.json({ inserted: 0, skipped: 0, failed: 0, errors: [] })
   }
 
   /* Three buckets, not two. `skipped` used to absorb invalid rows, duplicate
@@ -21,32 +50,48 @@ export async function POST(request) {
   const errors = []
 
   for (const row of rows) {
-    const name      = row.name?.trim() || null
-    const email     = row.email?.trim() || null
-    const phone     = row.phone?.trim() || null
-    const company   = row.company?.trim() || null
-    const source_url = row.source_url?.trim() || null
-    const needs     = row.needs ? row.needs.split(",").map(n => n.trim()).filter(Boolean) : []
+    /* "" not null. These three columns are NOT NULL with no default, so the
+       previous `|| null` would have thrown on any row missing one — the same
+       defect the submit route documents as fixed, never applied here. It was
+       masked because the ON CONFLICT failure fired first. */
+    const name = str(row.name)
+    const email = str(row.email).toLowerCase()
+    const phone = str(row.phone)
+    const company = str(row.company)
+    const sourceUrl = str(row.source_url) || "csv-import"
+    const needs = row.needs
+      ? String(row.needs).split(",").map((n) => n.trim()).filter(Boolean)
+      : []
 
-    if (!name && !email) { skipped++; continue }
+    if (!name && !email && !phone) {
+      skipped++
+      continue
+    }
 
     let contactId = null
     try {
-      const result = await sql`
-        INSERT INTO public.contact_us (name, email, phone, company, source_url, needs, status)
-        VALUES (${name}, ${email}, ${phone}, ${company}, ${source_url}, ${needs}, 'New')
-        ON CONFLICT (email) DO NOTHING
+      if (email) {
+        const [existing] = await sql`
+          SELECT id FROM public.contact_us WHERE email = ${email} LIMIT 1
+        `
+        if (existing) {
+          skipped++
+          continue
+        }
+      }
+
+      const [contact] = await sql`
+        INSERT INTO public.contact_us
+          (name, email, phone, company, source_url, needs, status)
+        VALUES
+          (${name}, ${email}, ${phone}, ${company}, ${sourceUrl}, ${needs}, 'New')
         RETURNING id
       `
-      if (result.length === 0) {
-        skipped++
-        continue
-      }
-      contactId = result[0].id
+      contactId = contact.id
       inserted++
     } catch (error) {
       failed++
-      if (errors.length < 5) errors.push(`${email ?? name}: ${error.message}`)
+      if (errors.length < 5) errors.push(`${email || name}: ${error.message}`)
       console.error("[import] insert failed", { email, error })
       continue
     }
@@ -62,5 +107,9 @@ export async function POST(request) {
     }
   }
 
-  return Response.json({ inserted, skipped, failed, errors })
+  /* A run where every row failed is not a success. The three-bucket split was
+     added so an outage could not hide, but the status code still said 200 —
+     which is exactly how a route that never worked went unnoticed. */
+  const status = failed > 0 && inserted === 0 ? 500 : 200
+  return Response.json({ inserted, skipped, failed, errors }, { status })
 }
