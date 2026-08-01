@@ -9,16 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updateContactStatus } from "@/app/(app)/planner/actions"
-
-const STATUS_OPTIONS = [
-  { value: "New",       label: "New",       color: "#3b82f6" },
-  { value: "follow-up", label: "Follow-up", color: "#f97316" },
-  { value: "win",       label: "Win",       color: "#22c55e" },
-  { value: "closed",    label: "Closed",    color: "#64748b" },
-  { value: "rejected",  label: "Rejected",  color: "#ef4444" },
-  { value: "fake",      label: "Fake",      color: "#a855f7" },
-  { value: "test",      label: "Test",      color: "#14b8a6" },
-]
+import {
+  CONTACT_STATUSES,
+  DEFAULT_CONTACT_STATUS,
+  statusMeta,
+} from "@/lib/contact-statuses"
 
 /** The status swatch. Same size and shape in the trigger and the menu. */
 function StatusDot({ color }) {
@@ -31,7 +26,7 @@ function StatusDot({ color }) {
 }
 
 export function ContactStatusSelect({ contactId, initialStatus }) {
-  const [status, setStatus] = useState(initialStatus ?? "New")
+  const [status, setStatus] = useState(initialStatus ?? DEFAULT_CONTACT_STATUS)
   const [failed, setFailed] = useState(false)
   const [, startTransition] = useTransition()
 
@@ -52,8 +47,11 @@ export function ContactStatusSelect({ contactId, initialStatus }) {
     })
   }
 
-  const current = STATUS_OPTIONS.find((s) => s.value === status)
-  const color = current?.color ?? "#64748b"
+  // statusMeta falls back to the first status rather than undefined, so a row
+  // carrying a value written before contact_us_status_check existed still
+  // renders a labelled, coloured control instead of a bare key on a grey chip.
+  const current = statusMeta(status)
+  const color = current.color
 
   return (
     <div className="flex flex-col items-start gap-1">
@@ -76,13 +74,13 @@ export function ContactStatusSelect({ contactId, initialStatus }) {
           <SelectValue>
             <span className="flex items-center gap-2">
               <StatusDot color={color} />
-              {current?.label ?? status}
+              {current.label}
             </span>
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {STATUS_OPTIONS.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
+          {CONTACT_STATUSES.map((opt) => (
+            <SelectItem key={opt.key} value={opt.key}>
               <StatusDot color={opt.color} />
               {opt.label}
             </SelectItem>

@@ -34,14 +34,14 @@ import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
+import { CONTACT_STATUS_KEYS, statusMeta } from "@/lib/contact-statuses"
 
-const STATUS_COLORS = {
-  New:       "secondary",
-  Contacted: "outline",
-  Closed:    "destructive",
-}
-
-const STATUS_OPTIONS = ["New", "follow-up", "win", "closed", "rejected", "fake", "test"]
+/* The badge previously keyed a variant map on New / Contacted / Closed. Only
+   "New" ever matched: "Contacted" is not a status this app has, and the real
+   key is lowercase "closed", so six of the seven statuses fell through to the
+   same outline badge and the two dead entries were unreachable. Colour now
+   comes from src/lib/contact-statuses.js, the same source the select and the
+   planner read, so a new status cannot arrive without one. */
 
 /** Age since the last note or activity, red once the lead is stale. */
 function LastTouchCell({ row }) {
@@ -307,10 +307,15 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={STATUS_COLORS[row.status] ?? "outline"}
+                        variant="outline"
                         className="text-[10px] px-1.5 py-0"
+                        style={{
+                          backgroundColor: `${statusMeta(row.status).color}18`,
+                          color: statusMeta(row.status).color,
+                          borderColor: `${statusMeta(row.status).color}40`,
+                        }}
                       >
-                        {row.status || "—"}
+                        {row.status ? statusMeta(row.status).label : "—"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
@@ -351,8 +356,10 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                   <SelectValue placeholder="Set status…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  {CONTACT_STATUS_KEYS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {statusMeta(status).label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
