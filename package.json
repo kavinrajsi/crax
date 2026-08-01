@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "node scripts/patch-neon-auth.mjs",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke": "node --env-file-if-exists=.env.local scripts/smoke.mjs",
+    "check": "node --env-file-if-exists=.env.local scripts/check-contact-fields.mjs && node --env-file-if-exists=.env.local scripts/check-deal-stages.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
