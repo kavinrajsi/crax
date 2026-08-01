@@ -12,46 +12,56 @@ export const dynamic = "force-dynamic"
  * counted "login", "view_list" and "view_detail" — action names no code has
  * ever produced — so two of the four cards were reporting on nothing and would
  * have read 0 forever once the seed rows were cleared.
+ *
+ * The counts come from SQL over the whole table, not from the rows below. They
+ * used to be computed from the fetched array, which was fine only because the
+ * query was unbounded; bounding it without moving these would have quietly
+ * turned "Total Events" into "events on this page".
  */
 const statDef = [
-  {
-    key: "total",
-    label: "Total Events",
-    icon: ListIcon,
-    compute: (rows) => rows.length,
-  },
-  {
-    key: "logins",
-    label: "Sign-ins",
-    icon: LogInIcon,
-    compute: (rows) => rows.filter((r) => r.action === "auth.login").length,
-  },
-  {
-    key: "failed",
-    label: "Failed Sign-ins",
-    icon: ShieldAlertIcon,
-    compute: (rows) => rows.filter((r) => r.action === "auth.login_failed").length,
-    alert: true,
-  },
-  {
-    key: "actors",
-    label: "Unique Actors",
-    icon: UsersIcon,
-    compute: (rows) => new Set(rows.map((r) => r.actor_email).filter(Boolean)).size,
-  },
+  { key: "total",  label: "Total Events",       icon: ListIcon },
+  { key: "logins", label: "Sign-ins",           icon: LogInIcon },
+  { key: "failed", label: "Failed Sign-ins",    icon: ShieldAlertIcon, alert: true },
+  { key: "actors", label: "Unique Actors",      icon: UsersIcon },
 ]
+
+/**
+ * How many rows reach the browser.
+ *
+ * This page shipped every row of audit_logs to a client component with no
+ * LIMIT. That was harmless while the table held 28 fixture rows and had no
+ * writer at all; as of the audit work there are 30 action types writing to it,
+ * so it grows without bound and the page degrades with it.
+ */
+const LOG_LIMIT = 200
 
 export default async function LogsPage() {
   await requireUser()
 
-  const logs = await sql`
-    SELECT * FROM public.audit_logs ORDER BY created_at DESC
-  `
+  /* `before` is deliberately not selected. It holds a full row snapshot, is the
+     largest column by far, and LogsView renders only `after`. */
+  const [logs, [counts]] = await Promise.all([
+    sql`
+      SELECT id, actor_email, actor_user_id, action, target_table, target_id,
+             after, ip_address, user_agent, created_at
+      FROM public.audit_logs
+      ORDER BY created_at DESC
+      LIMIT ${LOG_LIMIT}
+    `,
+    sql`
+      SELECT COUNT(*)::int                                                        AS total,
+             COUNT(*) FILTER (WHERE action = 'auth.login')::int                   AS logins,
+             COUNT(*) FILTER (WHERE action = 'auth.login_failed')::int            AS failed,
+             COUNT(DISTINCT actor_email) FILTER (WHERE actor_email IS NOT NULL)::int AS actors
+      FROM public.audit_logs
+    `,
+  ])
 
-  const stats = statDef.map(({ key, label, icon, compute, alert }) => {
-    const value = compute(logs)
-    return { key, label, icon, value, alert: Boolean(alert) && value > 0 }
-  })
+  const stats = statDef.map(({ key, label, icon, alert }) => ({
+    key, label, icon,
+    value: counts[key],
+    alert: Boolean(alert) && counts[key] > 0,
+  }))
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,7 +69,8 @@ export default async function LogsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Audit Logs</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Changes and sign-ins recorded in <code className="text-xs bg-muted px-1 py-0.5 rounded">public.audit_logs</code> — {logs.length} events. Page views are not recorded.
+          Changes and sign-ins recorded in <code className="text-xs bg-muted px-1 py-0.5 rounded">public.audit_logs</code> — {counts.total} events
+          {counts.total > logs.length && `, showing the most recent ${logs.length}`}. Page views are not recorded.
         </p>
       </div>
 
@@ -81,7 +92,7 @@ export default async function LogsPage() {
       </div>
 
       {/* Table */}
-      <LogsView logs={logs} />
+      <LogsView logs={logs} total={counts.total} />
     </div>
   )
 }

@@ -52,7 +52,14 @@ const ACTION_STYLES = {
 
 /* ─── LogsView ─────────────────────────────────────────────────────────── */
 
-export function LogsView({ logs }) {
+/**
+ * @param {object[]} logs   the most recent page of events, already bounded by
+ *                          the server — filtering and sorting here apply to
+ *                          this page only
+ * @param {number} [total]  events in the whole table, so the caption cannot
+ *                          claim to be showing everything when it is not
+ */
+export function LogsView({ logs, total }) {
   const [search, setSearch] = useState("")
   const [actionFilter, setActionFilter] = useState("all")
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
@@ -86,7 +93,9 @@ export function LogsView({ logs }) {
           <div>
             <CardTitle>Events</CardTitle>
             <CardDescription>
-              Showing {rows.length} of {logs.length} records
+              {total > logs.length
+                ? `Showing ${rows.length} of the most recent ${logs.length} — ${total} events in total`
+                : `Showing ${rows.length} of ${logs.length} records`}
             </CardDescription>
           </div>
           <div className="relative w-full sm:w-60">
