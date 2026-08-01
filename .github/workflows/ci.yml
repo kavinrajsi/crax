@@ -1,0 +1,122 @@
+name: CI
+
+# Two bugs reached production in one week that `npm run lint` and `npm run
+# build` both passed clean, because nothing ran automatically. There were no
+# workflows, no git hooks, and `npm run smoke` / `npm run check` fired only when
+# a human typed them.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  # Vercel reports each deployment through the Deployments API, so this fires
+  # once a preview finishes building. Note that GitHub only dispatches
+  # deployment_status against the workflow file on the DEFAULT branch — a change
+  # to the smoke-preview job below is not exercised until it is merged.
+  deployment_status:
+
+jobs:
+  # ── everything that needs no secret ─────────────────────────────────────
+  verify:
+    if: github.event_name != 'deployment_status'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # postinstall runs scripts/patch-neon-auth.mjs, which exits non-zero if
+      # the code it patches has moved. That is deliberate: a package bump that
+      # fixes the upstream bug should fail loudly here rather than silently.
+      - run: npm ci
+
+      # The baseline is zero. It was 1 error + 1 warning until this workflow was
+      # written: the error sat in src/hooks/use-mobile.js, which nothing
+      # imported, and eslint exits non-zero on any error — so CI would have been
+      # red on its first run over dead code. Both are fixed rather than
+      # tolerated, and --max-warnings=0 keeps it that way.
+      - run: npm run lint -- --max-warnings=0
+
+      - run: npm test
+
+      # Proves the tests and the constraint guard can still go red. A suite
+      # that cannot fail is worse than no suite, because it reports success.
+      - run: npm run test:mutations
+
+      # No DATABASE_URL here on purpose. These scripts connect when they see
+      # one, so the placeholder below would make them fail on a refused
+      # connection rather than fall back to the checked-in db/schema.sql. The
+      # live half runs in smoke-preview.
+      - run: npm run check
+
+      # Placeholders, not secrets. `neon()` and createNeonAuth parse these at
+      # module load and the build fails without them, but nothing connects or
+      # authenticates while building, so syntactically valid junk is enough.
+      # Keeping real credentials out of this job is the point: it runs on every
+      # push, including from forks.
+      #
+      # NEON_AUTH_COOKIE_SECRET must be at least 32 characters — createNeonAuth
+      # rejects anything shorter, and it does so while Next is collecting page
+      # data, so the failure reads "Failed to collect page data for
+      # /api/auth/[...path]" rather than naming the variable. The value below is
+      # 37 characters; do not shorten it.
+      - run: npm run build
+        env:
+          DATABASE_URL: postgres://ci:ci@localhost/ci
+          NEON_AUTH_BASE_URL: https://auth.example.invalid
+          NEON_AUTH_COOKIE_SECRET: ci-placeholder-not-used-at-build-time
+
+  # ── smoke the preview deployment Vercel just built ──────────────────────
+  smoke-preview:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      # Secrets are not available to `if:` at job level, so the check happens
+      # here. A missing secret must not look like a passing smoke test — this
+      # raises a visible warning and skips the run instead of going quietly
+      # green.
+      - id: secrets
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+        run: |
+          if [ -z "$SMOKE_EMAIL" ] || [ -z "$SMOKE_PASSWORD" ]; then
+            echo "::warning::SMOKE_EMAIL / SMOKE_PASSWORD are not set — the smoke test did not run. Add them in Settings → Secrets and variables → Actions."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.secrets.outputs.ready == 'true'
+        env:
+          SMOKE_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          # Preview deployments sit behind Vercel deployment protection. Without
+          # this every request answers with the SSO page and the run fails for a
+          # reason that has nothing to do with the code. Enable it under Vercel
+          # → Project → Settings → Deployment Protection → Protection Bypass for
+          # Automation.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # The half that catches render errors must actually run.
+          SMOKE_REQUIRE_AUTH: "1"
+          # DATABASE_URL is deliberately NOT provided. Previews share the
+          # production database, and the intake checks that create a contact
+          # need a connection to delete it again. Without one they skip loudly
+          # and the read-only checks still run, which is the safer trade for a
+          # job triggered by every push.
+        run: npm run smoke
