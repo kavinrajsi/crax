@@ -11,7 +11,7 @@
     "test": "node --test 'test/**/*.test.mjs'",
     "test:mutations": "node scripts/verify-tests-can-fail.mjs",
     "smoke": "node --env-file-if-exists=.env.local scripts/smoke.mjs",
-    "check": "node --env-file-if-exists=.env.local scripts/check-contact-fields.mjs && node --env-file-if-exists=.env.local scripts/check-deal-stages.mjs"
+    "check": "node --env-file-if-exists=.env.local scripts/check-contact-fields.mjs && node --env-file-if-exists=.env.local scripts/check-constraints.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

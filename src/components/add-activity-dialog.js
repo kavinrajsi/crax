@@ -22,13 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { addActivity } from "@/app/(app)/contacts/[id]/actions"
+import { USER_ACTIVITY_TYPES } from "@/lib/activity-types"
 
-const TYPES = [
-  { value: "call",    label: "Call" },
-  { value: "meeting", label: "Meeting" },
-  { value: "email",   label: "Email" },
-  { value: "task",    label: "Task" },
-]
 
 export function AddActivityDialog({ contactId, onAdded }) {
   const [open, setOpen] = useState(false)
@@ -94,8 +89,8 @@ export function AddActivityDialog({ contactId, onAdded }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                {USER_ACTIVITY_TYPES.map((t) => (
+                  <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

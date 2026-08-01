@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
 import { recordAudit, snapshot } from "@/lib/audit"
+import { isActivityType } from "@/lib/activity-types"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 
 export async function addNote(contactId, body) {
@@ -63,6 +64,13 @@ export async function removeTag(tagId) {
 
 export async function addActivity(contactId, { type, title, body, due_at }) {
   const user = await requireUserOrThrow()
+  /* Validate here rather than letting the CHECK constraint do it. A server
+     action is a public POST endpoint, so `type` is whatever the caller sends;
+     an unknown value produced a raw Postgres constraint violation surfacing as
+     "Something went wrong". */
+  if (!isActivityType(type)) {
+    throw new Error(`Unknown activity type: ${type}`)
+  }
   await sql`
     INSERT INTO public.contact_activities (contact_id, author_email, type, title, body, due_at)
     VALUES (${contactId}, ${user.email}, ${type}, ${title}, ${body ?? null}, ${due_at ?? null})
