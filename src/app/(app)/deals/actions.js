@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
 import { CLOSED_STAGES } from "@/lib/deal-stages"
+import { recordAudit, snapshot } from "@/lib/audit"
 
 /**
  * Deal actions. Every one gates first — a server action is a public POST
@@ -29,14 +30,17 @@ export async function createDeal(fields) {
        ${stage === "lost" ? new Date().toISOString() : null})
     RETURNING *
   `
+  await recordAudit(user, "deal.create", { table: "deals", id: deal.id, after: deal })
   revalidatePath("/deals")
   return deal
 }
 
 export async function updateDeal(dealId, fields) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
   const { title, value, contactId, companyId, expectedCloseDate } = fields
   if (!title?.trim()) throw new Error("A deal needs a title")
+
+  const before = await snapshot("deals", dealId)
 
   await sql`
     UPDATE public.deals
@@ -47,12 +51,18 @@ export async function updateDeal(dealId, fields) {
         expected_close_date = ${expectedCloseDate || null}
     WHERE id = ${dealId}
   `
+  await recordAudit(user, "deal.update", {
+    table: "deals", id: dealId, before, after: await snapshot("deals", dealId),
+  })
   revalidatePath("/deals")
 }
 
 export async function deleteDeal(dealId) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  // Snapshot first: after the DELETE there is nothing left to record.
+  const before = await snapshot("deals", dealId)
   await sql`DELETE FROM public.deals WHERE id = ${dealId}`
+  await recordAudit(user, "deal.delete", { table: "deals", id: dealId, before })
   revalidatePath("/deals")
 }
 
@@ -68,7 +78,8 @@ export async function deleteDeal(dealId) {
  * clears them.
  */
 export async function moveDeal(dealId, newStage, orderedDealIds) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("deals", dealId)
   const closing = CLOSED_STAGES.includes(newStage)
 
   await sql.transaction([
@@ -83,5 +94,10 @@ export async function moveDeal(dealId, newStage, orderedDealIds) {
       (id, i) => sql`UPDATE public.deals SET position = ${i} WHERE id = ${id}`
     ),
   ])
+  await recordAudit(user, "deal.move", {
+    table: "deals", id: dealId,
+    before: before && { stage: before.stage },
+    after: { stage: newStage },
+  })
   revalidatePath("/deals")
 }

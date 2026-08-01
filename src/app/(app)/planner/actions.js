@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
+import { recordAudit, snapshot } from "@/lib/audit"
 
 /* ─── contact status ─────────────────────────────────────────────────── */
 
@@ -11,6 +12,7 @@ import { requireUserOrThrow } from "@/lib/dal"
 // the audit trail whatever the caller said it was.
 export async function updateContactStatus(contactId, newStatus) {
   const user = await requireUserOrThrow()
+  const before = await snapshot("contact_us", contactId)
 
   /* The old status is read inside SQL rather than in a preceding round trip.
      Reading it in JS first was non-atomic: a concurrent update between the
@@ -35,6 +37,11 @@ export async function updateContactStatus(contactId, newStatus) {
     `,
   ])
 
+  await recordAudit(user, "contact.status_change", {
+    table: "contact_us", id: contactId,
+    before: before && { status: before.status },
+    after: { status: newStatus },
+  })
   revalidatePath("/planner")
   revalidatePath("/data")
   revalidatePath(`/contacts/${contactId}`)
@@ -43,24 +50,27 @@ export async function updateContactStatus(contactId, newStatus) {
 /* ─── boards ─────────────────────────────────────────────────────────── */
 
 export async function createBoard(name) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
   const [board] = await sql`
     INSERT INTO public.kanban_boards (name) VALUES (${name}) RETURNING *
   `
+  await recordAudit(user, "board.create", { table: "kanban_boards", id: board.id, after: board })
   revalidatePath("/planner")
   return board
 }
 
 export async function deleteBoard(boardId) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_boards", boardId)
   await sql`DELETE FROM public.kanban_boards WHERE id = ${boardId}`
+  await recordAudit(user, "board.delete", { table: "kanban_boards", id: boardId, before })
   revalidatePath("/planner")
 }
 
 /* ─── columns ────────────────────────────────────────────────────────── */
 
 export async function createColumn(boardId, name, color) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
   const [{ max }] = await sql`
     SELECT COALESCE(MAX(position), -1) AS max FROM public.kanban_columns WHERE board_id = ${boardId}
   `
@@ -69,24 +79,31 @@ export async function createColumn(boardId, name, color) {
     VALUES (${boardId}, ${name}, ${color}, ${max + 1})
     RETURNING *
   `
+  await recordAudit(user, "column.create", { table: "kanban_columns", id: col.id, after: col })
   revalidatePath("/planner")
   return col
 }
 
 export async function updateColumn(colId, name, color) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_columns", colId)
   await sql`UPDATE public.kanban_columns SET name=${name}, color=${color} WHERE id=${colId}`
+  await recordAudit(user, "column.update", {
+    table: "kanban_columns", id: colId, before, after: { name, color },
+  })
   revalidatePath("/planner")
 }
 
 export async function deleteColumn(colId) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_columns", colId)
   await sql`DELETE FROM public.kanban_columns WHERE id = ${colId}`
+  await recordAudit(user, "column.delete", { table: "kanban_columns", id: colId, before })
   revalidatePath("/planner")
 }
 
 export async function reorderColumns(orderedIds) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
   // One transaction, not N round trips — a failure partway through used to
   // leave the board half-reordered with no way to tell.
   await sql.transaction(
@@ -94,13 +111,16 @@ export async function reorderColumns(orderedIds) {
       (id, i) => sql`UPDATE public.kanban_columns SET position=${i} WHERE id=${id}`
     )
   )
+  await recordAudit(user, "column.reorder", {
+    table: "kanban_columns", after: { order: orderedIds },
+  })
   revalidatePath("/planner")
 }
 
 /* ─── cards ──────────────────────────────────────────────────────────── */
 
 export async function createCard(columnId, title, description) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
   const [{ max }] = await sql`
     SELECT COALESCE(MAX(position), -1) AS max FROM public.kanban_cards WHERE column_id = ${columnId}
   `
@@ -109,24 +129,32 @@ export async function createCard(columnId, title, description) {
     VALUES (${columnId}, ${title}, ${description ?? null}, ${max + 1})
     RETURNING *
   `
+  await recordAudit(user, "card.create", { table: "kanban_cards", id: card.id, after: card })
   revalidatePath("/planner")
   return card
 }
 
 export async function updateCard(cardId, title, description) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_cards", cardId)
   await sql`UPDATE public.kanban_cards SET title=${title}, description=${description ?? null} WHERE id=${cardId}`
+  await recordAudit(user, "card.update", {
+    table: "kanban_cards", id: cardId, before, after: { title, description },
+  })
   revalidatePath("/planner")
 }
 
 export async function deleteCard(cardId) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_cards", cardId)
   await sql`DELETE FROM public.kanban_cards WHERE id = ${cardId}`
+  await recordAudit(user, "card.delete", { table: "kanban_cards", id: cardId, before })
   revalidatePath("/planner")
 }
 
 export async function moveCard(cardId, newColumnId, orderedCardIds) {
-  await requireUserOrThrow()
+  const user = await requireUserOrThrow()
+  const before = await snapshot("kanban_cards", cardId)
   // The column reassignment and the position rewrite must land together, or a
   // mid-loop failure leaves the card in its new column at the wrong index.
   await sql.transaction([
@@ -135,5 +163,10 @@ export async function moveCard(cardId, newColumnId, orderedCardIds) {
       (id, i) => sql`UPDATE public.kanban_cards SET position=${i} WHERE id=${id}`
     ),
   ])
+  await recordAudit(user, "card.move", {
+    table: "kanban_cards", id: cardId,
+    before: before && { column_id: before.column_id },
+    after: { column_id: newColumnId },
+  })
   revalidatePath("/planner")
 }

@@ -1,5 +1,6 @@
 import { sql, EXCLUDED_EMAILS } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
+import { recordAudit } from "@/lib/audit"
 import { resolveExportColumns } from "@/lib/export-columns"
 
 /**
@@ -32,7 +33,8 @@ function listParam(searchParams, key) {
 }
 
 export async function GET(request) {
-  if (!(await getUserOrNull())) {
+  const user = await getUserOrNull()
+  if (!user) {
     return new Response("Unauthorized", { status: 401 })
   }
 
@@ -130,6 +132,12 @@ export async function GET(request) {
   const rows = contacts.map((c) =>
     columns.map((column) => escape(toCell(c[column.key]))).join(",")
   )
+
+  /* The one read worth auditing: this is contact PII leaving the system. */
+  await recordAudit(user, "contact.export", {
+    table: "contact_us",
+    after: { count: contacts.length, scoped: Boolean(idsParam) },
+  })
 
   const csv = [headers.join(","), ...rows].join("\n")
   const filename = `contacts-${new Date().toISOString().slice(0, 10)}.csv`

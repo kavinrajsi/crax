@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
+import { recordAudit } from "@/lib/audit"
 
 export async function bulkUpdateStatus(ids, newStatus) {
   const user = await requireUserOrThrow()
@@ -25,6 +26,10 @@ export async function bulkUpdateStatus(ids, newStatus) {
       WHERE id = ANY(${ids})
     `,
   ])
+  await recordAudit(user, "contact.bulk_status", {
+    table: "contact_us",
+    after: { ids, status: newStatus, count: ids.length },
+  })
   revalidatePath("/data")
   revalidatePath("/planner")
 }
