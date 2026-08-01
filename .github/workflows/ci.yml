@@ -34,11 +34,12 @@ jobs:
       - run: npm ci
 
       # The baseline is zero. It was 1 error + 1 warning until this workflow was
-      # written: the error sat in src/hooks/use-mobile.js, which nothing
-      # imported, and eslint exits non-zero on any error — so CI would have been
-      # red on its first run over dead code. Both are fixed rather than
-      # tolerated, and --max-warnings=0 keeps it that way.
-      - run: npm run lint -- --max-warnings=0
+      # written, and eslint exits non-zero on any error, so CI would have been
+      # red on its first run. Both are fixed rather than tolerated.
+      # --max-warnings=0 lives in the lint script itself, not here — a check
+      # that is stricter in CI than on a developer's machine recreates the
+      # local/CI gap this whole effort exists to close.
+      - run: npm run lint
 
       - run: npm test
 
@@ -70,10 +71,17 @@ jobs:
           NEON_AUTH_COOKIE_SECRET: ci-placeholder-not-used-at-build-time
 
   # ── smoke the preview deployment Vercel just built ──────────────────────
+  # Preview only. Vercel raises deployment_status for production deployments
+  # too, so guarding on state alone would point this job at the live site on
+  # every push to main: it signs in, which writes an auth.login row, and POSTs
+  # deliberately malformed bodies to the public intake endpoint. Neither belongs
+  # in production. `environment` is exactly "Preview" or "Production" — checked
+  # against real payloads from this repo's deployments, not assumed.
   smoke-preview:
     if: >-
       github.event_name == 'deployment_status' &&
-      github.event.deployment_status.state == 'success'
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment_status.environment == 'Preview'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -6,7 +6,8 @@
  * that exact mismatch: contact_activities.type allowed only
  * call/meeting/email/task while the code inserted 'status_change', so every
  * status change threw after updating the row and the table stayed empty for
- * months. scripts/check-deal-stages.mjs exists so that cannot repeat.
+ * months. scripts/check-constraints.mjs exists so that cannot repeat, and it
+ * checks every CHECK constraint rather than only this one.
  */
 
 export const DEAL_STAGES = [
