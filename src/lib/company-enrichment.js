@@ -1,40 +1,10 @@
 import { sql } from "@/lib/db"
-
-// Common personal/free email domains — skip these for company extraction
-const PERSONAL_DOMAINS = new Set([
-  "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
-  "hotmail.com", "hotmail.co.uk", "outlook.com", "outlook.in",
-  "live.com", "msn.com", "icloud.com", "me.com", "mac.com",
-  "aol.com", "protonmail.com", "proton.me", "pm.me",
-  "rediffmail.com", "yandex.com", "yandex.ru", "mail.ru",
-  "zohomail.com", "fastmail.com", "hey.com", "duck.com",
-  "tutanota.com", "tutamail.com", "gmx.com", "gmx.net",
-])
+import { extractDomain, domainToCompanyName } from "@/lib/email-domains"
 
 /**
- * Extract the business domain from an email address.
- * Returns null for personal email providers or invalid emails.
+ * Company auto-linking. The pure domain helpers this depends on live in
+ * `@/lib/email-domains` so they can be unit-tested without a database handle.
  */
-export function extractDomain(email) {
-  if (!email) return null
-  const parts = email.trim().toLowerCase().split("@")
-  if (parts.length !== 2) return null
-  const domain = parts[1].trim()
-  if (!domain.includes(".")) return null
-  if (PERSONAL_DOMAINS.has(domain)) return null
-  return domain
-}
-
-/**
- * Convert a domain name to a human-readable company name.
- * "my-company.io" → "My Company"
- */
-function domainToCompanyName(domain) {
-  const base = domain.split(".")[0]
-  return base
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-}
 
 /**
  * Auto-link a contact to a company based on their email domain.

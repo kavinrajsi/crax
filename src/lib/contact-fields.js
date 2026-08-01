@@ -94,6 +94,11 @@ export const CONTACT_FIELDS = CONTACT_FIELD_GROUPS.flatMap((group) => group.fiel
 export function isBlank(value) {
   if (value == null) return true
   if (Array.isArray(value)) return value.length === 0
+  // Before the generic object branch. @neondatabase/serverless returns
+  // timestamptz as a Date, and `Object.keys(new Date())` is [] — so every
+  // kind:"date" field (created_at, "Submitted") rendered as an em-dash on both
+  // the detail page and the /data drawer. Only an unparseable date is blank.
+  if (value instanceof Date) return Number.isNaN(value.getTime())
   if (typeof value === "object") return Object.keys(value).length === 0
   return String(value).trim() === ""
 }
