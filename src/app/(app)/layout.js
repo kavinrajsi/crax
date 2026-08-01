@@ -50,7 +50,6 @@ export default async function AppLayout({ children }) {
                 </div>
                 <div className="flex flex-col leading-none">
                   <span className="font-semibold text-sm">Crax</span>
-                  <span className="text-xs text-muted-foreground">Dashboard</span>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>

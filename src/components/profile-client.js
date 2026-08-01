@@ -129,13 +129,17 @@ function SecurityTab({ initialEmail }) {
   )
 }
 
+/* "Activity digest" was removed with the digest itself: /api/digest and its
+   cron are gone, the endpoint had been 401'd on every scheduled run since it
+   shipped, and the row described it as weekly when it was scheduled daily.
+   Offering a subscription to it was the last place in the app that claimed it
+   existed. */
 const notifications = [
   { id: "security", label: "Security alerts", description: "Login attempts and account changes." },
-  { id: "activity", label: "Activity digest", description: "Weekly summary of your account activity." },
 ]
 
 function NotificationsTab() {
-  const [prefs, setPrefs] = useState({ security: true, activity: true })
+  const [prefs, setPrefs] = useState({ security: true })
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 
