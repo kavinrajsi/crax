@@ -41,13 +41,15 @@ DATA-ROW-DRAWER.md
 
 # sql — local dumps, backups and scratch queries stay out of the repo.
 # The two exceptions below are load-bearing and must remain tracked:
-#   db/schema.sql      — scripts/check-constraints.mjs and
-#                        scripts/check-contact-fields.mjs read it whenever
-#                        DATABASE_URL is unset, which is exactly how CI's
-#                        secret-free `verify` job runs them.
-#   db/migrations/*.sql — the record of what has actually been applied. If a
-#                        new migration is ignored here, schema.sql drifts stale
-#                        and the constraint guard passes against old truth.
+#   db/schema.sql      — scripts/check-schema.mjs reads it, and nothing else in
+#                        CI has a database. It is the only place the frozen
+#                        column list of public.visible_contacts is visible
+#                        offline, so untracking it would silently disable the
+#                        one check that catches a column the view lost.
+#   db/migrations/*.sql — the record of what has actually been applied, and the
+#                        same check reads every migration that defines the view.
+#                        If a new migration is ignored here, schema.sql drifts
+#                        stale and the check passes against old truth.
 *.sql
 !db/schema.sql
 !db/migrations/*.sql
