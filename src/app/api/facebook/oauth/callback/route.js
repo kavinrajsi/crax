@@ -53,6 +53,13 @@ export async function GET(request) {
         `&fb_exchange_token=${shortLivedToken}`
     )
 
+    // Needed so a later deauthorize/data-deletion callback from Meta (which
+    // only carries this numeric ID, never an email or page_id) can find the
+    // rows to remove — see src/app/api/facebook/deauthorize/route.js.
+    const { id: fbUserId } = await graphFetch(
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/me?fields=id&access_token=${userToken}`
+    )
+
     const { data: pages } = await graphFetch(
       `https://graph.facebook.com/${GRAPH_API_VERSION}/me/accounts?access_token=${userToken}`
     )
@@ -60,12 +67,13 @@ export async function GET(request) {
     for (const page of pages ?? []) {
       await sql`
         INSERT INTO public.facebook_page_connections
-          (page_id, page_name, access_token, connected_by_email)
-        VALUES (${page.id}, ${page.name}, ${page.access_token}, ${user.email})
+          (page_id, page_name, access_token, connected_by_email, fb_user_id)
+        VALUES (${page.id}, ${page.name}, ${page.access_token}, ${user.email}, ${fbUserId})
         ON CONFLICT (page_id) DO UPDATE SET
           page_name = EXCLUDED.page_name,
           access_token = EXCLUDED.access_token,
           connected_by_email = EXCLUDED.connected_by_email,
+          fb_user_id = EXCLUDED.fb_user_id,
           updated_at = now()
       `
     }

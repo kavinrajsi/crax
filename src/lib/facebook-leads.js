@@ -130,3 +130,35 @@ export function verifyOAuthState(state, email, appSecret) {
 
   return Date.now() - Number(ts) <= OAUTH_STATE_MAX_AGE_MS
 }
+
+/**
+ * Verifies and decodes Meta's `signed_request` — the format Meta POSTs to
+ * the deauthorize and data-deletion callbacks (`<sig>.<payload>`, both
+ * base64url, signature is HMAC-SHA256 of the payload segment). Not the same
+ * shape as the leadgen webhook's X-Hub-Signature-256 header, so it needs its
+ * own parser rather than reusing verifySignature() above.
+ *
+ * Returns the decoded payload (contains `user_id`) or null if the signature
+ * doesn't check out.
+ */
+export function parseSignedRequest(signedRequest, appSecret) {
+  const parts = signedRequest?.split(".") ?? []
+  if (parts.length !== 2) return null
+  const [encodedSig, encodedPayload] = parts
+
+  let sigBuf, expectedBuf
+  try {
+    sigBuf = Buffer.from(encodedSig, "base64url")
+    expectedBuf = crypto.createHmac("sha256", appSecret).update(encodedPayload).digest()
+  } catch {
+    return null
+  }
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"))
+    return payload.algorithm === "HMAC-SHA256" ? payload : null
+  } catch {
+    return null
+  }
+}
