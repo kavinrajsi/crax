@@ -41,6 +41,41 @@ function parseNeeds(raw) {
   return []
 }
 
+/**
+ * Reads a tracking value from whichever shape the posting form uses.
+ *
+ * Two forms post here and they do not agree. The flat shape puts everything at
+ * the top level; the `seomart-audit` form on searchmadarth.com nests it:
+ *
+ *   { gclid: "...", utm_source: "google" }                        flat
+ *   { tracking: { gclid: "...", utmSource: "google",              nested
+ *                 params: { gclid: "...", utm_source: "google" } } }
+ *
+ * Reading only `body.gclid` discarded the click ID on every nested submission —
+ * four leads (ids 116, 117, 118, 121) arrived with a real Google click ID and
+ * it was dropped. The value survived only inside raw_payload, which nothing
+ * queries.
+ *
+ * Precedence is most-explicit-first: a form that deliberately sets a top-level
+ * field overrides its own tracking blob, and `tracking.params` comes last
+ * because it is a raw dump of the query string rather than a considered value.
+ *
+ * @param {object} body
+ * @param {string} snake  the flat/params name, e.g. "utm_source"
+ * @param {string} [camel] the tracking.* name when it differs, e.g. "utmSource"
+ */
+function tracked(body, snake, camel = snake) {
+  const tracking = body?.tracking
+  const params = tracking?.params
+  return (
+    str(body?.[snake]) ||
+    str(tracking?.[camel]) ||
+    str(tracking?.[snake]) ||
+    str(params?.[snake]) ||
+    ""
+  )
+}
+
 export async function POST(request) {
   /* Optional secret auth — deliberately fail-OPEN so live form intake keeps
      working while WEBHOOK_SECRET is being coordinated with the form owner.
@@ -73,22 +108,35 @@ export async function POST(request) {
   const source  = str(body.source) || "webhook"
   // source_url is a URL; `source` is a label. Conflating them is why every
   // existing row shows "webhook" as its source domain.
-  const sourceUrl = str(body.source_url) || str(body.page_url) || source
+  /* tracking.pageUrl is where the nested form puts it. Without it a nested
+     submission falls through to `source` and every one of them records
+     "webhook" as its source domain — the same conflation the comment above
+     describes, arriving by a different route. */
+  const sourceUrl =
+    str(body.source_url) ||
+    str(body.page_url) ||
+    str(body.tracking?.pageUrl) ||
+    str(body.tracking?.page_url) ||
+    source
   const needs = parseNeeds(body.needs)
 
+  /* camelCase second argument only where tracking.* spells it differently. */
   const utm = {
-    source:   str(body.utm_source),
-    medium:   str(body.utm_medium),
-    campaign: str(body.utm_campaign),
-    term:     str(body.utm_term),
-    content:  str(body.utm_content),
+    source:   tracked(body, "utm_source", "utmSource"),
+    medium:   tracked(body, "utm_medium", "utmMedium"),
+    campaign: tracked(body, "utm_campaign", "utmCampaign"),
+    term:     tracked(body, "utm_term", "utmTerm"),
+    content:  tracked(body, "utm_content", "utmContent"),
   }
+  /* Click IDs are nullable, unlike the UTM columns which are NOT NULL DEFAULT
+     '' — so an absent one is null rather than an empty string. Keeping that
+     distinction is what makes "no click ID" queryable as IS NULL. */
   const click = {
-    gclid:   str(body.gclid)   || null,
-    wbraid:  str(body.wbraid)  || null,
-    gbraid:  str(body.gbraid)  || null,
-    fbclid:  str(body.fbclid)  || null,
-    msclkid: str(body.msclkid) || null,
+    gclid:   tracked(body, "gclid")   || null,
+    wbraid:  tracked(body, "wbraid")  || null,
+    gbraid:  tracked(body, "gbraid")  || null,
+    fbclid:  tracked(body, "fbclid")  || null,
+    msclkid: tracked(body, "msclkid") || null,
   }
 
   if (!name && !email && !phone) {
