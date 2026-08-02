@@ -114,7 +114,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
   }
 
   // checkbox + id + name/email + phone/company + status + date + last touch
-  const columnCount = 7
+  const columnCount = 8
 
 
   function toggleSort(column) {
@@ -254,6 +254,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                 <SortableHead label="Name / Email"   column="name"       sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Phone / Company" column="phone"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Status"       column="status"     sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
+                <SortableHead label="Source"       column="source_domain" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Date"         column="created_at" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
                 <SortableHead label="Last touch"   column="last_touch" sort={sort} onSort={toggleSort} className="sticky top-0 z-10 bg-background" />
               </TableRow>
@@ -317,6 +318,9 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                       >
                         {row.status ? statusMeta(row.status).label : "—"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {row.source_domain || "—"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDate(row.created_at, { compact: true })}

@@ -12,6 +12,7 @@ import {
   BarChart2Icon,
   HandshakeIcon,
   ShieldCheckIcon,
+  GaugeIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/planner",   label: "Planner",   icon: KanbanSquareIcon },
   { href: "/data",      label: "Data",      icon: DatabaseIcon },
+  { href: "/sme",       label: "SME",       icon: GaugeIcon },
   { href: "/deals",     label: "Deals",     icon: HandshakeIcon },
   { href: "/companies", label: "Companies", icon: BuildingIcon },
   { href: "/analytics", label: "Analytics", icon: BarChart2Icon },
