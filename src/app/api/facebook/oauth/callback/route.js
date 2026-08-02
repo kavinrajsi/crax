@@ -1,6 +1,5 @@
 import { sql } from "@/lib/db"
-import { requireUser } from "@/lib/dal"
-import { verifyOAuthState, GRAPH_API_VERSION } from "@/lib/facebook-leads"
+import { readOAuthState, GRAPH_API_VERSION } from "@/lib/facebook-leads"
 
 const FETCH_TIMEOUT_MS = 8000
 
@@ -21,13 +20,17 @@ async function graphFetch(url, method = "GET") {
  * those), and upserts one row per Page into facebook_page_connections.
  */
 export async function GET(request) {
-  const user = await requireUser()
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
   const state = searchParams.get("state")
   const profileUrl = new URL("/profile", request.url)
 
-  if (!verifyOAuthState(state, user.email, process.env.FB_APP_SECRET)) {
+  // Not requireUser() here — this request is the return leg of a redirect
+  // through facebook.com, and a strict session cookie can fail to come back
+  // on that leg. The state's signature (readOAuthState) is what proves who
+  // started the flow; see its doc comment in facebook-leads.js.
+  const email = readOAuthState(state, process.env.FB_APP_SECRET)
+  if (!email) {
     profileUrl.searchParams.set("fb_error", "state")
     return Response.redirect(profileUrl.toString())
   }
@@ -68,7 +71,7 @@ export async function GET(request) {
       await sql`
         INSERT INTO public.facebook_page_connections
           (page_id, page_name, access_token, connected_by_email, fb_user_id)
-        VALUES (${page.id}, ${page.name}, ${page.access_token}, ${user.email}, ${fbUserId})
+        VALUES (${page.id}, ${page.name}, ${page.access_token}, ${email}, ${fbUserId})
         ON CONFLICT (page_id) DO UPDATE SET
           page_name = EXCLUDED.page_name,
           access_token = EXCLUDED.access_token,
@@ -99,7 +102,7 @@ export async function GET(request) {
 
     profileUrl.searchParams.set("fb_connected", String(pages?.length ?? 0))
   } catch (error) {
-    console.error("[facebook-oauth] callback failed", { email: user.email, error })
+    console.error("[facebook-oauth] callback failed", { email, error })
     profileUrl.searchParams.set("fb_error", "exchange")
   }
 
