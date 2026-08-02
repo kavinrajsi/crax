@@ -4,8 +4,8 @@ import { verifyOAuthState, GRAPH_API_VERSION } from "@/lib/facebook-leads"
 
 const FETCH_TIMEOUT_MS = 8000
 
-async function graphFetch(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+async function graphFetch(url, method = "GET") {
+  const response = await fetch(url, { method, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   const data = await response.json()
   if (!response.ok) {
     throw new Error(data?.error?.message ?? `Graph API responded ${response.status}`)
@@ -76,6 +76,25 @@ export async function GET(request) {
           fb_user_id = EXCLUDED.fb_user_id,
           updated_at = now()
       `
+
+      /* Configuring the App's webhook (Use cases → Webhooks → Page → leadgen)
+         only says what the app listens for — each Page still has to be
+         subscribed to this app separately, or leadgen events never fire for
+         it. Best-effort: a page this app can't subscribe to (e.g. missing
+         leads_retrieval before App Review finishes) shouldn't break
+         connecting the rest, or lose the row already inserted above. */
+      try {
+        await graphFetch(
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${page.id}/subscribed_apps` +
+            `?subscribed_fields=leadgen&access_token=${page.access_token}`,
+          "POST"
+        )
+      } catch (error) {
+        console.error("[facebook-oauth] page webhook subscription failed", {
+          pageId: page.id,
+          error: String(error?.message ?? error),
+        })
+      }
     }
 
     profileUrl.searchParams.set("fb_connected", String(pages?.length ?? 0))
