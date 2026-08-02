@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 import { autoLinkCompany } from "@/lib/company-enrichment"
+import { recordAudit } from "@/lib/audit"
 
 /**
  * CSV import.
@@ -25,7 +26,11 @@ function str(value) {
 }
 
 export async function POST(request) {
-  if (!(await getUserOrNull())) {
+  /* Kept rather than discarded: an enrichment failure below is attributed to
+     whoever ran the import, since unlike the public webhook this route always
+     has a real user. */
+  const user = await getUserOrNull()
+  if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -104,6 +109,15 @@ export async function POST(request) {
       await autoLinkCompany(contactId, email, company)
     } catch (error) {
       console.error("[import] company enrichment failed", { contactId, email, error })
+      /* Audited for the same reason as the webhook's: console.error alone left
+         two months of enrichment failure invisible. recordAudit swallows its
+         own errors, so this cannot break an import that has already inserted
+         the row. */
+      await recordAudit(user, "contact.enrichment_failed", {
+        table: "contact_us",
+        id: contactId,
+        after: { source: "import", email, company, error: String(error?.message ?? error) },
+      })
     }
   }
 

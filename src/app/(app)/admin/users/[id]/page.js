@@ -35,7 +35,9 @@ export default async function AdminUserLogPage({ params }) {
   let users
   try {
     users = await sql`
-      SELECT id, name, email, "emailVerified" AS email_verified,
+      /* emailVerified omitted — see the note in ../page.js. Neon Auth never
+         sends a verification email, so it is false for everyone forever. */
+      SELECT id, name, email,
              "createdAt" AS created_at, banned, "banReason" AS ban_reason
       FROM neon_auth."user"
       WHERE id = ${id}
@@ -105,7 +107,6 @@ export default async function AdminUserLogPage({ params }) {
           <span className="text-sm text-muted-foreground">{user.email}</span>
           {admin && <Badge variant="secondary">Super admin</Badge>}
           {user.banned && <Badge variant="destructive">Banned{user.ban_reason ? `: ${user.ban_reason}` : ""}</Badge>}
-          {!user.email_verified && <Badge variant="outline">Unverified</Badge>}
         </div>
 
         <p className="text-sm text-muted-foreground mt-2">

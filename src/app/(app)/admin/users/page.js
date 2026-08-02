@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { UsersIcon, ShieldCheckIcon, MailCheckIcon, ActivityIcon } from "lucide-react"
+import { UsersIcon, ShieldCheckIcon, KeyRoundIcon, ActivityIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -44,7 +44,13 @@ export default async function AdminUsersPage() {
       SELECT u.id,
              u.name,
              u.email,
-             u."emailVerified" AS email_verified,
+             /* emailVerified is deliberately not selected. Neon Auth is
+                configured with sendVerificationEmailOnSignUp and
+                sendVerificationEmailOnSignIn both false and
+                requireEmailVerification false, and neon_auth.verification is
+                empty — no verification email is ever sent, so the column
+                cannot become true for anyone. Showing it put an "Unverified"
+                badge on every row that no action could ever clear. */
              u."createdAt"     AS created_at,
              u.banned,
              s.last_session,
@@ -70,7 +76,10 @@ export default async function AdminUsersPage() {
     `,
     sql`
       SELECT (SELECT COUNT(*)::int FROM neon_auth."user")                          AS users,
-             (SELECT COUNT(*)::int FROM neon_auth."user" WHERE "emailVerified")    AS verified,
+             /* Live sessions, which is a fact that changes. It replaced a
+                "Verified Emails" card that read 0 permanently. */
+             (SELECT COUNT(*)::int FROM neon_auth.session
+               WHERE "expiresAt" > now())                                        AS active_sessions,
              (SELECT COUNT(*)::int FROM public.audit_logs)                         AS events
     `,
   ])
@@ -80,7 +89,7 @@ export default async function AdminUsersPage() {
   const stats = [
     { key: "users", label: "All Users", icon: UsersIcon, value: totals.users },
     { key: "admins", label: "Super Admins", icon: ShieldCheckIcon, value: admins },
-    { key: "verified", label: "Verified Emails", icon: MailCheckIcon, value: totals.verified },
+    { key: "sessions", label: "Active Sessions", icon: KeyRoundIcon, value: totals.active_sessions },
     { key: "events", label: "Recorded Events", icon: ActivityIcon, value: totals.events },
   ]
 
@@ -141,7 +150,6 @@ export default async function AdminUsersPage() {
                       <div className="flex gap-1.5 pt-1">
                         {admin && <Badge variant="secondary">Super admin</Badge>}
                         {u.banned && <Badge variant="destructive">Banned</Badge>}
-                        {!u.email_verified && <Badge variant="outline">Unverified</Badge>}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>

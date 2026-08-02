@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { autoLinkCompany } from "@/lib/company-enrichment"
+import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 
 /**
  * Public form intake. The only automated way contacts enter the CRM.
@@ -187,12 +188,21 @@ export async function POST(request) {
       RETURNING id
     `
 
-    // Enrichment is best-effort: a failure here must not lose the lead that is
-    // already safely stored.
+    /* Enrichment is best-effort: a failure here must not lose the lead that is
+       already safely stored. It is also audited, because for two months it
+       failed on every lead and console.error was the only trace — Vercel keeps
+       runtime logs for a short window, so by the time anyone noticed the
+       companies table was empty the reason was unrecoverable. recordAudit
+       swallows its own errors, so this cannot itself break intake. */
     try {
       await autoLinkCompany(contact.id, email, company)
     } catch (error) {
       console.error("[submit] company enrichment failed", { contactId: contact.id, error })
+      await recordAudit(SYSTEM_ACTOR, "contact.enrichment_failed", {
+        table: "contact_us",
+        id: contact.id,
+        after: { source: "submit", email, company, error: String(error?.message ?? error) },
+      })
     }
 
     return Response.json({ ok: true, contactId: contact.id, isNew: true })

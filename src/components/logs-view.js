@@ -23,11 +23,25 @@ import { JsonViewer } from "@/components/json-viewer"
 
 
 
+/**
+ * Non-browser clients are named, not flattened to "Unknown".
+ *
+ * 3 of the 4 rows in audit_logs store the literal user agent "node" — what
+ * `fetch` sends by default — because they are script sign-ins from smoke runs,
+ * one of them from ::1 against the production database. Rendering those as
+ * "Unknown" made machine traffic indistinguishable from a person on an
+ * unrecognised browser, in a table whose entire job is answering "who did
+ * this?".
+ */
 function shortUA(ua) {
   if (!ua) return "—"
+  if (/^node(\/|$)/i.test(ua)) return "Script · node"
+  if (/^(curl|wget|python-requests|axios|got|postman)/i.test(ua)) {
+    return `Script · ${ua.split("/")[0].toLowerCase()}`
+  }
   const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)
   const os = ua.match(/\(([^)]+)\)/)
-  const b = browser ? browser[0] : "Unknown"
+  const b = browser ? browser[0] : "Unrecognised client"
   const o = os ? os[1].split(";")[0].trim() : ""
   return o ? `${b} · ${o}` : b
 }

@@ -30,7 +30,22 @@ import { sql } from "@/lib/db"
 export const LOG_PAGE_LIMIT = 200
 
 /**
- * @param {object} user      from requireUserOrThrow()
+ * Actor for writes that no signed-in user triggered.
+ *
+ * The public intake webhook and the CSV importer both run work — company
+ * enrichment — with nobody logged in, so there is no user to attribute it to.
+ * Before this existed those failures went to console.error and nowhere else,
+ * and company enrichment failed on every lead for two months without one
+ * surface in the app showing it.
+ *
+ * Deliberately an address no account can hold, so it never collides with a real
+ * user: /admin/users/[id] joins the trail on lower(actor_email), and a system
+ * row must not appear inside a person's log.
+ */
+export const SYSTEM_ACTOR = { email: "system@intake.local", id: null }
+
+/**
+ * @param {object} user      from requireUserOrThrow(), or SYSTEM_ACTOR
  * @param {string} action    verb, e.g. "contact.update", "company.delete"
  * @param {object} [target]
  * @param {string} [target.table]
