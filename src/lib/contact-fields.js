@@ -12,6 +12,7 @@ import {
   NetworkIcon,
   CalendarIcon,
   BracesIcon,
+  UserIcon,
 } from "lucide-react"
 
 /**
@@ -73,6 +74,18 @@ export const CONTACT_FIELD_GROUPS = [
       { key: "gbraid", label: "gbraid", icon: MousePointerClickIcon, breakAll: true },
       { key: "fbclid", label: "fbclid", icon: MousePointerClickIcon, breakAll: true },
       { key: "msclkid", label: "msclkid", icon: MousePointerClickIcon, breakAll: true },
+    ],
+  },
+  {
+    /* Who inside the team owns this lead, as opposed to everything else here,
+       which describes the lead itself. Rendered as a plain read-only field for
+       now: there is no assignment control yet, and putting it in
+       HANDLED_ELSEWHERE before one exists would mean the column holds data and
+       appears nowhere — the failure that left `message` unrendered while 91 of
+       121 contacts had one. Move it there when the control lands. */
+    title: "Assignment",
+    fields: [
+      { key: "owner_email", label: "Owner", icon: UserIcon, breakAll: true },
     ],
   },
   {
