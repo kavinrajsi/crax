@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircleIcon, AlertCircleIcon } from "lucide-react"
 
@@ -129,78 +128,18 @@ function SecurityTab({ initialEmail }) {
   )
 }
 
-/* "Activity digest" was removed with the digest itself: /api/digest and its
-   cron are gone, the endpoint had been 401'd on every scheduled run since it
-   shipped, and the row described it as weekly when it was scheduled daily.
-   Offering a subscription to it was the last place in the app that claimed it
-   existed. */
-const notifications = [
-  { id: "security", label: "Security alerts", description: "Login attempts and account changes." },
-]
+/* The Notifications tab was removed on 2026-08-02. It offered two email
+   subscriptions over a Save button that awaited a 500ms timer, showed "Saved"
+   and persisted nothing — the toggle reset on reload.
 
-function NotificationsTab() {
-  const [prefs, setPrefs] = useState({ security: true })
-  const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(false)
+   Neither email existed. "Activity digest" advertised /api/digest, which was
+   401'd on every scheduled run since it shipped and has since been deleted.
+   "Security alerts" promised mail on login attempts and account changes, and
+   this app has no email provider in its dependency tree at all: the only
+   address it can send from belongs to Neon Auth, for password resets.
 
-  function toggle(id) {
-    setPrefs((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 500))
-    setLoading(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>Choose which emails you want to receive.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-0">
-          {saved && <div className="mb-4"><SavedAlert /></div>}
-          {notifications.map((n, i) => (
-            <div key={n.id}>
-              {i > 0 && <Separator />}
-              <div className="flex items-center justify-between py-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium">{n.label}</span>
-                  <span className="text-xs text-muted-foreground">{n.description}</span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={prefs[n.id]}
-                  onClick={() => toggle(n.id)}
-                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    prefs[n.id] ? "bg-primary" : "bg-input"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform ${
-                      prefs[n.id] ? "translate-x-4" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-        <CardFooter className="justify-end">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving…" : "Save preferences"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </form>
-  )
-}
+   Restore it when there is something to subscribe to and somewhere to store
+   the preference. */
 
 export function ProfileClient({ initialName, initialEmail }) {
   const displayName = initialName || initialEmail || "User"
@@ -225,7 +164,6 @@ export function ProfileClient({ initialName, initialEmail }) {
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
         <div className="mt-4">
           <TabsContent value="account">
@@ -233,9 +171,6 @@ export function ProfileClient({ initialName, initialEmail }) {
           </TabsContent>
           <TabsContent value="security">
             <SecurityTab initialEmail={initialEmail} />
-          </TabsContent>
-          <TabsContent value="notifications">
-            <NotificationsTab />
           </TabsContent>
         </div>
       </Tabs>
