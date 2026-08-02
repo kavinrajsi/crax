@@ -1,11 +1,12 @@
 import crypto from "node:crypto"
+import { sql } from "@/lib/db"
 
 /**
  * Facebook Lead Ads helpers — fetching, mapping, and verifying webhook
  * signatures for leads pulled via the Graph API.
  */
 
-const GRAPH_API_VERSION = "v21.0"
+export const GRAPH_API_VERSION = "v21.0"
 
 /** How long to wait on the Graph API before giving up on a lead fetch. Same
  * timeout convention as src/lib/company-enrichment.js's isDomainLive(). */
@@ -72,4 +73,60 @@ export function verifySignature(rawBody, signatureHeader, appSecret) {
   const providedBuf = Buffer.from(provided, "hex")
   if (expectedBuf.length !== providedBuf.length) return false
   return crypto.timingSafeEqual(expectedBuf, providedBuf)
+}
+
+/**
+ * Resolves the Page Access Token to use for a given Page.
+ *
+ * Prefers a token connected via OAuth (Profile → Integrations,
+ * facebook_page_connections) over the single manually-generated
+ * FB_PAGE_ACCESS_TOKEN env var, so Pages connected that way don't need the
+ * env var touched. Falls back to the env var for any Page that hasn't been
+ * connected — keeps the original manual-token setup working unchanged.
+ */
+export async function getPageAccessToken(pageId) {
+  const [connection] = await sql`
+    SELECT access_token FROM public.facebook_page_connections WHERE page_id = ${pageId} LIMIT 1
+  `
+  return connection?.access_token ?? process.env.FB_PAGE_ACCESS_TOKEN
+}
+
+/** 10 minutes is generous for a browser round-trip through Facebook's OAuth
+ * dialog, short enough that a leaked/logged state value stops being useful
+ * quickly. */
+const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000
+
+/**
+ * Signs a CSRF state value for the OAuth dance — HMAC over the initiating
+ * user's email and a timestamp, same HMAC approach as verifySignature()
+ * above rather than a new crypto pattern or an extra DB table just to hold
+ * short-lived state.
+ */
+export function createOAuthState(email, appSecret) {
+  const payload = `${email}:${Date.now()}`
+  const sig = crypto.createHmac("sha256", appSecret).update(payload).digest("hex")
+  return Buffer.from(`${payload}:${sig}`).toString("base64url")
+}
+
+/** Verifies a state value came from createOAuthState() for this email, unexpired. */
+export function verifyOAuthState(state, email, appSecret) {
+  if (!state) return false
+  let decoded
+  try {
+    decoded = Buffer.from(state, "base64url").toString("utf8")
+  } catch {
+    return false
+  }
+  const parts = decoded.split(":")
+  if (parts.length !== 3) return false
+  const [stateEmail, ts, sig] = parts
+  if (stateEmail !== email) return false
+
+  const payload = `${stateEmail}:${ts}`
+  const expected = crypto.createHmac("sha256", appSecret).update(payload).digest("hex")
+  const expectedBuf = Buffer.from(expected, "hex")
+  const sigBuf = Buffer.from(sig, "hex")
+  if (expectedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expectedBuf, sigBuf)) return false
+
+  return Date.now() - Number(ts) <= OAUTH_STATE_MAX_AGE_MS
 }

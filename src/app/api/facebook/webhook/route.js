@@ -1,7 +1,7 @@
 import { sql } from "@/lib/db"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
-import { fetchLeadFields, mapLeadFields, verifySignature } from "@/lib/facebook-leads"
+import { fetchLeadFields, mapLeadFields, verifySignature, getPageAccessToken } from "@/lib/facebook-leads"
 
 /**
  * Facebook Lead Ads intake. Meta calls GET once to verify the endpoint, then
@@ -35,7 +35,6 @@ export async function GET(request) {
 
 export async function POST(request) {
   const appSecret = process.env.FB_APP_SECRET
-  const accessToken = process.env.FB_PAGE_ACCESS_TOKEN
   const rawBody = await request.text()
 
   // Unlike submit/route.js's optional shared secret, this fails CLOSED: Meta
@@ -63,6 +62,9 @@ export async function POST(request) {
       const [already] = await sql`SELECT id FROM public.contact_us WHERE fb_lead_id = ${leadgenId} LIMIT 1`
       if (already) continue
 
+      // Prefers a Page connected via OAuth (Profile → Integrations) over the
+      // manually-set FB_PAGE_ACCESS_TOKEN — see getPageAccessToken()'s doc.
+      const accessToken = await getPageAccessToken(pageId)
       const lead = await fetchLeadFields(leadgenId, accessToken)
       const { name, email, phone, message } = mapLeadFields(lead.field_data)
 
