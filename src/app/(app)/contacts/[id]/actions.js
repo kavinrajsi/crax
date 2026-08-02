@@ -109,7 +109,16 @@ export async function detectAndLinkCompany(contactId) {
   `
   if (!contact) return null
 
-  const result = await autoLinkCompany(contactId, contact.email, contact.company, { overwrite: true })
+  /* allowNameFallback is set here and nowhere else. A person clicked Detect on
+     one contact they are looking at, so the typed company name is worth acting
+     on; at intake the same fallback would auto-create a company from every
+     distinct string a form ever received. The audit entry records matchedBy,
+     so a link made from typed text is distinguishable afterwards from one made
+     from the email domain. */
+  const result = await autoLinkCompany(contactId, contact.email, contact.company, {
+    overwrite: true,
+    allowNameFallback: true,
+  })
   if (result) {
     await recordAudit(user, "contact.company_detect", {
       table: "contact_us", id: contactId, after: result,
