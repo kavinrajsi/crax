@@ -22,13 +22,13 @@ export default async function AnalyticsPage() {
   const [statusRows, dailyRows, activityRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count
-      FROM public.visible_contacts
+      FROM public.contact_us
       GROUP BY status
       ORDER BY count DESC
     `,
     sql`
       SELECT DATE_TRUNC('day', created_at)::date AS day, COUNT(*)::int AS count
-      FROM public.visible_contacts
+      FROM public.contact_us
       WHERE created_at >= NOW() - INTERVAL '30 days'
       GROUP BY day
       ORDER BY day ASC

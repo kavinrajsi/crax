@@ -27,7 +27,7 @@ export default async function CompanyDetailPage({ params }) {
     sql`SELECT * FROM public.companies WHERE id = ${id} LIMIT 1`,
     // The same view /companies counts through, so this list and the
     // contact_count beside it cannot disagree.
-    sql`SELECT id, name, email, status FROM public.visible_contacts
+    sql`SELECT id, name, email, status FROM public.contact_us
         WHERE company_id = ${id}
         ORDER BY created_at DESC`,
     sql`SELECT * FROM public.company_notes WHERE company_id = ${id} ORDER BY created_at ASC`,

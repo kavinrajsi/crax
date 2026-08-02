@@ -22,7 +22,7 @@ export default async function PlannerPage() {
     sql`SELECT * FROM public.kanban_columns ORDER BY position`,
     sql`SELECT * FROM public.kanban_cards ORDER BY position`,
     sql`SELECT id, name, email, phone, company, source_url, status, needs, created_at
-        FROM public.visible_contacts
+        FROM public.contact_us
         ORDER BY created_at DESC`,
   ])
 

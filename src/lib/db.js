@@ -8,6 +8,8 @@ export const sql = neon(process.env.DATABASE_URL)
  * free of the `neon()` call above so that scripts without a DATABASE_URL can
  * import it — see the comment there.
  *
- * Display reads no longer need it: they select from public.visible_contacts.
+ * The public.visible_contacts view that made this unnecessary for display
+ * reads was dropped on 2026-08-03; those reads now select from contact_us
+ * directly and are unfiltered.
  */
 export { EXCLUDED_EMAILS } from "./excluded-emails.js"

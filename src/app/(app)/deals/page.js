@@ -15,7 +15,7 @@ export default async function DealsPage() {
       LEFT JOIN public.companies  co ON co.id = d.company_id
       ORDER BY d.position ASC, d.created_at DESC
     `,
-    sql`SELECT id, name, email FROM public.visible_contacts
+    sql`SELECT id, name, email FROM public.contact_us
         ORDER BY created_at DESC`,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
   ])

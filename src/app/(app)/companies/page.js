@@ -12,7 +12,7 @@ export default async function CompaniesPage() {
     SELECT c.*,
            COUNT(cu.id)::int AS contact_count
     FROM public.companies c
-    LEFT JOIN public.visible_contacts cu
+    LEFT JOIN public.contact_us cu
            ON cu.company_id = c.id
     GROUP BY c.id
     ORDER BY c.created_at DESC

@@ -34,7 +34,7 @@ export default async function DataPage() {
                OR
                EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)
              ) AS has_touch
-      FROM public.visible_contacts cu
+      FROM public.contact_us cu
       ORDER BY cu.created_at DESC
     `,
     sql`SELECT id, name FROM public.companies ORDER BY name ASC`,

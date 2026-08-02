@@ -18,12 +18,12 @@ export default async function DashboardPage() {
   const [contactRows, sourceRows, staleRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
-        FROM public.visible_contacts`,
+        FROM public.contact_us`,
     // Same view as the total above. These two cards once counted different
     // populations, because one carried the exclusion filter by hand and the
     // other did not; selecting from the view is what stops that recurring.
     sql`SELECT source_url, COUNT(*)::int AS cnt
-        FROM public.visible_contacts
+        FROM public.contact_us
         WHERE source_url IS NOT NULL AND source_url <> ''
         GROUP BY source_url
         ORDER BY cnt DESC`,
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
        lib/follow-up, which the /data filter uses — if the two disagree this
        card sends you to a list that does not match it. */
     sql`SELECT COUNT(*)::int AS stale
-        FROM public.visible_contacts cu
+        FROM public.contact_us cu
         WHERE cu.status <> ALL(${RESOLVED_STATUSES})
           AND NOT EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
           AND NOT EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)`,

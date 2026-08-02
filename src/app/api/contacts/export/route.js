@@ -93,7 +93,7 @@ export async function GET(request) {
       SELECT cu.*,
              split_part(regexp_replace(cu.source_url, ${SOURCE_DOMAIN_RE}, ''), '/', 1) AS source_domain,
              array_to_string(cu.needs, ', ') AS needs_str
-      FROM public.visible_contacts cu
+      FROM public.contact_us cu
     ) c
     WHERE (${ids}::int[] IS NULL OR c.id = ANY(${ids}))
       AND (${domains}::text[] IS NULL OR c.source_domain = ANY(${domains}))
