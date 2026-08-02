@@ -5,9 +5,9 @@
  * That constraint is the one that already cost this project a feature: it
  * allowed call/meeting/email/task while updateContactStatus and
  * bulkUpdateStatus always inserted 'status_change', so every status change
- * threw after updating the row and the table sat empty for months.
- * db/migrations/001 widened it. The guard that compared this list against the
- * constraint was deleted on 2026-08-01, so keeping the two in step is now
+ * threw after updating the row and the table sat empty for months. The live
+ * constraint was widened to fix it. The guard that compared this list against
+ * the constraint was deleted on 2026-08-01, so keeping the two in step is now
  * manual: change this array and contact_activities_type_check together.
  *
  * `system: true` means the app writes it, not a person choosing from a menu.

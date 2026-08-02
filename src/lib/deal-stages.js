@@ -1,9 +1,9 @@
 /**
  * Deal pipeline stages, defined once.
  *
- * The keys here MUST match the CHECK constraint in
- * db/migrations/002-create-deals.sql. This session already lost a feature to
- * that exact mismatch: contact_activities.type allowed only
+ * The keys here MUST match the live deals_stage_check CHECK constraint in
+ * the database. This session already lost a feature to that exact mismatch:
+ * contact_activities.type allowed only
  * call/meeting/email/task while the code inserted 'status_change', so every
  * status change threw after updating the row and the table stayed empty for
  * months. The guard that made that impossible to repeat was deleted on

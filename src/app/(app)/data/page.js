@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db"
+import { sql, getCompanyOptions } from "@/lib/db"
 import { DataPageClient } from "@/components/data-page-client"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 
@@ -37,7 +37,7 @@ export default async function DataPage() {
       FROM public.contact_us cu
       ORDER BY cu.created_at DESC
     `,
-    sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+    getCompanyOptions(),
     /* Tag membership, not just the distinct tag list: the export dialog shows a
        live match count, and it cannot count a tag filter without knowing which
        contacts carry which tag. One row per (contact, tag) — a handful today. */

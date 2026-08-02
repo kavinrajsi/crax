@@ -78,8 +78,8 @@ export const CONTACT_FIELD_GROUPS = [
   },
   {
     /* Where the lead landed, not who claimed it. Leads arrive from the website,
-       so there is no owner at source; db/migrations/006 defaults the column to
-       business@madarth.com, the shared inbox, and every row currently reads
+       so there is no owner at source; the column defaults to business@madarth.com
+       in the live database, the shared inbox, and every row currently reads
        that. It is a label, not a workflow — nothing in the app reassigns it and
        no assignment control is planned, so "Owner" alone would overstate what
        the value means.

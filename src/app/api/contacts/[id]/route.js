@@ -3,13 +3,13 @@ import { getUserOrNull } from "@/lib/dal"
 
 export async function GET(request, { params }) {
   if (!(await getUserOrNull())) {
-    return new Response("Unauthorized", { status: 401 })
+    return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const { id: contactId } = await params
   // The column is an integer; anything else would blow up in the driver.
   if (!/^\d+$/.test(contactId)) {
-    return new Response("Not Found", { status: 404 })
+    return Response.json({ error: "Not Found" }, { status: 404 })
   }
 
   const [notes, tags, activities] = await Promise.all([

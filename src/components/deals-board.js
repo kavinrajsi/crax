@@ -2,14 +2,8 @@
 
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
+import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core"
+import { useKanbanSensors } from "@/hooks/use-kanban-sensors"
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVerticalIcon, UserIcon, BuildingIcon, CalendarIcon, Trash2Icon } from "lucide-react"
@@ -101,7 +95,7 @@ export function DealsBoard({ deals: initialDeals, contacts, companies }) {
   const [error, setError] = useState(null)
   const [, startTransition] = useTransition()
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useKanbanSensors()
 
   const forStage = (stage) => deals.filter((d) => d.stage === stage)
 

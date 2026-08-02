@@ -35,9 +35,8 @@
  * references rather than values. Same constraint documented in
  * src/lib/table-utils.js and src/lib/contact-fields.js.
  *
- * The keys below MUST match contact_us_status_check in
- * db/migrations/004-constrain-contact-status.sql, which is applied to the live
- * database. Adding a key here without widening the CHECK makes every write of
+ * The keys below MUST match the live contact_us_status_check CHECK constraint
+ * in the database. Adding a key here without widening the CHECK makes every write of
  * that status throw; removing one the database still allows leaves rows no code
  * path renders. Nothing checks this — change both together.
  */

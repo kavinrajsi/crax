@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db"
+import { sql, getCompanyOptions } from "@/lib/db"
 import { requireUser } from "@/lib/dal"
 import { DealsBoard } from "@/components/deals-board"
 
@@ -17,7 +17,7 @@ export default async function DealsPage() {
     `,
     sql`SELECT id, name, email FROM public.contact_us
         ORDER BY created_at DESC`,
-    sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+    getCompanyOptions(),
   ])
 
   return (

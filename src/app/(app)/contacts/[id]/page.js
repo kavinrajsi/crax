@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ArrowLeftIcon, TagIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { sql } from "@/lib/db"
+import { sql, getCompanyOptions } from "@/lib/db"
 import { requireUser } from "@/lib/dal"
 import { CONTACT_FIELD_GROUPS } from "@/lib/contact-fields"
 import { ContactFieldValue } from "@/components/contact-field-value"
@@ -50,7 +50,7 @@ export default async function ContactDetailPage({ params }) {
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_activities WHERE contact_id = ${id} ORDER BY created_at ASC`,
-    sql`SELECT id, name FROM public.companies ORDER BY name ASC`,
+    getCompanyOptions(),
   ])
   const contact = rows[0]
 

@@ -4,11 +4,9 @@ import { useState, useTransition } from "react"
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
   closestCorners,
 } from "@dnd-kit/core"
+import { useKanbanSensors } from "@/hooks/use-kanban-sensors"
 import {
   SortableContext,
   useSortable,
@@ -308,10 +306,7 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
   const cardsForColumn = (colId) =>
     cards.filter((c) => c.column_id === colId).sort((a, b) => a.position - b.position)
 
-  /* ── DnD sensors ── */
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
+  const sensors = useKanbanSensors()
 
   function onDragStart(event) {
     setActiveItem(event.active.data.current)

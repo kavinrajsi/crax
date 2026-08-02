@@ -8,7 +8,7 @@ import { isAdminEmail } from "@/lib/admin"
  * Data Access Layer — the authorization boundary for this app.
  *
  * Next 16 is explicit that proxy/middleware must not be the security layer
- * (`node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md:29`); the
+ * (see the Next.js docs on Proxy/Middleware and security); the
  * checks belong as close to the data as possible. `src/proxy.js` is only an
  * optimistic redirect for UX — everything that touches the database goes
  * through one of the three helpers below.

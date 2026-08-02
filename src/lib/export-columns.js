@@ -64,7 +64,7 @@ export const EXPORT_COLUMNS = [
 /**
  * The nine columns the export has always emitted. An untouched dialog must
  * produce a byte-identical CSV to the pre-dialog export, so this list and its
- * order are load-bearing — see the regression test in the plan.
+ * order are load-bearing — verify by hand if this order changes.
  */
 export const DEFAULT_EXPORT_COLUMNS = [
   "id",

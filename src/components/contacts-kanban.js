@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation"
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
   closestCorners,
 } from "@dnd-kit/core"
+import { useKanbanSensors } from "@/hooks/use-kanban-sensors"
 import {
   SortableContext,
   useSortable,
@@ -134,9 +132,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
   const [error, setError] = useState(null)
   const [, startTransition] = useTransition()
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
+  const sensors = useKanbanSensors()
 
   function contactsForStatus(status) {
     return contacts.filter((c) => c.status === status)

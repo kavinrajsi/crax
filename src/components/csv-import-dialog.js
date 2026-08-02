@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const CONTACT_FIELDS = [
+const IMPORTABLE_FIELDS = [
   { value: "name",       label: "Name" },
   { value: "email",      label: "Email" },
   { value: "phone",      label: "Phone" },
@@ -190,7 +190,7 @@ export function CsvImportDialog({ onImported }) {
                   <Select value={mapping[h] ?? "__skip__"} onValueChange={(v) => setMapping((m) => ({ ...m, [h]: v }))}>
                     <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {CONTACT_FIELDS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                      {IMPORTABLE_FIELDS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -207,7 +207,7 @@ export function CsvImportDialog({ onImported }) {
                       {parsed.headers.map((h) => (
                         <th key={h} className="text-left px-3 py-2 text-muted-foreground font-medium whitespace-nowrap">
                           {mapping[h] && mapping[h] !== "__skip__"
-                            ? CONTACT_FIELDS.find(f => f.value === mapping[h])?.label ?? h
+                            ? IMPORTABLE_FIELDS.find(f => f.value === mapping[h])?.label ?? h
                             : <span className="line-through opacity-50">{h}</span>
                           }
                         </th>

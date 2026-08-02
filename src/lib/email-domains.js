@@ -6,8 +6,7 @@
  * so its logic could not be unit-tested without a connection string. These two
  * functions are pure and decide which contacts get linked to a company, so
  * they are the part worth testing. Keeping them here means anything that
- * exercises them needs no environment at all — which is also why
- * src/lib/excluded-emails.js is separate from src/lib/db.js.
+ * exercises them needs no environment at all.
  */
 
 // Common personal/free email domains — skip these for company extraction

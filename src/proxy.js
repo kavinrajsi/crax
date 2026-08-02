@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
  * Optimistic auth redirect — a UX layer, NOT the security boundary.
  *
  * Next 16 is explicit that this file must not be the authorization solution
- * (`node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md:29`).
+ * (see the Next.js docs on Proxy/Middleware and security).
  * All it does is spare a logged-out visitor a render before bouncing them to
  * /login. The real checks live in `src/lib/dal.js` and run next to the data:
  * every page, every server action, every route handler. If you delete this
