@@ -1,18 +1,17 @@
 name: CI
 
-# Lint, schema check, build.
+# Lint and build.
 #
 # This workflow previously also ran `npm test` (75 unit tests), a mutation
 # harness that reintroduced each historical bug and required the corresponding
 # check to go red, and a smoke test against the live site. All of that was
-# deleted on 2026-08-01 by request; the commit that removed it holds the full
-# contents if any of it is wanted back.
+# deleted on 2026-08-01 by request.
 #
-# `npm run check` is the one guard brought back, because the drift it catches
-# produces no error and nothing on screen: a column added to contact_us but
-# missing from the public.visible_contacts view is invisible to every display
-# read, silently. It reads files only, so unlike the guards it replaces it needs
-# no database and no secrets.
+# It also ran `npm run check`, a schema guard reading the tracked SQL dump. That
+# went on 2026-08-02 with the SQL itself. Nothing now catches a column added to
+# contact_us but missing from the public.visible_contacts view — that drift
+# produces no error and nothing on screen, so check it by hand after any
+# migration.
 #
 # What is still not covered: a build passing here proves the code compiles and
 # lints. It does not prove the app runs. Two of the four bugs that prompted the
@@ -47,14 +46,6 @@ jobs:
       # not here — a check that is stricter in CI than on a developer's machine
       # recreates the local/CI gap.
       - run: npm run lint
-
-      # Reads db/schema.sql, db/migrations/*.sql and the constants in src/lib —
-      # no database, so it works here with no credentials at all. It catches the
-      # two drifts that produce no error anywhere: a column on contact_us that
-      # public.visible_contacts does not carry (invisible to every display read,
-      # because SELECT * is frozen at CREATE VIEW time), and a CHECK constraint
-      # that disagrees with the code constant behind it.
-      - run: npm run check
 
       # Placeholders, not secrets. `neon()` and createNeonAuth parse these at
       # module load and the build fails without them, but nothing connects or

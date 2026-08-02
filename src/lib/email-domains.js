@@ -7,8 +7,7 @@
  * functions are pure and decide which contacts get linked to a company, so
  * they are the part worth testing. Keeping them here means anything that
  * exercises them needs no environment at all — which is also why
- * src/lib/excluded-emails.js is separate from src/lib/db.js, and how
- * scripts/check-schema.mjs runs in CI with no database.
+ * src/lib/excluded-emails.js is separate from src/lib/db.js.
  */
 
 // Common personal/free email domains — skip these for company extraction

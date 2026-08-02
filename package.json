@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "node scripts/patch-neon-auth.mjs",
-    "lint": "eslint --max-warnings=0",
-    "check": "node scripts/check-schema.mjs"
+    "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

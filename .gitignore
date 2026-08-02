@@ -34,25 +34,13 @@ yarn-error.log*
 .env*
 !.env.example
 
-# security assessments — these name the unprotected routes and the ungated
-# actions. This repo is public; do not commit them.
-ASSESSMENT.md
-DATA-ROW-DRAWER.md
+# documentation — this repo is public. Notes about routes, authorization and
+# known defects describe the attack surface, so they stay out of it entirely.
+*.md
 
-# sql — local dumps, backups and scratch queries stay out of the repo.
-# The two exceptions below are load-bearing and must remain tracked:
-#   db/schema.sql      — scripts/check-schema.mjs reads it, and nothing else in
-#                        CI has a database. It is the only place the frozen
-#                        column list of public.visible_contacts is visible
-#                        offline, so untracking it would silently disable the
-#                        one check that catches a column the view lost.
-#   db/migrations/*.sql — the record of what has actually been applied, and the
-#                        same check reads every migration that defines the view.
-#                        If a new migration is ignored here, schema.sql drifts
-#                        stale and the check passes against old truth.
+# sql — schema dumps, migrations, local backups and scratch queries. The
+# database structure is not published either; no exceptions.
 *.sql
-!db/schema.sql
-!db/migrations/*.sql
 
 # vercel
 .vercel
