@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useRef } from "react"
-import { UploadIcon, CheckCircleIcon, AlertTriangleIcon } from "lucide-react"
+import { UploadIcon, CheckCircleIcon, AlertTriangleIcon, DownloadIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,6 +28,22 @@ const IMPORTABLE_FIELDS = [
   { value: "needs",      label: "Needs (comma-separated)" },
   { value: "__skip__",   label: "— Skip —" },
 ]
+
+const SAMPLE_CSV = [
+  ["Name", "Email", "Phone", "Company", "Source URL", "Needs"],
+  ["Jane Doe", "jane@example.com", "+1 555 0100", "Acme Inc", "https://example.com/contact", "branding, web design"],
+  ["John Smith", "john@example.com", "+1 555 0101", "Beta LLC", "https://example.com/pricing", "seo"],
+].map((row) => row.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(",")).join("\n")
+
+function downloadSampleCsv() {
+  const blob = new Blob([SAMPLE_CSV], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "sample-contacts.csv"
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/).filter((l) => l.trim())
@@ -175,6 +191,14 @@ export function CsvImportDialog({ onImported }) {
               </div>
               <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
             </label>
+            <button
+              type="button"
+              onClick={downloadSampleCsv}
+              className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <DownloadIcon className="h-3 w-3" />
+              Download sample CSV
+            </button>
           </div>
         )}
 

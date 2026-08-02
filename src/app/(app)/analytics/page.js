@@ -19,7 +19,7 @@ const STATUS_COLORS = {
 export default async function AnalyticsPage() {
   await requireUser()
 
-  const [statusRows, dailyRows, activityRows] = await Promise.all([
+  const [statusRows, dailyRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count
       FROM public.contact_us
@@ -32,12 +32,6 @@ export default async function AnalyticsPage() {
       WHERE created_at >= NOW() - INTERVAL '30 days'
       GROUP BY day
       ORDER BY day ASC
-    `,
-    sql`
-      SELECT type, COUNT(*)::int AS total,
-             COUNT(*) FILTER (WHERE completed_at IS NOT NULL)::int AS completed
-      FROM public.contact_activities
-      GROUP BY type
     `,
   ])
 
@@ -55,9 +49,6 @@ export default async function AnalyticsPage() {
   }
   const maxDay = Math.max(...last30.map((d) => d.count), 1)
   const totalNewContacts = last30.reduce((s, d) => s + d.count, 0)
-
-  // Activity completion
-  const ACTIVITY_TYPES = ["call", "meeting", "email", "task"]
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,36 +119,6 @@ export default async function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Activity Completion */}
-        {activityRows.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Completion</CardTitle>
-              <CardDescription>Logged activities by type</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {ACTIVITY_TYPES.map((type) => {
-                const row = activityRows.find((r) => r.type === type) ?? { total: 0, completed: 0 }
-                const pct = row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0
-                return (
-                  <div key={type} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-16 shrink-0 capitalize">{type}</span>
-                    <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-green-500/50"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs tabular-nums w-16 text-right text-muted-foreground">
-                      {row.completed}/{row.total} done
-                    </span>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   )

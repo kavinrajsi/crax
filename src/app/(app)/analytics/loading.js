@@ -17,8 +17,6 @@ export default function AnalyticsLoading() {
     <div className="flex flex-col gap-6">
       <PageHeading titleWidth="w-36" subWidth="w-56" />
 
-      {/* Card 2 spans both columns, so auto-placement leaves a gap beside cards
-          1 and 3 — same as the real page. */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Contacts by Status */}
         <Card>
@@ -55,20 +53,6 @@ export default function AnalyticsLoading() {
               <Skeleton className="h-3 w-14" />
             </div>
           </CardContent>
-        </Card>
-
-        {/* Activity Completion */}
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-5 w-48" />
-          </CardHeader>
-          <BarRowsContent
-            rows={4}
-            labelWidth="w-16"
-            barClassName="h-5 rounded-full"
-            valueWidth="w-16"
-          />
         </Card>
       </div>
     </div>
