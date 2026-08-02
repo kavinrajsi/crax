@@ -13,6 +13,26 @@ async function graphFetch(url, method = "GET") {
 }
 
 /**
+ * A real HTML page that navigates onward via a script, not an HTTP 3xx.
+ *
+ * The redirect chain here is exactly facebook.com → this route → /profile —
+ * the shape browsers' anti-bounce-tracking protections (Brave Shields in
+ * particular) look for, and they were stripping the session cookie on that
+ * third leg, bouncing the user to /login even though everything up to here
+ * had already succeeded. A same-origin script-driven navigation from a
+ * rendered page isn't part of an automatic redirect chain, so it doesn't
+ * trip that heuristic.
+ */
+function htmlRedirect(url) {
+  return new Response(
+    `<!doctype html><html><head><meta charset="utf-8"></head><body>` +
+      `<script>window.location.replace(${JSON.stringify(url)})</script>` +
+      `<p>Redirecting…</p></body></html>`,
+    { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+  )
+}
+
+/**
  * Completes the "Connect Facebook" dance — see oauth/start/route.js.
  * Exchanges the authorization code for a long-lived user token, lists every
  * Page the user manages via /me/accounts (each entry already carries that
@@ -32,11 +52,11 @@ export async function GET(request) {
   const email = readOAuthState(state, process.env.FB_APP_SECRET)
   if (!email) {
     profileUrl.searchParams.set("fb_error", "state")
-    return Response.redirect(profileUrl.toString())
+    return htmlRedirect(profileUrl.toString())
   }
   if (!code) {
     profileUrl.searchParams.set("fb_error", "denied")
-    return Response.redirect(profileUrl.toString())
+    return htmlRedirect(profileUrl.toString())
   }
 
   const redirectUri = new URL("/api/facebook/oauth/callback", request.url).toString()
@@ -106,5 +126,5 @@ export async function GET(request) {
     profileUrl.searchParams.set("fb_error", "exchange")
   }
 
-  return Response.redirect(profileUrl.toString())
+  return htmlRedirect(profileUrl.toString())
 }
