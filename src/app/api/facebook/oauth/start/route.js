@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/dal"
-import { createOAuthState, GRAPH_API_VERSION } from "@/lib/facebook-leads"
+import { GRAPH_API_VERSION } from "@/lib/facebook-leads"
+import { createOAuthState } from "@/lib/oauth-flow"
 
 /**
  * Starts the "Connect Facebook" OAuth dance from Profile → Integrations.

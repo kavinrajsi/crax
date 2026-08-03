@@ -91,56 +91,8 @@ export async function getPageAccessToken(pageId) {
   return connection?.access_token ?? process.env.FB_PAGE_ACCESS_TOKEN
 }
 
-/** 10 minutes is generous for a browser round-trip through Facebook's OAuth
- * dialog, short enough that a leaked/logged state value stops being useful
- * quickly. */
-const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000
-
-/**
- * Signs a CSRF state value for the OAuth dance — HMAC over the initiating
- * user's email and a timestamp, same HMAC approach as verifySignature()
- * above rather than a new crypto pattern or an extra DB table just to hold
- * short-lived state.
- */
-export function createOAuthState(email, appSecret) {
-  const payload = `${email}:${Date.now()}`
-  const sig = crypto.createHmac("sha256", appSecret).update(payload).digest("hex")
-  return Buffer.from(`${payload}:${sig}`).toString("base64url")
-}
-
-/**
- * Verifies a state value came from createOAuthState() and is unexpired,
- * returning the email it was signed for — or null if invalid/tampered/stale.
- *
- * Deliberately doesn't take an "expected email" to compare against: the
- * callback runs after a cross-site redirect through facebook.com, and a
- * strict session cookie can fail to come back on that leg even though the
- * user never left crax's own domain in a way that should matter. The state's
- * HMAC signature — checkable with only FB_APP_SECRET, which only this server
- * holds — is what proves who started the flow, not a live session read at
- * the callback. oauth/start/route.js still gates *starting* the flow on a
- * real session (that request is same-site, so the cookie is reliable there).
- */
-export function readOAuthState(state, appSecret) {
-  if (!state) return null
-  let decoded
-  try {
-    decoded = Buffer.from(state, "base64url").toString("utf8")
-  } catch {
-    return null
-  }
-  const parts = decoded.split(":")
-  if (parts.length !== 3) return null
-  const [email, ts, sig] = parts
-
-  const payload = `${email}:${ts}`
-  const expected = crypto.createHmac("sha256", appSecret).update(payload).digest("hex")
-  const expectedBuf = Buffer.from(expected, "hex")
-  const sigBuf = Buffer.from(sig, "hex")
-  if (expectedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expectedBuf, sigBuf)) return null
-
-  return Date.now() - Number(ts) <= OAUTH_STATE_MAX_AGE_MS ? email : null
-}
+/* createOAuthState/readOAuthState/htmlRedirect moved to src/lib/oauth-flow.js
+   when LinkedIn became the second OAuth-connect flow — shared there now. */
 
 /**
  * Verifies and decodes Meta's `signed_request` — the format Meta POSTs to
