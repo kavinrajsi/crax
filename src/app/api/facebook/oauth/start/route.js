@@ -18,9 +18,17 @@ export async function GET(request) {
   authorizeUrl.searchParams.set("client_id", process.env.FB_APP_ID)
   authorizeUrl.searchParams.set("redirect_uri", redirectUri)
   authorizeUrl.searchParams.set("state", state)
+  /* pages_manage_ads is what /{page_id}/leadgen_forms checks, and only that
+     endpoint — the live webhook never needed it, because Meta hands it a
+     leadgen_id and leads_retrieval covers reading the answers behind one.
+     Enumerating a Page's forms is a different permission, so the historical
+     backfill (src/app/api/facebook/backfill/route.js) 403s with
+     "(#200) Requires pages_manage_ads permission" on a token minted without
+     it. Pages connected before this scope was added keep their old token and
+     must be reconnected for the backfill to see their forms. */
   authorizeUrl.searchParams.set(
     "scope",
-    "pages_show_list,pages_read_engagement,leads_retrieval,business_management"
+    "pages_show_list,pages_read_engagement,leads_retrieval,business_management,pages_manage_ads"
   )
 
   return Response.redirect(authorizeUrl.toString())

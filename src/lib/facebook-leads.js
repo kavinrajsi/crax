@@ -1,5 +1,7 @@
 import crypto from "node:crypto"
 import { sql } from "@/lib/db"
+import { autoLinkCompany } from "@/lib/company-enrichment"
+import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 
 /**
  * Facebook Lead Ads helpers — fetching, mapping, and verifying webhook
@@ -11,6 +13,14 @@ export const GRAPH_API_VERSION = "v21.0"
 /** How long to wait on the Graph API before giving up on a lead fetch. Same
  * timeout convention as src/lib/company-enrichment.js's isDomainLive(). */
 const FETCH_TIMEOUT_MS = 8000
+
+/**
+ * Ceiling on how many `paging.next` hops a single walk will follow. Meta's
+ * cursors are supposed to terminate, but a bad cursor that returns itself
+ * would otherwise spin the route until the platform timeout kills it with
+ * nothing written to show for the work.
+ */
+const MAX_PAGES = 100
 
 /**
  * Fetches the full lead object — field_data plus ad/campaign/form context —
@@ -58,6 +68,166 @@ export function mapLeadFields(fieldData = []) {
   mapped.message = extra.join("\n")
 
   return mapped
+}
+
+/**
+ * One Graph GET, JSON out. Kept private: every public caller below wants the
+ * same timeout and the same "throw with the status in the message" failure,
+ * and the OAuth callback already has its own copy for the token exchange.
+ */
+async function graphFetch(url, what) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  if (!response.ok) {
+    const body = await response.text()
+    // Meta puts the useful part (error.code / error_user_msg) in the body —
+    // logged rather than thrown, since the message reaches HTTP clients.
+    console.error("[facebook-leads] graph request failed", { what, status: response.status, body })
+    throw new Error(`Graph API responded ${response.status} for ${what}`)
+  }
+  return response.json()
+}
+
+/**
+ * Follows Meta's cursor pagination (`paging.next` is a complete URL, access
+ * token already embedded) and concatenates every page's `data` array.
+ *
+ * Deliberately eager rather than a generator: callers here write each batch
+ * to Postgres anyway, and the page counts involved (a form's leads, a Page's
+ * forms) are small enough that holding them is cheaper than the ceremony.
+ */
+async function graphFetchAll(firstUrl, what) {
+  const items = []
+  let url = firstUrl
+
+  for (let page = 0; url && page < MAX_PAGES; page += 1) {
+    const body = await graphFetch(url, what)
+    items.push(...(body.data ?? []))
+    url = body.paging?.next ?? null
+  }
+
+  // Not an error — just the only honest thing to report when the walk stops
+  // early. Callers surface it so a partial backfill never reads as complete.
+  return { items, truncated: Boolean(url) }
+}
+
+/** Every Page connected through Profile → Integrations, newest first. */
+export async function listConnectedPages() {
+  return sql`
+    SELECT page_id, page_name, access_token
+    FROM public.facebook_page_connections
+    ORDER BY created_at DESC
+  `
+}
+
+/**
+ * Every lead form ever created on a Page, including archived ones — an
+ * archived form still holds the leads it collected while it ran, so
+ * filtering by status here would silently drop history.
+ */
+export async function fetchLeadForms(pageId, accessToken) {
+  const url =
+    `https://graph.facebook.com/${GRAPH_API_VERSION}/${pageId}/leadgen_forms` +
+    `?fields=id,name,status,leads_count,created_time&limit=100&access_token=${accessToken}`
+  return graphFetchAll(url, `leadgen_forms of page ${pageId}`)
+}
+
+/**
+ * Every lead a form still holds, oldest cursor first.
+ *
+ * Meta only retains lead answers for 90 days, so this is "everything the API
+ * will admit to", not "everything the form ever collected" — leads older
+ * than that are gone and no endpoint can bring them back.
+ *
+ * Same `fields` list as fetchLeadFields() so both intake paths store the same
+ * raw_payload shape, with `id` added: the single-lead fetch is keyed by the
+ * id it was given, this one has to read it off each row.
+ */
+export async function fetchFormLeads(formId, accessToken) {
+  const url =
+    `https://graph.facebook.com/${GRAPH_API_VERSION}/${formId}/leads` +
+    `?fields=id,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,created_time,platform` +
+    `&limit=100&access_token=${accessToken}`
+  return graphFetchAll(url, `leads of form ${formId}`)
+}
+
+/** Trims to a string, mapping null/undefined to "" — the INSERT below has no nullable text columns. */
+function str(value) {
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim()
+}
+
+/**
+ * Writes one Facebook lead into contact_us. The single source of truth for
+ * "what a Facebook lead becomes" — the webhook and the backfill both call
+ * this, so historical and live leads land identically (same dedupe, same
+ * enrichment, same raw_payload shape).
+ *
+ * `lead` is the Graph object; the ids are passed separately because the
+ * webhook learns them from the change notification while the backfill reads
+ * them off the row and the form it was walking.
+ *
+ * Returns a discriminated result rather than throwing on the ordinary
+ * outcomes — same case set as the Google webhook's JSON responses:
+ *   { skipped: true }            no usable name/email/phone
+ *   { duplicate: true }          fb_lead_id already recorded
+ *   { isNew: false, contactId }  matched an existing contact by email
+ *   { isNew: true, contactId }   inserted
+ */
+export async function upsertFacebookLead(lead, { leadgenId, pageId, formId }) {
+  // Already processed — Meta retries delivery on anything but a fast 200,
+  // and a backfill re-run walks leads the webhook already took.
+  const [already] = await sql`SELECT id FROM public.contact_us WHERE fb_lead_id = ${leadgenId} LIMIT 1`
+  if (already) return { duplicate: true, contactId: already.id }
+
+  const { name, email, phone, message } = mapLeadFields(lead.field_data)
+  if (!name && !email && !phone) return { skipped: true }
+
+  const sourceUrl = `https://facebook.com/${pageId}/leads/${formId}`
+  const rawPayload = JSON.stringify({ ...lead, leadgen_id: leadgenId, page_id: pageId })
+
+  // Known email: append the message rather than creating a second contact —
+  // same convention as submit/route.js.
+  if (email) {
+    const [existing] = await sql`SELECT id FROM public.contact_us WHERE email = ${email} LIMIT 1`
+    if (existing) {
+      if (message) {
+        await sql`
+          INSERT INTO public.contact_notes (contact_id, author_email, body)
+          VALUES (${existing.id}, ${"facebook-lead-ads"}, ${message})
+        `
+      }
+      await sql`UPDATE public.contact_us SET fb_lead_id = ${leadgenId} WHERE id = ${existing.id} AND fb_lead_id IS NULL`
+      return { isNew: false, contactId: existing.id }
+    }
+  }
+
+  const [contact] = await sql`
+    INSERT INTO public.contact_us
+      (name, email, phone, company, message, role, location,
+       source_url, ip_address, needs, status, raw_payload, fb_lead_id,
+       utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+       gclid, wbraid, gbraid, fbclid, msclkid)
+    VALUES
+      (${str(name)}, ${str(email)}, ${str(phone)}, '', ${str(message)}, '', '',
+       ${sourceUrl}, '', ${[]}, 'New', ${rawPayload}, ${leadgenId},
+       '', '', '', '', '',
+       NULL, NULL, NULL, NULL, NULL)
+    ON CONFLICT (fb_lead_id) WHERE fb_lead_id IS NOT NULL DO NOTHING
+    RETURNING id
+  `
+  if (!contact) return { duplicate: true } // lost the race to a concurrent retry
+
+  try {
+    await autoLinkCompany(contact.id, email, "")
+  } catch (error) {
+    console.error("[facebook-leads] company enrichment failed", { contactId: contact.id, error })
+    await recordAudit(SYSTEM_ACTOR, "contact.enrichment_failed", {
+      table: "contact_us",
+      id: contact.id,
+      after: { source: "facebook-lead-ads", email, error: String(error?.message ?? error) },
+    })
+  }
+
+  return { isNew: true, contactId: contact.id }
 }
 
 /**

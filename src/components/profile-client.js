@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FacebookBackfillCard } from "@/components/lead-backfill"
 import { CheckCircleIcon, AlertCircleIcon, Link2Icon, XIcon } from "lucide-react"
 import { formatDate } from "@/lib/table-utils"
 
@@ -228,6 +229,10 @@ function IntegrationsTab({ connections, linkedinConnections }) {
           exchange: "Could not complete the connection with Facebook. Try again in a moment.",
         }}
       />
+      {/* Directly under the Facebook card: the backfill is only meaningful
+          once a Page is connected, and the ordering makes that dependency
+          read as a sequence rather than two unrelated features. */}
+      {connections.length > 0 && <FacebookBackfillCard />}
       <ProviderConnectionsCard
         provider="LinkedIn"
         itemNoun="ad account"

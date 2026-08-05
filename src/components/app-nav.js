@@ -13,6 +13,7 @@ import {
   HandshakeIcon,
   ShieldCheckIcon,
   GaugeIcon,
+  MegaphoneIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
@@ -21,15 +22,16 @@ import {
 } from "@/components/ui/sidebar"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
-  { href: "/planner",   label: "Planner",   icon: KanbanSquareIcon },
-  { href: "/data",      label: "Data",      icon: DatabaseIcon },
-  { href: "/sme",       label: "SME",       icon: GaugeIcon },
-  { href: "/deals",     label: "Deals",     icon: HandshakeIcon },
-  { href: "/companies", label: "Companies", icon: BuildingIcon },
-  { href: "/analytics", label: "Analytics", icon: BarChart2Icon },
-  { href: "/logs",      label: "Logs",      icon: ScrollTextIcon },
-  { href: "/profile",   label: "Profile",   icon: UserIcon },
+  { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboardIcon },
+  { href: "/planner",   label: "Planner",    icon: KanbanSquareIcon },
+  { href: "/data",      label: "Data",       icon: DatabaseIcon },
+  { href: "/sme",       label: "SME",        icon: GaugeIcon },
+  { href: "/deals",     label: "Deals",      icon: HandshakeIcon },
+  { href: "/companies", label: "Companies",  icon: BuildingIcon },
+  { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
+  { href: "/ads",       label: "Google Ads", icon: MegaphoneIcon },
+  { href: "/logs",      label: "Logs",       icon: ScrollTextIcon },
+  { href: "/profile",   label: "Profile",    icon: UserIcon },
 ]
 
 /** Super admins only. Appended, so it sits below the shared items. */
