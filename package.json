@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "postinstall": "node scripts/patch-neon-auth.mjs",
     "lint": "eslint --max-warnings=0"
   },
   "dependencies": {

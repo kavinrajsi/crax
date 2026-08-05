@@ -35,11 +35,12 @@ jobs:
           node-version: "24"
           cache: npm
 
-      # postinstall runs scripts/patch-neon-auth.mjs, which exits non-zero if
-      # the code it patches has moved. That is deliberate: a package bump that
-      # fixes the upstream bug should fail loudly here rather than silently.
-      # It is now the only automated check with any knowledge of runtime
-      # behaviour.
+      # There is no postinstall step any more. It ran scripts/patch-neon-auth.mjs,
+      # which guarded @neondatabase/auth's cookieStore.set() so a rotating session
+      # token could not throw inside a Server Component. That patch was dropped
+      # along with the scripts directory; the upstream call is still unguarded as
+      # of @neondatabase/auth 0.4.1-beta, so an RSC calling auth.getSession() can
+      # 500 when the token rotates, and nothing here will catch it.
       - run: npm ci
 
       # The baseline is zero. --max-warnings=0 lives in the lint script itself,
