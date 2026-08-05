@@ -37,10 +37,10 @@ jobs:
 
       # There is no postinstall step any more. It ran scripts/patch-neon-auth.mjs,
       # which guarded @neondatabase/auth's cookieStore.set() so a rotating session
-      # token could not throw inside a Server Component. That patch was dropped
-      # along with the scripts directory; the upstream call is still unguarded as
-      # of @neondatabase/auth 0.4.1-beta, so an RSC calling auth.getSession() can
-      # 500 when the token rotates, and nothing here will catch it.
+      # token could not throw inside a Server Component. The upstream call is
+      # still unguarded as of 0.4.1-beta; the guard now lives in src/lib/auth.js
+      # instead, where it needs no install-time step. See that file for why it
+      # cannot sit any closer to the failing write.
       - run: npm ci
 
       # The baseline is zero. --max-warnings=0 lives in the lint script itself,
