@@ -45,11 +45,10 @@ export default async function ContactDetailPage({ params }) {
   await requireUser()
 
   const { id } = await params
-  const [rows, notes, tags, activities, companies] = await Promise.all([
+  const [rows, notes, tags, companies] = await Promise.all([
     sql`SELECT * FROM public.contact_us WHERE id = ${id} LIMIT 1`,
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${id} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${id} ORDER BY created_at ASC`,
-    sql`SELECT * FROM public.contact_activities WHERE contact_id = ${id} ORDER BY created_at ASC`,
     getCompanyOptions(),
   ])
   const contact = rows[0]
@@ -126,7 +125,6 @@ export default async function ContactDetailPage({ params }) {
         <ContactTimeline
           contactId={contact.id}
           initialNotes={notes}
-          initialActivities={activities}
         />
       </div>
     </div>

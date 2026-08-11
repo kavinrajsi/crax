@@ -33,8 +33,7 @@ export default async function DashboardPage() {
     sql`SELECT COUNT(*)::int AS stale
         FROM public.contact_us cu
         WHERE cu.status <> ALL(${RESOLVED_STATUSES})
-          AND NOT EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
-          AND NOT EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)`,
+          AND NOT EXISTS(SELECT 1 FROM public.contact_notes n WHERE n.contact_id = cu.id)`,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0

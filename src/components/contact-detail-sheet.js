@@ -46,7 +46,7 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
   const contactId = contact?.id ?? null
   const [loadedDetail, setLoadedDetail] = useState(null)
 
-  // Notes/tags/activities aren't in the /data payload — fetch per contact on open.
+  // Notes/tags aren't in the /data payload — fetch per contact on open.
   useEffect(() => {
     if (contactId == null) return
     const abortController = new AbortController()
@@ -59,7 +59,7 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
         // An empty timeline and a failed load look identical otherwise, and a
         // user who reads a 401 as "no notes yet" will add a duplicate note.
         if (error.name !== "AbortError") {
-          setLoadedDetail({ contactId, loadFailed: true, notes: [], tags: [], activities: [] })
+          setLoadedDetail({ contactId, loadFailed: true, notes: [], tags: [] })
         }
       })
     // Abort so a fast open→close→open can't land stale data in another contact's drawer.
@@ -164,14 +164,13 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
 
               {contactDetail?.loadFailed ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Couldn&apos;t load notes and activity for this contact.
+                  Couldn&apos;t load notes for this contact.
                 </p>
               ) : contactDetail ? (
                 <ContactTimeline
                   key={`timeline-${displayedContact.id}`}
                   contactId={displayedContact.id}
                   initialNotes={contactDetail.notes}
-                  initialActivities={contactDetail.activities}
                 />
               ) : (
                 <div className="flex flex-col gap-3">

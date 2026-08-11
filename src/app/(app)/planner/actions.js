@@ -14,28 +14,13 @@ export async function updateContactStatus(contactId, newStatus) {
   const user = await requireUserOrThrow()
   const before = await snapshot("contact_us", contactId)
 
-  /* The old status is read inside SQL rather than in a preceding round trip.
-     Reading it in JS first was non-atomic: a concurrent update between the
-     SELECT and the UPDATE made the timeline record a "from" value that was
-     already stale. The INSERT runs before the UPDATE so it still sees the old
-     row, and `IS DISTINCT FROM` makes it a no-op when nothing actually changed
+  /* `IS DISTINCT FROM` makes this a no-op when nothing actually changed
      (also handling a NULL status, which `<>` would not). */
-  await sql.transaction([
-    sql`
-      INSERT INTO public.contact_activities
-        (contact_id, author_email, type, title, body, completed_at)
-      SELECT id, ${user.email}, 'status_change', 'Status changed',
-             'Status changed from ' || COALESCE(status, 'unknown') || ' to ' || ${newStatus},
-             NOW()
-      FROM public.contact_us
-      WHERE id = ${contactId} AND status IS DISTINCT FROM ${newStatus}
-    `,
-    sql`
-      UPDATE public.contact_us
-      SET status = ${newStatus}
-      WHERE id = ${contactId} AND status IS DISTINCT FROM ${newStatus}
-    `,
-  ])
+  await sql`
+    UPDATE public.contact_us
+    SET status = ${newStatus}
+    WHERE id = ${contactId} AND status IS DISTINCT FROM ${newStatus}
+  `
 
   await recordAudit(user, "contact.status_change", {
     table: "contact_us", id: contactId,

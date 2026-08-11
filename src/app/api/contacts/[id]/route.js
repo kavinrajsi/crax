@@ -12,11 +12,10 @@ export async function GET(request, { params }) {
     return Response.json({ error: "Not Found" }, { status: 404 })
   }
 
-  const [notes, tags, activities] = await Promise.all([
+  const [notes, tags] = await Promise.all([
     sql`SELECT * FROM public.contact_notes WHERE contact_id = ${contactId} ORDER BY created_at ASC`,
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${contactId} ORDER BY created_at ASC`,
-    sql`SELECT * FROM public.contact_activities WHERE contact_id = ${contactId} ORDER BY created_at ASC`,
   ])
 
-  return Response.json({ notes, tags, activities })
+  return Response.json({ notes, tags })
 }

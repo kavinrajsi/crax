@@ -98,8 +98,6 @@ export async function snapshot(table, id) {
         return (await sql`SELECT * FROM public.companies WHERE id = ${id}`)[0] ?? null
       case "deals":
         return (await sql`SELECT * FROM public.deals WHERE id = ${id}`)[0] ?? null
-      case "contact_activities":
-        return (await sql`SELECT * FROM public.contact_activities WHERE id = ${id}`)[0] ?? null
       case "contact_tags":
         return (await sql`SELECT * FROM public.contact_tags WHERE id = ${id}`)[0] ?? null
       case "kanban_boards":

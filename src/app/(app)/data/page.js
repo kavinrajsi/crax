@@ -16,24 +16,19 @@ export default async function DataPage() {
   await requireUser()
 
   const [contacts, companies, contactTags] = await Promise.all([
-    /* has_touch drives the "needs attention" filter: has anyone left a note or
-       logged an activity at all. last_touch is display only, for the age shown
-       in the Last touch column. Written inline rather than interpolated from a
-       constant — every query in this codebase is a tagged template with no
-       string interpolation, and that is worth keeping. */
+    /* has_touch drives the "needs attention" filter: has anyone left a note
+       at all. last_touch is display only, for the age shown in the Last touch
+       column. Written inline rather than interpolated from a constant — every
+       query in this codebase is a tagged template with no string
+       interpolation, and that is worth keeping. */
     sql`
       SELECT cu.*,
              split_part(regexp_replace(cu.source_url, ${SOURCE_DOMAIN_RE}, ''), '/', 1) AS source_domain,
              GREATEST(
                cu.created_at,
-               COALESCE((SELECT MAX(created_at) FROM public.contact_notes      n WHERE n.contact_id = cu.id), cu.created_at),
-               COALESCE((SELECT MAX(created_at) FROM public.contact_activities a WHERE a.contact_id = cu.id), cu.created_at)
+               COALESCE((SELECT MAX(created_at) FROM public.contact_notes n WHERE n.contact_id = cu.id), cu.created_at)
              ) AS last_touch,
-             (
-               EXISTS(SELECT 1 FROM public.contact_notes      n WHERE n.contact_id = cu.id)
-               OR
-               EXISTS(SELECT 1 FROM public.contact_activities a WHERE a.contact_id = cu.id)
-             ) AS has_touch
+             EXISTS(SELECT 1 FROM public.contact_notes n WHERE n.contact_id = cu.id) AS has_touch
       FROM public.contact_us cu
       ORDER BY cu.created_at DESC
     `,
