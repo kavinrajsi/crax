@@ -11,7 +11,6 @@ import {
   MapPinIcon,
   NetworkIcon,
   CalendarIcon,
-  BracesIcon,
   UserIcon,
 } from "lucide-react"
 
@@ -98,7 +97,6 @@ export const CONTACT_FIELD_GROUPS = [
       { key: "ip_address", label: "IP Address", icon: NetworkIcon },
       { key: "location", label: "Location", icon: MapPinIcon },
       { key: "created_at", label: "Submitted", icon: CalendarIcon, kind: "date" },
-      { key: "raw_payload", label: "Raw Payload", icon: BracesIcon, wide: true, kind: "json" },
     ],
   },
 ]
