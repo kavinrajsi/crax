@@ -16,7 +16,7 @@ const SOURCE_DOMAIN_RE = String.raw`^https?://(www\.)?`
 export default async function DataPage() {
   await requireUser()
 
-  const [contacts, companies, contactTags] = await Promise.all([
+  const [contacts, companies, contactTags, sourceRows] = await Promise.all([
     /* has_touch drives the "needs attention" filter: has anyone left a note
        at all. last_touch is display only, for the age shown in the Last touch
        column. Written inline rather than interpolated from a constant — every
@@ -38,6 +38,11 @@ export default async function DataPage() {
        live match count, and it cannot count a tag filter without knowing which
        contacts carry which tag. One row per (contact, tag) — a handful today. */
     sql`SELECT contact_id, tag FROM public.contact_tags ORDER BY tag ASC`,
+    /* Distinct sources feed the Add Lead dialog's source picker, so manual
+       entry reuses the values intake already wrote instead of inventing
+       near-duplicates. */
+    sql`SELECT DISTINCT source_url FROM public.contact_us
+        WHERE source_url <> '' ORDER BY source_url ASC`,
   ])
 
   return (
@@ -51,7 +56,7 @@ export default async function DataPage() {
         </div>
         <div className="flex items-center gap-2">
           <CsvImportDialog />
-          <AddContactDialog />
+          <AddContactDialog sources={sourceRows.map((r) => r.source_url)} />
         </div>
       </div>
       <div className="rounded-xl border border-border overflow-hidden">

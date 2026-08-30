@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,11 @@ import {
 import { CONTACT_STATUSES, DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { createContact } from "@/app/(app)/data/actions"
 
-const EMPTY = { name: "", email: "", phone: "", company: "", sourceUrl: "", needs: "", status: DEFAULT_CONTACT_STATUS }
+const OTHER_SOURCE = "__other__"
 
-export function AddContactDialog() {
+const EMPTY = { name: "", email: "", phone: "", company: "", sourceUrl: "", customSource: "", message: "", needs: "", status: DEFAULT_CONTACT_STATUS }
+
+export function AddContactDialog({ sources = [] }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
@@ -46,6 +49,7 @@ export function AddContactDialog() {
       try {
         const result = await createContact({
           ...form,
+          sourceUrl: form.sourceUrl === OTHER_SOURCE ? form.customSource : form.sourceUrl,
           needs: form.needs.split(",").map((n) => n.trim()).filter(Boolean),
         })
         if (result?.error) {
@@ -81,7 +85,32 @@ export function AddContactDialog() {
             <Input placeholder="Phone" value={form.phone} onChange={set("phone")} />
             <Input placeholder="Company" value={form.company} onChange={set("company")} />
           </div>
-          <Input placeholder="Source URL (optional)" value={form.sourceUrl} onChange={set("sourceUrl")} />
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">Source</p>
+            <Select value={form.sourceUrl || undefined} onValueChange={(v) => setForm((f) => ({ ...f, sourceUrl: v }))}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select a source (optional)" /></SelectTrigger>
+              <SelectContent>
+                {sources.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+                <SelectItem value={OTHER_SOURCE}>Other…</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.sourceUrl === OTHER_SOURCE && (
+              <Input
+                className="mt-2"
+                placeholder="Custom source URL"
+                value={form.customSource}
+                onChange={set("customSource")}
+              />
+            )}
+          </div>
+          <Textarea
+            placeholder="Message (optional)"
+            value={form.message}
+            onChange={set("message")}
+            className="min-h-20 resize-none"
+          />
           <Input placeholder="Needs, comma-separated (optional)" value={form.needs} onChange={set("needs")} />
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Status</p>

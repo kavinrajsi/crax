@@ -13,7 +13,7 @@ import { DEFAULT_CONTACT_STATUS, isContactStatus } from "@/lib/contact-statuses"
  * duplicate, not a second lead. Returns { error } instead of throwing for
  * those two cases so the dialog can show the message inline.
  */
-export async function createContact({ name, email, phone, company, sourceUrl, needs, status }) {
+export async function createContact({ name, email, phone, company, sourceUrl, message, needs, status }) {
   const user = await requireUserOrThrow()
 
   const cleanName = String(name ?? "").trim()
@@ -35,10 +35,10 @@ export async function createContact({ name, email, phone, company, sourceUrl, ne
     : []
 
   const [contact] = await sql`
-    INSERT INTO public.contact_us (name, email, phone, company, source_url, needs, status)
+    INSERT INTO public.contact_us (name, email, phone, company, source_url, message, needs, status)
     VALUES (${cleanName}, ${cleanEmail}, ${String(phone ?? "").trim()},
             ${String(company ?? "").trim()}, ${String(sourceUrl ?? "").trim()},
-            ${cleanNeeds}, ${cleanStatus})
+            ${String(message ?? "").trim()}, ${cleanNeeds}, ${cleanStatus})
     RETURNING *
   `
 
