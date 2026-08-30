@@ -22,9 +22,9 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboardIcon },
-  { href: "/pipeline",   label: "Pipeline",    icon: KanbanSquareIcon },
   { href: "/data",      label: "Data",       icon: DatabaseIcon },
   { href: "/sme",       label: "SME",        icon: GaugeIcon },
+  { href: "/pipeline",  label: "Pipeline",   icon: KanbanSquareIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
   { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
   { href: "/ads",       label: "Google Ads", icon: MegaphoneIcon },
