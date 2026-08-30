@@ -97,8 +97,7 @@ export function isContactStatus(key) {
 /**
  * Falls back to the first status rather than returning undefined, so a row
  * carrying a value written before the constraint existed still renders a badge
- * instead of crashing the row it appears in. Mirrors stageMeta() in
- * src/lib/deal-stages.js.
+ * instead of crashing the row it appears in.
  */
 export function statusMeta(key) {
   return CONTACT_STATUSES.find((s) => s.key === key) ?? CONTACT_STATUSES[0]
