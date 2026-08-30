@@ -37,6 +37,15 @@ export async function GET(request) {
   if (!challengeCode || !clientSecret) {
     return Response.json({ error: "Verification failed" }, { status: 403 })
   }
+  /* This GET is a public HMAC oracle — it signs whatever challengeCode it is
+     given. LinkedIn's challengeCode is an opaque alphanumeric token, so we
+     refuse anything outside that charset. This keeps the oracle from being
+     asked to sign structured inputs (e.g. "email:timestamp") that another
+     verifier might accept; the primary defence is the derived per-purpose key
+     in oauth-flow.js, this is belt-and-suspenders. */
+  if (!/^[A-Za-z0-9_-]{1,256}$/.test(challengeCode)) {
+    return Response.json({ error: "Invalid challenge" }, { status: 400 })
+  }
   return Response.json({
     challengeCode,
     challengeResponse: challengeResponse(challengeCode, clientSecret),

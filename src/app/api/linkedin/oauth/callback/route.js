@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db"
 import { readOAuthState, htmlRedirect } from "@/lib/oauth-flow"
 import { LINKEDIN_API_VERSION } from "@/lib/linkedin-leads"
+import { encryptToken } from "@/lib/token-crypto"
 
 const FETCH_TIMEOUT_MS = 8000
 
@@ -76,7 +77,7 @@ export async function GET(request) {
       await sql`
         INSERT INTO public.linkedin_connections
           (account_urn, account_name, access_token, refresh_token, expires_at, connected_by_email)
-        VALUES (${accountUrn}, ${account.name ?? accountUrn}, ${accessToken}, ${refreshToken}, ${expiresAt}, ${email})
+        VALUES (${accountUrn}, ${account.name ?? accountUrn}, ${encryptToken(accessToken)}, ${encryptToken(refreshToken)}, ${expiresAt}, ${email})
         ON CONFLICT (account_urn) DO UPDATE SET
           account_name = EXCLUDED.account_name,
           access_token = EXCLUDED.access_token,
@@ -121,7 +122,7 @@ export async function GET(request) {
 
     profileUrl.searchParams.set("li_connected", String(accounts.length))
   } catch (error) {
-    console.error("[linkedin-oauth] callback failed", { email, error })
+    console.error("[linkedin-oauth] callback failed", { email, error: String(error?.message ?? error) })
     profileUrl.searchParams.set("li_error", "exchange")
   }
 

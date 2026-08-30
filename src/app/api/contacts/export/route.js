@@ -110,8 +110,16 @@ export async function GET(request) {
 
   function escape(val) {
     if (val == null) return ""
-    const s = String(val)
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    let s = String(val)
+    /* CSV formula injection: a cell whose first character is one of = + - @, or
+       a leading tab/CR, is executed as a formula by Excel/Sheets/LibreOffice
+       when the file is opened. The payload arrives through the unauthenticated
+       intake form and detonates on a staff member's workstation. Prefixing a
+       tab neutralises the formula while displaying the original text. */
+    if (/^[=+\-@\t\r]/.test(s)) s = "\t" + s
+    /* \r added to the quoting triggers: a bare CR is a row terminator to Excel
+       and several parsers, so an un-quoted CR silently splits one row into two. */
+    if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
       return `"${s.replace(/"/g, '""')}"`
     }
     return s
@@ -138,12 +146,14 @@ export async function GET(request) {
     after: { count: contacts.length, scoped: Boolean(idsParam) },
   })
 
-  const csv = [headers.join(","), ...rows].join("\n")
+  /* Leading UTF-8 BOM so Excel reads the file as UTF-8 rather than the local
+     ANSI codepage, which otherwise mangles non-ASCII names. */
+  const csv = "﻿" + [headers.join(","), ...rows].join("\r\n")
   const filename = `contacts-${new Date().toISOString().slice(0, 10)}.csv`
 
   return new Response(csv, {
     headers: {
-      "Content-Type": "text/csv",
+      "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   })

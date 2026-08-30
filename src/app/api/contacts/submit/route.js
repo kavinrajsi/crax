@@ -1,7 +1,22 @@
+import crypto from "node:crypto"
 import { sql } from "@/lib/db"
 import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
+
+/* Abuse limits for the one public, unauthenticated write path. A browser form
+   cannot hold a shared secret, so the real controls here are size caps — a
+   distributed per-IP rate limit needs a shared store (KV/Upstash) and is
+   tracked separately. */
+const MAX_BODY_BYTES = 64 * 1024      // whole request body
+const MAX_RAW_PAYLOAD_BYTES = 16 * 1024 // what we persist to raw_payload
+
+/** Constant-time header-secret compare — avoids leaking the secret by timing. */
+function secretMatches(provided, expected) {
+  const a = Buffer.from(String(provided ?? ""))
+  const b = Buffer.from(expected)
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
 
 /**
  * Public form intake. The only automated way contacts enter the CRM.
@@ -89,14 +104,25 @@ export async function POST(request) {
     console.error(
       "[SECURITY] WEBHOOK_SECRET is unset — accepting an unauthenticated POST to /api/contacts/submit"
     )
-  } else if (providedSecret !== secret) {
+  } else if (!secretMatches(providedSecret, secret)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  /* Read raw text so we can cap the size before parsing — request.json() would
+     buffer an arbitrarily large body first. Content-Length can lie or be
+     absent, so the byte length of what we actually read is the real check. */
+  const rawText = await request.text()
+  if (Buffer.byteLength(rawText, "utf8") > MAX_BODY_BYTES) {
+    return Response.json({ error: "Payload too large" }, { status: 413 })
   }
 
   let body
   try {
-    body = await request.json()
+    body = JSON.parse(rawText)
   } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 })
   }
 
@@ -148,6 +174,14 @@ export async function POST(request) {
     )
   }
 
+  /* Persist the submitted body for debugging, but never let an attacker use it
+     as unbounded storage. Over the cap, store a marker instead of the blob. */
+  const rawPayloadJson = JSON.stringify(body)
+  const rawPayload =
+    Buffer.byteLength(rawPayloadJson, "utf8") > MAX_RAW_PAYLOAD_BYTES
+      ? JSON.stringify({ truncated: true, bytes: Buffer.byteLength(rawPayloadJson, "utf8") })
+      : rawPayloadJson
+
   try {
     // Rate-limit: same email within 60 seconds is treated as a duplicate.
     if (email) {
@@ -183,7 +217,7 @@ export async function POST(request) {
          gclid, wbraid, gbraid, fbclid, msclkid)
       VALUES
         (${name}, ${email}, ${phone}, ${company}, ${message}, ${role}, ${location},
-         ${sourceUrl}, ${clientIp(request)}, ${needs}, ${DEFAULT_CONTACT_STATUS}, ${JSON.stringify(body)},
+         ${sourceUrl}, ${clientIp(request)}, ${needs}, ${DEFAULT_CONTACT_STATUS}, ${rawPayload},
          ${utm.source}, ${utm.medium}, ${utm.campaign}, ${utm.term}, ${utm.content},
          ${click.gclid}, ${click.wbraid}, ${click.gbraid}, ${click.fbclid}, ${click.msclkid})
       RETURNING id

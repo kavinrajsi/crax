@@ -1,11 +1,22 @@
 import { sql } from "@/lib/db"
 import { GRAPH_API_VERSION } from "@/lib/facebook-leads"
 import { readOAuthState, htmlRedirect } from "@/lib/oauth-flow"
+import { encryptToken } from "@/lib/token-crypto"
 
 const FETCH_TIMEOUT_MS = 8000
 
-async function graphFetch(url, method = "GET") {
-  const response = await fetch(url, { method, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+/* Secrets and tokens go in headers or the POST body, never the query string —
+   query strings land in proxy logs and APM traces. Token exchange uses a POST
+   form body; read calls send the token as a Bearer header. */
+async function graphFetch(url, { method = "GET", accessToken, form } = {}) {
+  const headers = {}
+  const init = { method, headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+  if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`
+  if (form) {
+    headers["Content-Type"] = "application/x-www-form-urlencoded"
+    init.body = new URLSearchParams(form).toString()
+  }
+  const response = await fetch(url, init)
   const data = await response.json()
   if (!response.ok) {
     throw new Error(data?.error?.message ?? `Graph API responded ${response.status}`)
@@ -49,33 +60,33 @@ export async function GET(request) {
 
   try {
     const { access_token: shortLivedToken } = await graphFetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
-        `?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&client_secret=${appSecret}&code=${code}`
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token`,
+      { method: "POST", form: { client_id: appId, redirect_uri: redirectUri, client_secret: appSecret, code } }
     )
 
     const { access_token: userToken } = await graphFetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
-        `?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}` +
-        `&fb_exchange_token=${shortLivedToken}`
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token`,
+      { method: "POST", form: { grant_type: "fb_exchange_token", client_id: appId, client_secret: appSecret, fb_exchange_token: shortLivedToken } }
     )
 
     // Needed so a later deauthorize/data-deletion callback from Meta (which
     // only carries this numeric ID, never an email or page_id) can find the
     // rows to remove — see src/app/api/facebook/deauthorize/route.js.
     const { id: fbUserId } = await graphFetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/me?fields=id&access_token=${userToken}`
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/me?fields=id`,
+      { accessToken: userToken }
     )
 
     const { data: pages } = await graphFetch(
-      `https://graph.facebook.com/${GRAPH_API_VERSION}/me/accounts?access_token=${userToken}`
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/me/accounts`,
+      { accessToken: userToken }
     )
 
     for (const page of pages ?? []) {
       await sql`
         INSERT INTO public.facebook_page_connections
           (page_id, page_name, access_token, connected_by_email, fb_user_id)
-        VALUES (${page.id}, ${page.name}, ${page.access_token}, ${email}, ${fbUserId})
+        VALUES (${page.id}, ${page.name}, ${encryptToken(page.access_token)}, ${email}, ${fbUserId})
         ON CONFLICT (page_id) DO UPDATE SET
           page_name = EXCLUDED.page_name,
           access_token = EXCLUDED.access_token,
@@ -92,9 +103,8 @@ export async function GET(request) {
          connecting the rest, or lose the row already inserted above. */
       try {
         await graphFetch(
-          `https://graph.facebook.com/${GRAPH_API_VERSION}/${page.id}/subscribed_apps` +
-            `?subscribed_fields=leadgen&access_token=${page.access_token}`,
-          "POST"
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(page.id)}/subscribed_apps`,
+          { method: "POST", accessToken: page.access_token, form: { subscribed_fields: "leadgen" } }
         )
       } catch (error) {
         console.error("[facebook-oauth] page webhook subscription failed", {
@@ -106,7 +116,7 @@ export async function GET(request) {
 
     profileUrl.searchParams.set("fb_connected", String(pages?.length ?? 0))
   } catch (error) {
-    console.error("[facebook-oauth] callback failed", { email, error })
+    console.error("[facebook-oauth] callback failed", { email, error: String(error?.message ?? error) })
     profileUrl.searchParams.set("fb_error", "exchange")
   }
 

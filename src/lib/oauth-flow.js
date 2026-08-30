@@ -27,12 +27,28 @@ import crypto from "node:crypto"
 const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000
 
 /**
+ * Domain separation for the state HMAC.
+ *
+ * LINKEDIN_CLIENT_SECRET is reused across three trust domains (OAuth token
+ * exchange, webhook X-LI-Signature verification, and this OAuth state), and
+ * the LinkedIn webhook GET is a public HMAC-signing oracle: it returns
+ * HMAC(clientSecret, attackerInput) for any input. Signing state with the raw
+ * secret let that oracle forge state for any email. Deriving a purpose-bound
+ * subkey means the oracle's output — HMAC over the *raw* secret — can never be
+ * a valid state signature, because state is signed under a key the oracle
+ * cannot compute. FB_APP_SECRET has the same reuse shape and benefits equally.
+ */
+function deriveStateKey(secret) {
+  return crypto.createHmac("sha256", secret).update("crax:oauth-state:v1").digest()
+}
+
+/**
  * Signs a CSRF state value — HMAC over the initiating user's email and a
  * timestamp. No DB table needed for short-lived state.
  */
 export function createOAuthState(email, secret) {
   const payload = `${email}:${Date.now()}`
-  const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex")
+  const sig = crypto.createHmac("sha256", deriveStateKey(secret)).update(payload).digest("hex")
   return Buffer.from(`${payload}:${sig}`).toString("base64url")
 }
 
@@ -53,7 +69,7 @@ export function readOAuthState(state, secret) {
   const [email, ts, sig] = parts
 
   const payload = `${email}:${ts}`
-  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex")
+  const expected = crypto.createHmac("sha256", deriveStateKey(secret)).update(payload).digest("hex")
   const expectedBuf = Buffer.from(expected, "hex")
   const sigBuf = Buffer.from(sig, "hex")
   if (expectedBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expectedBuf, sigBuf)) return null
