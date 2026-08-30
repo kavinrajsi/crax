@@ -13,6 +13,7 @@ import {
   ShieldCheckIcon,
   GaugeIcon,
   MegaphoneIcon,
+  ContactIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/data",      label: "Data",       icon: DatabaseIcon },
   { href: "/sme",       label: "SME",        icon: GaugeIcon },
   { href: "/pipeline",  label: "Pipeline",   icon: KanbanSquareIcon },
+  { href: "/contacts",  label: "Contacts",   icon: ContactIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
   { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
   { href: "/ads",       label: "Google Ads", icon: MegaphoneIcon },
