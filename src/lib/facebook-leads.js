@@ -3,6 +3,7 @@ import { sql } from "@/lib/db"
 import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
+import { decryptToken } from "@/lib/token-crypto"
 
 /**
  * Facebook Lead Ads helpers — fetching, mapping, and verifying webhook
@@ -29,8 +30,11 @@ const MAX_PAGES = 100
  * answers themselves live behind this call.
  */
 export async function fetchLeadFields(leadgenId, accessToken) {
-  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${leadgenId}?fields=field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,created_time,platform&access_token=${accessToken}`
-  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(leadgenId)}?fields=field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,created_time,platform`
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
   if (!response.ok) {
     throw new Error(`Graph API responded ${response.status} for leadgen_id ${leadgenId}`)
   }
@@ -76,8 +80,9 @@ export function mapLeadFields(fieldData = []) {
  * same timeout and the same "throw with the status in the message" failure,
  * and the OAuth callback already has its own copy for the token exchange.
  */
-async function graphFetch(url, what) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+async function graphFetch(url, what, accessToken) {
+  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   if (!response.ok) {
     const body = await response.text()
     // Meta puts the useful part (error.code / error_user_msg) in the body —
@@ -96,13 +101,16 @@ async function graphFetch(url, what) {
  * to Postgres anyway, and the page counts involved (a form's leads, a Page's
  * forms) are small enough that holding them is cheaper than the ceremony.
  */
-async function graphFetchAll(firstUrl, what) {
+async function graphFetchAll(firstUrl, what, accessToken) {
   const items = []
   let url = firstUrl
 
   for (let page = 0; url && page < MAX_PAGES; page += 1) {
-    const body = await graphFetch(url, what)
+    const body = await graphFetch(url, what, accessToken)
     items.push(...(body.data ?? []))
+    /* paging.next carries the token in the query only when the first request
+       did; we now send it as a header, so the token is passed to each page
+       explicitly instead of riding along in the URL. */
     url = body.paging?.next ?? null
   }
 
@@ -113,11 +121,12 @@ async function graphFetchAll(firstUrl, what) {
 
 /** Every Page connected through Profile → Integrations, newest first. */
 export async function listConnectedPages() {
-  return sql`
+  const rows = await sql`
     SELECT page_id, page_name, access_token
     FROM public.facebook_page_connections
     ORDER BY created_at DESC
   `
+  return rows.map((r) => ({ ...r, access_token: decryptToken(r.access_token) }))
 }
 
 /**
@@ -127,9 +136,9 @@ export async function listConnectedPages() {
  */
 export async function fetchLeadForms(pageId, accessToken) {
   const url =
-    `https://graph.facebook.com/${GRAPH_API_VERSION}/${pageId}/leadgen_forms` +
-    `?fields=id,name,status,leads_count,created_time&limit=100&access_token=${accessToken}`
-  return graphFetchAll(url, `leadgen_forms of page ${pageId}`)
+    `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(pageId)}/leadgen_forms` +
+    `?fields=id,name,status,leads_count,created_time&limit=100`
+  return graphFetchAll(url, `leadgen_forms of page ${pageId}`, accessToken)
 }
 
 /**
@@ -145,10 +154,10 @@ export async function fetchLeadForms(pageId, accessToken) {
  */
 export async function fetchFormLeads(formId, accessToken) {
   const url =
-    `https://graph.facebook.com/${GRAPH_API_VERSION}/${formId}/leads` +
+    `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(formId)}/leads` +
     `?fields=id,field_data,ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,form_id,created_time,platform` +
-    `&limit=100&access_token=${accessToken}`
-  return graphFetchAll(url, `leads of form ${formId}`)
+    `&limit=100`
+  return graphFetchAll(url, `leads of form ${formId}`, accessToken)
 }
 
 /** Trims to a string, mapping null/undefined to "" — the INSERT below has no nullable text columns. */
@@ -259,7 +268,9 @@ export async function getPageAccessToken(pageId) {
   const [connection] = await sql`
     SELECT access_token FROM public.facebook_page_connections WHERE page_id = ${pageId} LIMIT 1
   `
-  return connection?.access_token ?? process.env.FB_PAGE_ACCESS_TOKEN
+  return connection?.access_token
+    ? decryptToken(connection.access_token)
+    : process.env.FB_PAGE_ACCESS_TOKEN
 }
 
 /* createOAuthState/readOAuthState/htmlRedirect moved to src/lib/oauth-flow.js

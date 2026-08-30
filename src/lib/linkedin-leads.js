@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 import { sql } from "@/lib/db"
+import { encryptToken, decryptToken } from "@/lib/token-crypto"
 
 /**
  * LinkedIn Lead Gen Form helpers (Lead Sync API). Shapes verified against
@@ -90,8 +91,11 @@ export async function getAccessToken(accountUrn) {
   `
   if (!conn) return null
 
+  const storedAccess = decryptToken(conn.access_token)
+  const storedRefresh = decryptToken(conn.refresh_token)
+
   const nearExpiry = conn.expires_at && new Date(conn.expires_at).getTime() - Date.now() < REFRESH_MARGIN_MS
-  if (!nearExpiry || !conn.refresh_token) return conn.access_token
+  if (!nearExpiry || !storedRefresh) return storedAccess
 
   try {
     const response = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
@@ -99,7 +103,7 @@ export async function getAccessToken(accountUrn) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: conn.refresh_token,
+        refresh_token: storedRefresh,
         client_id: process.env.LINKEDIN_CLIENT_ID,
         client_secret: process.env.LINKEDIN_CLIENT_SECRET,
       }),
@@ -111,8 +115,8 @@ export async function getAccessToken(accountUrn) {
     }
     await sql`
       UPDATE public.linkedin_connections SET
-        access_token = ${data.access_token},
-        refresh_token = ${data.refresh_token ?? conn.refresh_token},
+        access_token = ${encryptToken(data.access_token)},
+        refresh_token = ${encryptToken(data.refresh_token ?? storedRefresh)},
         expires_at = ${new Date(Date.now() + (data.expires_in ?? 0) * 1000).toISOString()},
         updated_at = now()
       WHERE id = ${conn.id}
@@ -120,7 +124,7 @@ export async function getAccessToken(accountUrn) {
     return data.access_token
   } catch (error) {
     console.error("[linkedin-leads] token refresh failed", { accountUrn, error: String(error?.message ?? error) })
-    return conn.access_token
+    return storedAccess
   }
 }
 
