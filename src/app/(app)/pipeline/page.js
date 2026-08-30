@@ -51,7 +51,7 @@ export default async function PipelinePage() {
             <ContactsKanban contacts={contacts} statusColumns={STATUS_COLUMNS} />
           </TabsContent>
           <TabsContent value="boards">
-            <KanbanBoard boards={boards} columns={columns} cards={cards} />
+            <KanbanBoard boards={boards} columns={columns} cards={cards} contacts={contacts} />
           </TabsContent>
         </div>
       </Tabs>

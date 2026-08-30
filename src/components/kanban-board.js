@@ -41,7 +41,9 @@ import {
   PencilIcon,
   GripVerticalIcon,
   KanbanSquareIcon,
+  UserIcon,
 } from "lucide-react"
+import Link from "next/link"
 import {
   createBoard,
   deleteBoard,
@@ -68,9 +70,30 @@ const COLUMN_COLORS = [
   { label: "Pink",   value: "#ec4899" },
 ]
 
+/* ─── Contact picker ──────────────────────────────────────────────────── */
+
+/* Native select, styled like Input — the inline add-card form is too cramped
+   for the popover Select, and the list is a flat lookup, not a search. */
+function ContactPicker({ contacts, value, onChange, className = "" }) {
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+      className={`h-7 w-full rounded-md border border-input bg-transparent px-2 text-xs text-foreground ${className}`}
+    >
+      <option value="">No linked lead</option>
+      {contacts.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name || c.email || `#${c.id}`}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 /* ─── Card item ───────────────────────────────────────────────────────── */
 
-function KanbanCard({ card, onEdit, onDelete }) {
+function KanbanCard({ card, contact, onEdit, onDelete }) {
   const {
     attributes,
     listeners,
@@ -107,6 +130,15 @@ function KanbanCard({ card, onEdit, onDelete }) {
               {card.description}
             </p>
           )}
+          {contact && (
+            <Link
+              href={`/contacts/${contact.id}`}
+              className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <UserIcon className="h-3 w-3" />
+              {contact.name || contact.email || `#${contact.id}`}
+            </Link>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -134,10 +166,11 @@ function KanbanCard({ card, onEdit, onDelete }) {
 
 /* ─── Column ──────────────────────────────────────────────────────────── */
 
-function KanbanColumn({ column, cards, onAddCard, onEditCard, onDeleteCard, onEditColumn, onDeleteColumn }) {
+function KanbanColumn({ column, cards, contacts, contactById, onAddCard, onEditCard, onDeleteCard, onEditColumn, onDeleteColumn }) {
   const [addingCard, setAddingCard] = useState(false)
   const [title, setTitle] = useState("")
   const [desc, setDesc] = useState("")
+  const [contactId, setContactId] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const {
@@ -158,9 +191,10 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onDeleteCard, onEd
   async function handleAddCard() {
     if (!title.trim()) return
     setSaving(true)
-    await onAddCard(column.id, title.trim(), desc.trim() || null)
+    await onAddCard(column.id, title.trim(), desc.trim() || null, contactId)
     setTitle("")
     setDesc("")
+    setContactId(null)
     setAddingCard(false)
     setSaving(false)
   }
@@ -218,6 +252,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onDeleteCard, onEd
             <KanbanCard
               key={card.id}
               card={card}
+              contact={card.contact_id ? contactById.get(card.contact_id) : null}
               onEdit={onEditCard}
               onDelete={onDeleteCard}
             />
@@ -241,6 +276,7 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onDeleteCard, onEd
               onChange={(e) => setDesc(e.target.value)}
               className="text-xs min-h-14 resize-none"
             />
+            <ContactPicker contacts={contacts} value={contactId} onChange={setContactId} />
             <div className="flex gap-1.5">
               <Button size="sm" className="h-7 text-xs" onClick={handleAddCard} disabled={saving || !title.trim()}>
                 {saving ? "Adding…" : "Add card"}
@@ -266,7 +302,8 @@ function KanbanColumn({ column, cards, onAddCard, onEditCard, onDeleteCard, onEd
 
 /* ─── KanbanBoard ─────────────────────────────────────────────────────── */
 
-export function KanbanBoard({ boards: initialBoards, columns: initialColumns, cards: initialCards }) {
+export function KanbanBoard({ boards: initialBoards, columns: initialColumns, cards: initialCards, contacts = [] }) {
+  const contactById = new Map(contacts.map((c) => [c.id, c]))
   const [boards, setBoards] = useState(initialBoards)
   const [columns, setColumns] = useState(initialColumns)
   const [cards, setCards] = useState(initialCards)
@@ -296,6 +333,7 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
   const [editingCard, setEditingCard] = useState(null)
   const [editCardTitle, setEditCardTitle] = useState("")
   const [editCardDesc, setEditCardDesc] = useState("")
+  const [editCardContactId, setEditCardContactId] = useState(null)
 
   const activeBoard = boards.find((b) => b.id === activeBoardId)
   const boardColumns = columns
@@ -457,8 +495,8 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
   }
 
   /* ── Card actions ── */
-  async function handleAddCard(colId, title, description) {
-    const card = await createCard(colId, title, description)
+  async function handleAddCard(colId, title, description, contactId) {
+    const card = await createCard(colId, title, description, contactId)
     setCards((p) => [...p, card])
   }
 
@@ -466,13 +504,14 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
     setEditingCard(card)
     setEditCardTitle(card.title)
     setEditCardDesc(card.description ?? "")
+    setEditCardContactId(card.contact_id ?? null)
     setEditCardOpen(true)
   }
 
   async function handleEditCard() {
     if (!editCardTitle.trim()) return
-    await updateCard(editingCard.id, editCardTitle.trim(), editCardDesc.trim() || null)
-    setCards((p) => p.map((c) => c.id === editingCard.id ? { ...c, title: editCardTitle.trim(), description: editCardDesc.trim() || null } : c))
+    await updateCard(editingCard.id, editCardTitle.trim(), editCardDesc.trim() || null, editCardContactId)
+    setCards((p) => p.map((c) => c.id === editingCard.id ? { ...c, title: editCardTitle.trim(), description: editCardDesc.trim() || null, contact_id: editCardContactId } : c))
     setEditCardOpen(false)
   }
 
@@ -548,6 +587,8 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
                   key={col.id}
                   column={col}
                   cards={cardsForColumn(col.id)}
+                  contacts={contacts}
+                  contactById={contactById}
                   onAddCard={handleAddCard}
                   onEditCard={openEditCard}
                   onDeleteCard={handleDeleteCard}
@@ -699,6 +740,15 @@ export function KanbanBoard({ boards: initialBoards, columns: initialColumns, ca
               onChange={(e) => setEditCardDesc(e.target.value)}
               className="min-h-24 resize-none"
             />
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Linked lead</p>
+              <ContactPicker
+                contacts={contacts}
+                value={editCardContactId}
+                onChange={setEditCardContactId}
+                className="h-9 text-sm"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditCardOpen(false)}>Cancel</Button>

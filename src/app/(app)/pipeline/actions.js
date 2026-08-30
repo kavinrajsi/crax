@@ -104,14 +104,14 @@ export async function reorderColumns(orderedIds) {
 
 /* ─── cards ──────────────────────────────────────────────────────────── */
 
-export async function createCard(columnId, title, description) {
+export async function createCard(columnId, title, description, contactId = null) {
   const user = await requireUserOrThrow()
   const [{ max }] = await sql`
     SELECT COALESCE(MAX(position), -1) AS max FROM public.kanban_cards WHERE column_id = ${columnId}
   `
   const [card] = await sql`
-    INSERT INTO public.kanban_cards (column_id, title, description, position)
-    VALUES (${columnId}, ${title}, ${description ?? null}, ${max + 1})
+    INSERT INTO public.kanban_cards (column_id, title, description, position, contact_id)
+    VALUES (${columnId}, ${title}, ${description ?? null}, ${max + 1}, ${contactId ?? null})
     RETURNING *
   `
   await recordAudit(user, "card.create", { table: "kanban_cards", id: card.id, after: card })
@@ -119,12 +119,12 @@ export async function createCard(columnId, title, description) {
   return card
 }
 
-export async function updateCard(cardId, title, description) {
+export async function updateCard(cardId, title, description, contactId = null) {
   const user = await requireUserOrThrow()
   const before = await snapshot("kanban_cards", cardId)
-  await sql`UPDATE public.kanban_cards SET title=${title}, description=${description ?? null} WHERE id=${cardId}`
+  await sql`UPDATE public.kanban_cards SET title=${title}, description=${description ?? null}, contact_id=${contactId ?? null} WHERE id=${cardId}`
   await recordAudit(user, "card.update", {
-    table: "kanban_cards", id: cardId, before, after: { title, description },
+    table: "kanban_cards", id: cardId, before, after: { title, description, contact_id: contactId },
   })
   revalidatePath("/pipeline")
 }
