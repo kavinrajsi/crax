@@ -23,7 +23,7 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboardIcon },
-  { href: "/planner",   label: "Planner",    icon: KanbanSquareIcon },
+  { href: "/pipeline",   label: "Pipeline",    icon: KanbanSquareIcon },
   { href: "/data",      label: "Data",       icon: DatabaseIcon },
   { href: "/sme",       label: "SME",        icon: GaugeIcon },
   { href: "/deals",     label: "Deals",      icon: HandshakeIcon },

@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 
@@ -208,7 +209,7 @@ export async function upsertFacebookLead(lead, { leadgenId, pageId, formId }) {
        gclid, wbraid, gbraid, fbclid, msclkid)
     VALUES
       (${str(name)}, ${str(email)}, ${str(phone)}, '', ${str(message)}, '', '',
-       ${sourceUrl}, '', ${[]}, 'New', ${rawPayload}, ${leadgenId},
+       ${sourceUrl}, '', ${[]}, ${DEFAULT_CONTACT_STATUS}, ${rawPayload}, ${leadgenId},
        '', '', '', '', '',
        NULL, NULL, NULL, NULL, NULL)
     ON CONFLICT (fb_lead_id) WHERE fb_lead_id IS NOT NULL DO NOTHING

@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 
@@ -136,7 +137,7 @@ export async function upsertGoogleLead({ leadId, userColumnData, campaignId, for
        gclid, wbraid, gbraid, fbclid, msclkid)
     VALUES
       (${str(name)}, ${str(email)}, ${str(phone)}, '', ${str(message)}, '', '',
-       ${sourceUrl}, '', ${[]}, 'New', ${rawPayload}, ${leadId},
+       ${sourceUrl}, '', ${[]}, ${DEFAULT_CONTACT_STATUS}, ${rawPayload}, ${leadId},
        '', '', '', '', '',
        ${str(gclid) || null}, NULL, NULL, NULL, NULL)
     ON CONFLICT (google_lead_id) WHERE google_lead_id IS NOT NULL DO NOTHING

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { updateContactStatus } from "@/app/(app)/planner/actions"
+import { updateContactStatus } from "@/app/(app)/pipeline/actions"
 import {
   CONTACT_STATUSES,
   DEFAULT_CONTACT_STATUS,

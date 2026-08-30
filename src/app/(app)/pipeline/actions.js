@@ -27,7 +27,7 @@ export async function updateContactStatus(contactId, newStatus) {
     before: before && { status: before.status },
     after: { status: newStatus },
   })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
   revalidatePath("/data")
   revalidatePath(`/contacts/${contactId}`)
 }
@@ -40,7 +40,7 @@ export async function createBoard(name) {
     INSERT INTO public.kanban_boards (name) VALUES (${name}) RETURNING *
   `
   await recordAudit(user, "board.create", { table: "kanban_boards", id: board.id, after: board })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
   return board
 }
 
@@ -49,7 +49,7 @@ export async function deleteBoard(boardId) {
   const before = await snapshot("kanban_boards", boardId)
   await sql`DELETE FROM public.kanban_boards WHERE id = ${boardId}`
   await recordAudit(user, "board.delete", { table: "kanban_boards", id: boardId, before })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 /* ─── columns ────────────────────────────────────────────────────────── */
@@ -65,7 +65,7 @@ export async function createColumn(boardId, name, color) {
     RETURNING *
   `
   await recordAudit(user, "column.create", { table: "kanban_columns", id: col.id, after: col })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
   return col
 }
 
@@ -76,7 +76,7 @@ export async function updateColumn(colId, name, color) {
   await recordAudit(user, "column.update", {
     table: "kanban_columns", id: colId, before, after: { name, color },
   })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 export async function deleteColumn(colId) {
@@ -84,7 +84,7 @@ export async function deleteColumn(colId) {
   const before = await snapshot("kanban_columns", colId)
   await sql`DELETE FROM public.kanban_columns WHERE id = ${colId}`
   await recordAudit(user, "column.delete", { table: "kanban_columns", id: colId, before })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 export async function reorderColumns(orderedIds) {
@@ -99,7 +99,7 @@ export async function reorderColumns(orderedIds) {
   await recordAudit(user, "column.reorder", {
     table: "kanban_columns", after: { order: orderedIds },
   })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 /* ─── cards ──────────────────────────────────────────────────────────── */
@@ -115,7 +115,7 @@ export async function createCard(columnId, title, description) {
     RETURNING *
   `
   await recordAudit(user, "card.create", { table: "kanban_cards", id: card.id, after: card })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
   return card
 }
 
@@ -126,7 +126,7 @@ export async function updateCard(cardId, title, description) {
   await recordAudit(user, "card.update", {
     table: "kanban_cards", id: cardId, before, after: { title, description },
   })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 export async function deleteCard(cardId) {
@@ -134,7 +134,7 @@ export async function deleteCard(cardId) {
   const before = await snapshot("kanban_cards", cardId)
   await sql`DELETE FROM public.kanban_cards WHERE id = ${cardId}`
   await recordAudit(user, "card.delete", { table: "kanban_cards", id: cardId, before })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }
 
 export async function moveCard(cardId, newColumnId, orderedCardIds) {
@@ -153,5 +153,5 @@ export async function moveCard(cardId, newColumnId, orderedCardIds) {
     before: before && { column_id: before.column_id },
     after: { column_id: newColumnId },
   })
-  revalidatePath("/planner")
+  revalidatePath("/pipeline")
 }

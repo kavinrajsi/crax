@@ -29,7 +29,7 @@ import { statusMeta } from "@/lib/contact-statuses"
    key is lowercase "closed", so six of the seven statuses fell through to the
    same outline badge and the two dead entries were unreachable. Colour now
    comes from src/lib/contact-statuses.js, the same source the select and the
-   planner read, so a new status cannot arrive without one. */
+   pipeline read, so a new status cannot arrive without one. */
 
 /** Age since the last note, red once the lead is stale. */
 function LastTouchCell({ row }) {

@@ -71,7 +71,7 @@ export async function deleteDeal(dealId) {
  *
  * One transaction: the stage change and the reorder must land together, or a
  * failure partway leaves the deal in its new column at the wrong index — the
- * same defect moveCard had before planner/actions.js was fixed.
+ * same defect moveCard had before pipeline/actions.js was fixed.
  *
  * won_at / lost_at are set in SQL from the target stage rather than passed in,
  * so the timestamps cannot disagree with the stage. Re-opening a closed deal

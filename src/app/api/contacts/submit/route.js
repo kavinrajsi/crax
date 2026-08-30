@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 
@@ -182,7 +183,7 @@ export async function POST(request) {
          gclid, wbraid, gbraid, fbclid, msclkid)
       VALUES
         (${name}, ${email}, ${phone}, ${company}, ${message}, ${role}, ${location},
-         ${sourceUrl}, ${clientIp(request)}, ${needs}, 'New', ${JSON.stringify(body)},
+         ${sourceUrl}, ${clientIp(request)}, ${needs}, ${DEFAULT_CONTACT_STATUS}, ${JSON.stringify(body)},
          ${utm.source}, ${utm.medium}, ${utm.campaign}, ${utm.term}, ${utm.content},
          ${click.gclid}, ${click.wbraid}, ${click.gbraid}, ${click.fbclid}, ${click.msclkid})
       RETURNING id

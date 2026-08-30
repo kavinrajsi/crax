@@ -1,20 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { sql } from "@/lib/db"
+import { CONTACT_STATUSES } from "@/lib/contact-statuses"
 
 import { requireUser } from "@/lib/dal"
 
 export const dynamic = "force-dynamic"
 
-const STATUS_COLORS = {
-  New:        "#3b82f6",
-  "follow-up":"#f97316",
-  win:        "#22c55e",
-  closed:     "#64748b",
-  rejected:   "#ef4444",
-  fake:       "#a855f7",
-  test:       "#14b8a6",
-}
+const STATUS_COLORS = Object.fromEntries(
+  CONTACT_STATUSES.map((s) => [s.key, s.color])
+)
 
 export default async function AnalyticsPage() {
   await requireUser()

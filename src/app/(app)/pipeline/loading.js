@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeading, TabsListSkeleton } from "@/components/skeletons"
 
 /**
- * Mirrors src/app/(app)/planner/page.js and the default tab,
+ * Mirrors src/app/(app)/pipeline/page.js and the default tab,
  * src/components/contacts-kanban.js. Update together.
  */
 
@@ -10,7 +10,7 @@ import { PageHeading, TabsListSkeleton } from "@/components/skeletons"
 // board.
 const CARDS_PER_COLUMN = [3, 2, 2, 1, 1, 1, 1]
 
-export default function PlannerLoading() {
+export default function PipelineLoading() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeading titleWidth="w-28" subWidth="w-72" />

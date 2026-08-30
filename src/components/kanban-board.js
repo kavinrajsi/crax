@@ -53,7 +53,7 @@ import {
   deleteCard,
   moveCard,
   reorderColumns,
-} from "@/app/(app)/planner/actions"
+} from "@/app/(app)/pipeline/actions"
 
 /* ─── colour palette for columns ─────────────────────────────────────── */
 

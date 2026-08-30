@@ -53,7 +53,7 @@ export function BackLink({ width = "w-28" }) {
   )
 }
 
-/** TabsList: h-8 pill, bg-muted, 3px inset — planner and profile. */
+/** TabsList: h-8 pill, bg-muted, 3px inset — pipeline and profile. */
 export function TabsListSkeleton({ widths = ["w-24", "w-24"] }) {
   return (
     <div className="inline-flex h-8 w-fit items-center justify-center gap-1.5 rounded-lg bg-muted p-[3px]">

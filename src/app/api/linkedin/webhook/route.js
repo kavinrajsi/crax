@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit, SYSTEM_ACTOR } from "@/lib/audit"
 import {
@@ -125,7 +126,7 @@ export async function POST(request) {
            gclid, wbraid, gbraid, fbclid, msclkid)
         VALUES
           (${str(name)}, ${str(email)}, ${str(phone)}, '', ${str(message)}, '', '',
-           ${sourceUrl}, '', ${[]}, 'New', ${rawPayload}, ${responseId},
+           ${sourceUrl}, '', ${[]}, ${DEFAULT_CONTACT_STATUS}, ${rawPayload}, ${responseId},
            '', '', '', '', '',
            NULL, NULL, NULL, NULL, NULL)
         ON CONFLICT (linkedin_lead_id) WHERE linkedin_lead_id IS NOT NULL DO NOTHING

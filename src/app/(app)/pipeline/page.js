@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
    so its contacts would vanish from the board with nothing reporting it. */
 const STATUS_COLUMNS = CONTACT_STATUSES
 
-export default async function PlannerPage() {
+export default async function PipelinePage() {
   await requireUser()
 
   const [boards, columns, cards, contacts] = await Promise.all([
@@ -29,7 +29,7 @@ export default async function PlannerPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Planner</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">Pipeline</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Manage your work and leads with kanban boards.
         </p>

@@ -17,7 +17,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { GripVerticalIcon, MailIcon, PhoneIcon, BuildingIcon, GlobeIcon } from "lucide-react"
-import { updateContactStatus } from "@/app/(app)/planner/actions"
+import { updateContactStatus } from "@/app/(app)/pipeline/actions"
 import { sourceDomain, timeAgo } from "@/lib/table-utils"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */

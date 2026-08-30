@@ -3,7 +3,7 @@
  *
  * `contact_us.status` was `text DEFAULT 'New'` with **no CHECK constraint** —
  * the last ungoverned enum in the schema, and the one that drives the dashboard
- * counts, the /data filter, the planner columns and the status badge. Anything
+ * counts, the /data filter, the pipeline columns and the status badge. Anything
  * could be written to it, including a typo, and nothing would notice until a
  * board grew a column nobody meant to create.
  *
@@ -18,7 +18,7 @@
  * The vocabulary already existed in FIVE places that had begun to drift:
  *
  *   src/components/contact-status-select.js  value/label/color
- *   src/app/(app)/planner/page.js            key/label/color, same seven
+ *   src/app/(app)/pipeline/page.js            key/label/color, same seven
  *   src/components/data-page-client.js       STATUS_OPTIONS, keys only
  *   src/components/data-page-client.js       a badge-variant map keyed
  *                                            "Contacted" and "Closed" — one
@@ -30,7 +30,7 @@
  * Six copies of getValue drifting apart is what started the testing effort in
  * this repo. This is the same shape, caught earlier.
  *
- * Deliberately NOT "use client": the planner and the dashboard are Server
+ * Deliberately NOT "use client": the pipeline and the dashboard are Server
  * Components, and a "use client" module's exports reach them as client
  * references rather than values. Same constraint documented in
  * src/lib/table-utils.js and src/lib/contact-fields.js.
@@ -42,7 +42,7 @@
  */
 
 /**
- * Order is the planner's column order and the select's menu order — it is
+ * Order is the pipeline's column order and the select's menu order — it is
  * presentation, not just a list, so it lives here rather than being sorted at
  * each call site.
  *
@@ -54,23 +54,27 @@
  * different set.
  */
 export const CONTACT_STATUSES = [
-  { key: "New",       label: "New",       color: "#3b82f6" },
-  { key: "follow-up", label: "Follow-up", color: "#f97316" },
-  { key: "win",       label: "Win",       color: "#22c55e", resolved: true },
-  { key: "closed",    label: "Closed",    color: "#64748b", resolved: true },
-  { key: "rejected",  label: "Rejected",  color: "#ef4444", resolved: true },
-  { key: "fake",      label: "Fake",      color: "#a855f7", resolved: true },
-  { key: "test",      label: "Test",      color: "#14b8a6", resolved: true },
+  { key: "lead",           label: "Lead (Needs Analysis)",         color: "#3b82f6" },
+  { key: "first-touch",    label: "First Touch",                   color: "#0ea5e9" },
+  { key: "discovery-call", label: "Discovery Call",                color: "#8b5cf6" },
+  { key: "proposal",       label: "Proposal Given",                color: "#f59e0b" },
+  { key: "negotiation",    label: "Price Estimation/Negotiation",  color: "#f97316" },
+  { key: "closed-won",     label: "Closed Won",                    color: "#22c55e", resolved: true },
+  { key: "closed-lost",    label: "Closed Lost",                   color: "#ef4444", resolved: true },
+  { key: "fake",           label: "Fake",                          color: "#a855f7", resolved: true },
+  { key: "test",           label: "Test",                          color: "#14b8a6", resolved: true },
 ]
 
 /**
  * Every key, in column order. This is the constant the CHECK constraint is
  * compared against.
  *
- * All seven are live in production — New 87, fake 13, test 10, closed 6,
- * rejected 3, win 1, follow-up 1 — so the constraint accepts every existing row
- * and the migration needs no data cleanup. "fake" and "test" are triage
- * outcomes for junk submissions on a public intake form, not leftovers.
+ * Vocabulary reworked 2026-08-30 from the original seven (New, follow-up, win,
+ * closed, rejected, fake, test) into a sales-pipeline shape; existing rows were
+ * migrated (New→lead, follow-up→first-touch, win→closed-won,
+ * closed/rejected→closed-lost) in the same transaction that rewrote the CHECK.
+ * "fake" and "test" are triage outcomes for junk submissions on a public
+ * intake form, not leftovers.
  */
 export const CONTACT_STATUS_KEYS = CONTACT_STATUSES.map((s) => s.key)
 
@@ -84,7 +88,7 @@ export const RESOLVED_STATUS_KEYS = CONTACT_STATUSES
  * written by both intake paths (api/contacts/submit and api/contacts/import),
  * which is why it is exported rather than repeated a fourth time.
  */
-export const DEFAULT_CONTACT_STATUS = "New"
+export const DEFAULT_CONTACT_STATUS = "lead"
 
 export function isContactStatus(key) {
   return CONTACT_STATUS_KEYS.includes(key)

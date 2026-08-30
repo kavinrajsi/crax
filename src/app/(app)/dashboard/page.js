@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { requireUser } from "@/lib/dal"
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { sourceDomain } from "@/lib/table-utils"
 import { RESOLVED_STATUSES } from "@/lib/follow-up"
 
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
 
   const [contactRows, sourceRows, staleRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
-              COUNT(*) FILTER (WHERE status = 'New')::int AS new_count
+              COUNT(*) FILTER (WHERE status = ${DEFAULT_CONTACT_STATUS})::int AS new_count
         FROM public.contact_us`,
     // Same view as the total above. These two cards once counted different
     // populations, because one carried the exclusion filter by hand and the

@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { getUserOrNull } from "@/lib/dal"
 import { autoLinkCompany } from "@/lib/company-enrichment"
 import { recordAudit } from "@/lib/audit"
@@ -89,7 +90,7 @@ export async function POST(request) {
         INSERT INTO public.contact_us
           (name, email, phone, company, source_url, needs, status)
         VALUES
-          (${name}, ${email}, ${phone}, ${company}, ${sourceUrl}, ${needs}, 'New')
+          (${name}, ${email}, ${phone}, ${company}, ${sourceUrl}, ${needs}, ${DEFAULT_CONTACT_STATUS})
         RETURNING id
       `
       contactId = contact.id
