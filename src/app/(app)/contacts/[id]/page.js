@@ -120,13 +120,11 @@ export default async function ContactDetailPage({ params }) {
 
       <Separator />
 
-      {/* Timeline keeps a measure: prose needs one even when the page does not. */}
-      <div className="max-w-3xl">
-        <ContactTimeline
-          contactId={contact.id}
-          initialNotes={notes}
-        />
-      </div>
+      {/* Notes + timeline, full width to match the field grid above. */}
+      <ContactTimeline
+        contactId={contact.id}
+        initialNotes={notes}
+      />
     </div>
   )
 }
