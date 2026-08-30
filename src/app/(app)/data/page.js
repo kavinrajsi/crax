@@ -1,6 +1,7 @@
 import { sql, getCompanyOptions } from "@/lib/db"
 import { DataPageClient } from "@/components/data-page-client"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
+import { AddContactDialog } from "@/components/add-contact-dialog"
 
 import { requireUser } from "@/lib/dal"
 
@@ -48,7 +49,10 @@ export default async function DataPage() {
             Live contact submissions from Neon DB — {contacts.length} records
           </p>
         </div>
-        <CsvImportDialog />
+        <div className="flex items-center gap-2">
+          <CsvImportDialog />
+          <AddContactDialog />
+        </div>
       </div>
       <div className="rounded-xl border border-border overflow-hidden">
         <DataPageClient contacts={contacts} companies={companies} contactTags={contactTags} />

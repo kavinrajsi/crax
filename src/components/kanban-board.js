@@ -188,10 +188,25 @@ function KanbanColumn({ column, cards, contacts, contactById, onAddCard, onEditC
     opacity: isDragging ? 0.5 : 1,
   }
 
+  /* Picking a lead fills the card from the lead's data instead of requiring
+     a typed title. Only untouched fields are overwritten, so a typed title
+     survives switching leads. */
+  function handlePickContact(id) {
+    setContactId(id)
+    const contact = id ? contactById.get(id) : null
+    if (!contact) return
+    if (!title.trim()) setTitle(contact.name || contact.email || `#${contact.id}`)
+    if (!desc.trim()) {
+      setDesc([contact.company, contact.email].filter(Boolean).join(" · "))
+    }
+  }
+
   async function handleAddCard() {
-    if (!title.trim()) return
+    const contact = contactId ? contactById.get(contactId) : null
+    const finalTitle = title.trim() || (contact && (contact.name || contact.email)) || ""
+    if (!finalTitle) return
     setSaving(true)
-    await onAddCard(column.id, title.trim(), desc.trim() || null, contactId)
+    await onAddCard(column.id, finalTitle, desc.trim() || null, contactId)
     setTitle("")
     setDesc("")
     setContactId(null)
@@ -262,8 +277,8 @@ function KanbanColumn({ column, cards, contacts, contactById, onAddCard, onEditC
         {/* Add card inline */}
         {addingCard ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-2.5">
+            <ContactPicker contacts={contacts} value={contactId} onChange={handlePickContact} />
             <Input
-              autoFocus
               placeholder="Card title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -276,9 +291,8 @@ function KanbanColumn({ column, cards, contacts, contactById, onAddCard, onEditC
               onChange={(e) => setDesc(e.target.value)}
               className="text-xs min-h-14 resize-none"
             />
-            <ContactPicker contacts={contacts} value={contactId} onChange={setContactId} />
             <div className="flex gap-1.5">
-              <Button size="sm" className="h-7 text-xs" onClick={handleAddCard} disabled={saving || !title.trim()}>
+              <Button size="sm" className="h-7 text-xs" onClick={handleAddCard} disabled={saving || (!title.trim() && !contactId)}>
                 {saving ? "Adding…" : "Add card"}
               </Button>
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingCard(false); setTitle(""); setDesc("") }}>
