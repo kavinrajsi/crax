@@ -15,6 +15,7 @@ import { CompanyForm } from "@/components/company-form"
 import { CompanyNotesSection } from "@/components/company-notes-section"
 
 import { requireUser } from "@/lib/dal"
+import { safeHref } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -77,12 +78,12 @@ export default async function CompanyDetailPage({ params }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {company.website ? (
-              <a href={company.website} target="_blank" rel="noopener noreferrer"
+            {safeHref(company.website) ? (
+              <a href={safeHref(company.website)} target="_blank" rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline break-all">
                 {company.website.replace(/^https?:\/\//, "")}
               </a>
-            ) : <p className="text-sm text-muted-foreground">—</p>}
+            ) : <p className="text-sm text-muted-foreground">{company.website || "—"}</p>}
           </CardContent>
         </Card>
 

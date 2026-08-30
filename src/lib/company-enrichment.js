@@ -38,14 +38,42 @@ const REACHABILITY_TIMEOUT_MS = 2500
  * normal shape and the redirect itself says nothing about whether a business
  * exists there.
  */
+/**
+ * Rejects anything that isn't a plain public hostname before we fetch it.
+ *
+ * `domain` comes from an email address on the unauthenticated intake path, so
+ * without this an attacker submits `a@169.254.169.254` (cloud metadata) or
+ * `a@127.0.0.1` and turns this reachability probe into a blind SSRF oracle
+ * against internal hosts. We require a dotted DNS name, forbid IP literals and
+ * anything but hostname characters (so `/`, `@`, ports and userinfo can't ride
+ * in), and block obvious internal suffixes. `redirect: "manual"` below stops a
+ * public host from bouncing the request inward.
+ */
+function isFetchableHostname(domain) {
+  if (typeof domain !== "string") return false
+  const host = domain.trim().toLowerCase()
+  // hostname label chars only, at least one dot, no port/path/userinfo
+  if (!/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(host)) return false
+  // reject IPv4 literals (the regex above already excludes a numeric TLD, but be explicit)
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false
+  // internal / non-public suffixes
+  if (/(^|\.)(local|localhost|internal|intranet|corp|home|lan)$/.test(host)) return false
+  return true
+}
+
 async function isDomainLive(domain) {
+  if (!isFetchableHostname(domain)) return false
+
   const attempt = async (method) => {
     const response = await fetch(`https://${domain}`, {
       method,
-      redirect: "follow",
+      /* manual, not follow: a reachable public host must not be able to
+         redirect this probe to an internal address. A 3xx counts as "answered"
+         which is all this check needs. */
+      redirect: "manual",
       signal: AbortSignal.timeout(REACHABILITY_TIMEOUT_MS),
     })
-    return response.ok
+    return response.ok || (response.status >= 300 && response.status < 400)
   }
 
   try {

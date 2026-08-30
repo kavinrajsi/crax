@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { JsonViewer } from "@/components/json-viewer"
 import { formatDate, sourceDomain } from "@/lib/table-utils"
 import { isBlank } from "@/lib/contact-fields"
+import { safeHref } from "@/lib/utils"
 
 /**
  * Renders one contact field according to its `kind`. Shared by the detail page
@@ -22,10 +23,14 @@ export function ContactFieldValue({ value, kind, breakAll = false }) {
   }
 
   switch (kind) {
-    case "url":
+    case "url": {
+      const href = safeHref(value)
+      if (!href) {
+        return <span className="text-sm break-all" title={value}>{sourceDomain(value)}</span>
+      }
       return (
         <a
-          href={value}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-primary hover:underline break-all"
@@ -34,6 +39,7 @@ export function ContactFieldValue({ value, kind, breakAll = false }) {
           {sourceDomain(value)}
         </a>
       )
+    }
 
     case "date":
       return <span className="text-sm">{formatDate(value)}</span>

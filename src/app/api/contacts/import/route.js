@@ -46,6 +46,15 @@ export async function POST(request) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return Response.json({ inserted: 0, skipped: 0, failed: 0, errors: [] })
   }
+  /* Cap the batch so one request can't hold a function open until the platform
+     timeout doing thousands of serial round-trips. */
+  const MAX_IMPORT_ROWS = 5000
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return Response.json(
+      { error: `Too many rows — import at most ${MAX_IMPORT_ROWS} at a time.` },
+      { status: 413 }
+    )
+  }
 
   /* Three buckets, not two. `skipped` used to absorb invalid rows, duplicate
      emails AND hard database errors alike, so a total outage returned HTTP 200
@@ -97,8 +106,10 @@ export async function POST(request) {
       inserted++
     } catch (error) {
       failed++
-      if (errors.length < 5) errors.push(`${email || name}: ${error.message}`)
-      console.error("[import] insert failed", { email, error })
+      /* Generic client message — the raw Postgres error leaks constraint and
+         column names. The detail is logged server-side instead. */
+      if (errors.length < 5) errors.push(`${email || name}: could not be imported`)
+      console.error("[import] insert failed", { email, error: String(error?.message ?? error) })
       continue
     }
 

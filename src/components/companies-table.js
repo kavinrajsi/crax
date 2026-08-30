@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { safeHref } from "@/lib/utils"
 import { CompanyForm } from "@/components/company-form"
 import { deleteCompany } from "@/app/(app)/companies/actions"
 import {
@@ -123,9 +124,9 @@ export function CompaniesTable({ companies: initialCompanies }) {
                   <TableCell className="font-medium">{company.name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{company.industry || "—"}</TableCell>
                   <TableCell className="text-xs">
-                    {company.website ? (
+                    {safeHref(company.website) ? (
                       <a
-                        href={company.website}
+                        href={safeHref(company.website)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -134,7 +135,7 @@ export function CompaniesTable({ companies: initialCompanies }) {
                         <GlobeIcon className="h-3 w-3" />
                         {company.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                       </a>
-                    ) : "—"}
+                    ) : (company.website || "—")}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{company.phone || "—"}</TableCell>
                   <TableCell className="text-center">

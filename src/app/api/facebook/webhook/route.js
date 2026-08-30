@@ -1,4 +1,12 @@
+import crypto from "node:crypto"
 import { verifySignature, getPageAccessToken, fetchLeadFields, upsertFacebookLead } from "@/lib/facebook-leads"
+
+/** Constant-time string compare; false on any length/format mismatch. */
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a ?? ""))
+  const bufB = Buffer.from(String(b ?? ""))
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)
+}
 
 /**
  * Facebook Lead Ads intake. Meta calls GET once to verify the endpoint, then
@@ -23,7 +31,7 @@ export async function GET(request) {
   const challenge = searchParams.get("hub.challenge")
 
   const verifyToken = process.env.FB_WEBHOOK_VERIFY_TOKEN
-  if (mode === "subscribe" && verifyToken && token === verifyToken && challenge) {
+  if (mode === "subscribe" && verifyToken && safeEqual(token, verifyToken) && challenge) {
     return new Response(challenge, { status: 200 })
   }
   return Response.json({ error: "Verification failed" }, { status: 403 })
