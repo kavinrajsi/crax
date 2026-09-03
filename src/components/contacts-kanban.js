@@ -71,6 +71,14 @@ function ContactCard({ contact }) {
             </div>
           )}
 
+          {/* Company */}
+          {contact.company && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <BuildingIcon className="h-3 w-3 shrink-0" />
+              <span className="truncate">{contact.company}</span>
+            </div>
+          )}
+
           {/* Phone */}
           {contact.phone && (
             <div className="flex items-center gap-1 text-muted-foreground">
@@ -80,14 +88,6 @@ function ContactCard({ contact }) {
                   overflow-y-auto promotes overflow-x to auto — so one long value
                   would give this single column its own horizontal scrollbar. */}
               <span className="truncate">{contact.phone}</span>
-            </div>
-          )}
-
-          {/* Company */}
-          {contact.company && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <BuildingIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{contact.company}</span>
             </div>
           )}
 
