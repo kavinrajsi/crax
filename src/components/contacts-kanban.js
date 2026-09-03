@@ -126,7 +126,12 @@ function OverlayCard({ contact }) {
 
 /* ─── ContactsKanban ──────────────────────────────────────────────────── */
 
-export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
+/**
+ * `filter` narrows what is *shown*, not what is *held*: the full list stays in
+ * state so the caller can switch filters without remounting and losing an
+ * optimistic move that is still in flight.
+ */
+export function ContactsKanban({ contacts: initialContacts, statusColumns, filter }) {
   const [contacts, setContacts] = useState(initialContacts)
   const [activeContact, setActiveContact] = useState(null)
   const [error, setError] = useState(null)
@@ -135,7 +140,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns }) {
   const sensors = useKanbanSensors()
 
   function contactsForStatus(status) {
-    return contacts.filter((c) => c.status === status)
+    return contacts.filter((c) => c.status === status && (!filter || filter(c)))
   }
 
   function onDragStart(event) {

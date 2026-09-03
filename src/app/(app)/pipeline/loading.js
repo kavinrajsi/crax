@@ -1,9 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
-import { PageHeading } from "@/components/skeletons"
+import { PageHeading, TabsListSkeleton } from "@/components/skeletons"
 
 /**
- * Mirrors src/app/(app)/pipeline/page.js and
- * src/components/contacts-kanban.js. Update together.
+ * Mirrors src/app/(app)/pipeline/page.js, src/components/pipeline-board.js
+ * and src/components/contacts-kanban.js. Update together.
  */
 
 // One entry per STATUS_COLUMNS column; a uniform count reads as a grid, not a
@@ -14,6 +14,8 @@ export default function PipelineLoading() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeading titleWidth="w-28" subWidth="w-72" />
+
+      <TabsListSkeleton widths={["w-14", "w-16", "w-20", "w-18"]} />
 
       <div className="flex gap-3 overflow-x-auto pb-4">
             {CARDS_PER_COLUMN.map((cardCount, columnIndex) => (

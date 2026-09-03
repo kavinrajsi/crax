@@ -1,8 +1,9 @@
 import { sql } from "@/lib/db"
-import { ContactsKanban } from "@/components/contacts-kanban"
+import { PipelineBoard } from "@/components/pipeline-board"
 
 import { requireUser } from "@/lib/dal"
 import { CONTACT_STATUSES } from "@/lib/contact-statuses"
+import { normalizePipelineSource } from "@/lib/contact-sources"
 
 export const dynamic = "force-dynamic"
 
@@ -12,8 +13,11 @@ export const dynamic = "force-dynamic"
    so its contacts would vanish from the board with nothing reporting it. */
 const STATUS_COLUMNS = CONTACT_STATUSES
 
-export default async function PipelinePage() {
+export default async function PipelinePage({ searchParams }) {
   await requireUser()
+
+  const { source } = await searchParams
+  const initialSource = normalizePipelineSource(source)
 
   const contacts = await sql`
     SELECT id, name, email, phone, company, source_url, status, needs, created_at
@@ -22,15 +26,10 @@ export default async function PipelinePage() {
   `
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Pipeline</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track {contacts.length} lead{contacts.length === 1 ? "" : "s"} across the pipeline.
-        </p>
-      </div>
-
-      <ContactsKanban contacts={contacts} statusColumns={STATUS_COLUMNS} />
-    </div>
+    <PipelineBoard
+      contacts={contacts}
+      statusColumns={STATUS_COLUMNS}
+      initialSource={initialSource}
+    />
   )
 }
