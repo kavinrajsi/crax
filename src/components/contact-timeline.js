@@ -1,61 +1,62 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useRef, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { SendIcon, MessageSquareIcon } from "lucide-react"
-import { addNote } from "@/app/(app)/contacts/[id]/actions"
-import { timeAgo } from "@/lib/table-utils"
-
-
-function initials(email) {
-  return (email || "?").split("@")[0].slice(0, 2).toUpperCase()
-}
+import { addNote, updateNote } from "@/app/(app)/contacts/[id]/actions"
+import { NoteItem } from "@/components/note-item"
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 export function ContactTimeline({ contactId, initialNotes }) {
   const [notes, setNotes] = useState(initialNotes)
-  const [noteBody, setNoteBody] = useState("")
+  const [draft, setDraft] = useState({ html: "", empty: true })
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
-  const textareaRef = useRef(null)
+  const editorRef = useRef(null)
 
   const items = [...notes].sort(
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   )
 
   function handleNoteSubmit(e) {
-    e.preventDefault()
-    const trimmed = noteBody.trim()
-    if (!trimmed) return
+    e?.preventDefault()
+    if (draft.empty || isPending) return
+    const html = draft.html
+    const tempId = `pending-${Date.now()}`
     const optimistic = {
-      id: Date.now(),
+      id: tempId,
       contact_id: contactId,
       author_email: "you",
-      body: trimmed,
+      body: html,
       created_at: new Date().toISOString(),
+      pending: true,
     }
     setNotes((prev) => [...prev, optimistic])
-    setNoteBody("")
+    editorRef.current?.commands.clearContent(true)
+    setDraft({ html: "", empty: true })
     setError(null)
     /* Restore the draft on failure. Previously the promise was dropped, so a
-       failed save cleared the textarea and left the note rendered as if it had
+       failed save cleared the editor and left the note rendered as if it had
        persisted — the user only found out on reload, with the text gone. */
     startTransition(async () => {
       try {
-        await addNote(contactId, trimmed)
+        const saved = await addNote(contactId, html)
+        // Swap in the real row so the new note can be edited straight away.
+        setNotes((prev) => prev.map((n) => (n.id === tempId ? saved : n)))
       } catch (err) {
         console.error("[contact-timeline] addNote failed", { contactId, err })
-        setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
-        setNoteBody(trimmed)
+        setNotes((prev) => prev.filter((n) => n.id !== tempId))
+        editorRef.current?.commands.setContent(html)
+        setDraft({ html, empty: false })
         setError("Couldn't save that note. Your text has been restored.")
       }
     })
   }
 
-  function handleNoteKeyDown(e) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleNoteSubmit(e)
+  async function handleNoteSave(noteId, html) {
+    const saved = await updateNote(noteId, html)
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, body: saved.body, updated_at: saved.updated_at } : n)))
   }
 
   return (
@@ -63,21 +64,18 @@ export function ContactTimeline({ contactId, initialNotes }) {
       {/* Quick note input */}
       {error && <p className="text-xs text-destructive">{error}</p>}
       <form onSubmit={handleNoteSubmit} className="flex flex-col gap-2">
-        <Textarea
-          ref={textareaRef}
+        <RichTextEditor
+          editorRef={editorRef}
           placeholder="Add a note… (⌘↵ to submit)"
-          value={noteBody}
-          onChange={(e) => setNoteBody(e.target.value)}
-          onKeyDown={handleNoteKeyDown}
-          rows={3}
-          className="resize-none text-sm"
           disabled={isPending}
+          onChange={(html, empty) => setDraft({ html, empty })}
+          onSubmit={handleNoteSubmit}
         />
         <div className="flex justify-end">
           <Button
             type="submit"
             size="sm"
-            disabled={!noteBody.trim() || isPending}
+            disabled={draft.empty || isPending}
             className="gap-1.5"
           >
             <SendIcon className="h-3.5 w-3.5" />
@@ -102,19 +100,7 @@ export function ContactTimeline({ contactId, initialNotes }) {
           {items.map((item, i) => (
             <div key={item.id}>
               {i > 0 && <Separator className="mb-4" />}
-              <div className="flex items-start gap-3">
-                <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                  <AvatarFallback className="text-[10px]">{initials(item.author_email)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MessageSquareIcon className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs font-medium">{item.author_email}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{timeAgo(item.created_at)}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap break-words">{item.body}</p>
-                </div>
-              </div>
+              <NoteItem note={item} icon={MessageSquareIcon} onSave={handleNoteSave} />
             </div>
           ))}
         </div>

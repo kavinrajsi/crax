@@ -5,18 +5,38 @@ import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
 import { recordAudit, snapshot } from "@/lib/audit"
 import { autoLinkCompany } from "@/lib/company-enrichment"
+import { sanitizeNoteHtml, isEmptyNoteHtml } from "@/lib/note-html"
 
 export async function addNote(contactId, body) {
   const user = await requireUserOrThrow()
-  const trimmed = body?.trim()
-  if (!trimmed) return
+  const html = sanitizeNoteHtml(body)
+  if (isEmptyNoteHtml(html)) return null
 
-  await sql`
+  const [note] = await sql`
     INSERT INTO public.contact_notes (contact_id, author_email, body)
-    VALUES (${contactId}, ${user.email}, ${trimmed})
+    VALUES (${contactId}, ${user.email}, ${html})
+    RETURNING *
   `
   await recordAudit(user, "contact.note", { table: "contact_notes", id: contactId })
   revalidatePath(`/contacts/${contactId}`)
+  return note
+}
+
+export async function updateNote(noteId, body) {
+  const user = await requireUserOrThrow()
+  const html = sanitizeNoteHtml(body)
+  if (isEmptyNoteHtml(html)) throw new Error("Note cannot be empty")
+
+  const before = await snapshot("contact_notes", noteId)
+  if (!before) throw new Error("Note not found")
+  const [note] = await sql`
+    UPDATE public.contact_notes SET body = ${html}, updated_at = now() WHERE id = ${noteId} RETURNING *
+  `
+  await recordAudit(user, "contact.note_update", {
+    table: "contact_notes", id: noteId, before: { body: before.body }, after: { body: note.body },
+  })
+  revalidatePath(`/contacts/${note.contact_id}`)
+  return note
 }
 
 export async function updateContact(contactId, fields) {

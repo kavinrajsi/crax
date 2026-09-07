@@ -1,48 +1,54 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useRef, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { SendIcon } from "lucide-react"
-import { addCompanyNote } from "@/app/(app)/companies/actions"
-import { timeAgo } from "@/lib/table-utils"
-
-
-function initials(email) {
-  return (email || "?").split("@")[0].slice(0, 2).toUpperCase()
-}
+import { addCompanyNote, updateCompanyNote } from "@/app/(app)/companies/actions"
+import { NoteItem } from "@/components/note-item"
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 export function CompanyNotesSection({ companyId, initialNotes }) {
   const [notes, setNotes] = useState(initialNotes)
-  const [body, setBody] = useState("")
+  const [draft, setDraft] = useState({ html: "", empty: true })
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
-  const textareaRef = useRef(null)
+  const editorRef = useRef(null)
 
   function handleSubmit(e) {
-    e.preventDefault()
-    const trimmed = body.trim()
-    if (!trimmed) return
-    const optimistic = { id: Date.now(), company_id: companyId, author_email: "you", body: trimmed, created_at: new Date().toISOString() }
+    e?.preventDefault()
+    if (draft.empty || isPending) return
+    const html = draft.html
+    const tempId = `pending-${Date.now()}`
+    const optimistic = {
+      id: tempId,
+      company_id: companyId,
+      author_email: "you",
+      body: html,
+      created_at: new Date().toISOString(),
+      pending: true,
+    }
     setNotes((prev) => [...prev, optimistic])
-    setBody("")
+    editorRef.current?.commands.clearContent(true)
+    setDraft({ html: "", empty: true })
     setError(null)
     startTransition(async () => {
       try {
-        await addCompanyNote(companyId, trimmed)
+        const saved = await addCompanyNote(companyId, html)
+        setNotes((prev) => prev.map((n) => (n.id === tempId ? saved : n)))
       } catch (err) {
         console.error("[company-notes] addCompanyNote failed", { companyId, err })
-        setNotes((prev) => prev.filter((n) => n.id !== optimistic.id))
-        setBody(trimmed)
+        setNotes((prev) => prev.filter((n) => n.id !== tempId))
+        editorRef.current?.commands.setContent(html)
+        setDraft({ html, empty: false })
         setError("Couldn't save that note. Your text has been restored.")
       }
     })
   }
 
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(e)
+  async function handleNoteSave(noteId, html) {
+    const saved = await updateCompanyNote(noteId, html)
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, body: saved.body, updated_at: saved.updated_at } : n)))
   }
 
   return (
@@ -59,18 +65,7 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
           {notes.map((note, i) => (
             <div key={note.id}>
               {i > 0 && <Separator className="mb-3" />}
-              <div className="flex items-start gap-3">
-                <Avatar className="h-7 w-7 shrink-0">
-                  <AvatarFallback className="text-[10px]">{initials(note.author_email)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium">{note.author_email}</span>
-                    <span className="text-xs text-muted-foreground">{timeAgo(note.created_at)}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap break-words">{note.body}</p>
-                </div>
-              </div>
+              <NoteItem note={note} onSave={handleNoteSave} />
             </div>
           ))}
         </div>
@@ -83,18 +78,15 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <Textarea
-          ref={textareaRef}
+        <RichTextEditor
+          editorRef={editorRef}
           placeholder="Add a note… (⌘↵ to submit)"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={3}
-          className="resize-none text-sm"
           disabled={isPending}
+          onChange={(html, empty) => setDraft({ html, empty })}
+          onSubmit={handleSubmit}
         />
         <div className="flex justify-end">
-          <Button type="submit" size="sm" disabled={!body.trim() || isPending} className="gap-1.5">
+          <Button type="submit" size="sm" disabled={draft.empty || isPending} className="gap-1.5">
             <SendIcon className="h-3.5 w-3.5" />
             {isPending ? "Saving…" : "Add Note"}
           </Button>

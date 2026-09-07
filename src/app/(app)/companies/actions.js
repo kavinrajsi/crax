@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
 import { recordAudit, snapshot } from "@/lib/audit"
+import { sanitizeNoteHtml, isEmptyNoteHtml } from "@/lib/note-html"
 
 export async function createCompany(fields) {
   const user = await requireUserOrThrow()
@@ -63,12 +64,31 @@ export async function linkContactToCompany(contactId, companyId) {
 
 export async function addCompanyNote(companyId, body) {
   const user = await requireUserOrThrow()
-  const trimmed = body?.trim()
-  if (!trimmed) return
-  await sql`
+  const html = sanitizeNoteHtml(body)
+  if (isEmptyNoteHtml(html)) return null
+  const [note] = await sql`
     INSERT INTO public.company_notes (company_id, author_email, body)
-    VALUES (${companyId}, ${user.email}, ${trimmed})
+    VALUES (${companyId}, ${user.email}, ${html})
+    RETURNING *
   `
   await recordAudit(user, "company.note", { table: "company_notes", id: companyId })
   revalidatePath(`/companies/${companyId}`)
+  return note
+}
+
+export async function updateCompanyNote(noteId, body) {
+  const user = await requireUserOrThrow()
+  const html = sanitizeNoteHtml(body)
+  if (isEmptyNoteHtml(html)) throw new Error("Note cannot be empty")
+
+  const before = await snapshot("company_notes", noteId)
+  if (!before) throw new Error("Note not found")
+  const [note] = await sql`
+    UPDATE public.company_notes SET body = ${html}, updated_at = now() WHERE id = ${noteId} RETURNING *
+  `
+  await recordAudit(user, "company.note_update", {
+    table: "company_notes", id: noteId, before: { body: before.body }, after: { body: note.body },
+  })
+  revalidatePath(`/companies/${note.company_id}`)
+  return note
 }
