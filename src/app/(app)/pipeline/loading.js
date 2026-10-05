@@ -56,6 +56,14 @@ export default function PipelineLoading() {
                             <Skeleton className="h-3 w-3 shrink-0" />
                             <Skeleton className="h-4 flex-1" />
                           </div>
+                          <div className="flex items-center gap-1">
+                            <Skeleton className="h-3 w-3 shrink-0" />
+                            <Skeleton className="h-4 flex-1" />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Skeleton className="h-3 w-3 shrink-0" />
+                            <Skeleton className="h-4 flex-1" />
+                          </div>
                         </div>
                       </div>
                     </div>

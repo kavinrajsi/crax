@@ -22,7 +22,15 @@ import { sourceDomain, timeAgo } from "@/lib/table-utils"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
-
+function CardRow({ icon: Icon, value }) {
+  const blank = !value
+  return (
+    <div className={`flex items-center gap-1 ${blank ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
+      <Icon className="h-3 w-3 shrink-0" />
+      <span className="truncate">{blank ? "—" : value}</span>
+    </div>
+  )
+}
 
 /* ─── Contact Card ────────────────────────────────────────────────────── */
 
@@ -63,41 +71,16 @@ function ContactCard({ contact }) {
             <span className="text-muted-foreground whitespace-nowrap shrink-0">{timeAgo(contact.created_at)}</span>
           </div>
 
-          {/* Email */}
-          {contact.email && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MailIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{contact.email}</span>
-            </div>
-          )}
-
-          {/* Company */}
-          {contact.company && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <BuildingIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{contact.company}</span>
-            </div>
-          )}
-
-          {/* Phone */}
-          {contact.phone && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <PhoneIcon className="h-3 w-3 shrink-0" />
-              {/* truncate like the other fields: without overflow:hidden a flex
-                  item cannot shrink below its content, and the column body's
-                  overflow-y-auto promotes overflow-x to auto — so one long value
-                  would give this single column its own horizontal scrollbar. */}
-              <span className="truncate">{contact.phone}</span>
-            </div>
-          )}
-
-          {/* Source */}
-          {contact.source_url && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <GlobeIcon className="h-3 w-3 shrink-0" />
-              <span className="truncate">{sourceDomain(contact.source_url, "")}</span>
-            </div>
-          )}
+          {/* Always four rows, blank as "—", so every card has the same shape
+              and a missing value reads as missing rather than as a shorter card. */}
+          <CardRow icon={MailIcon}     value={contact.email} />
+          <CardRow icon={BuildingIcon} value={contact.company} />
+          {/* truncate matters: without overflow:hidden a flex item cannot shrink
+              below its content, and the column body's overflow-y-auto promotes
+              overflow-x to auto — so one long value would give this single
+              column its own horizontal scrollbar. */}
+          <CardRow icon={PhoneIcon}    value={contact.phone} />
+          <CardRow icon={GlobeIcon}    value={contact.source_url ? sourceDomain(contact.source_url, "") : ""} />
 
           {/* Needs */}
           {Array.isArray(contact.needs) && contact.needs.length > 0 && (
