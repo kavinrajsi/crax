@@ -36,6 +36,7 @@ import {
   matchesFilters,
   presetRange,
   tally,
+  todayIst,
 } from "@/lib/contact-filters"
 
 /* The badge previously keyed a variant map on New / Contacted / Closed. Only
@@ -56,6 +57,12 @@ function LastTouchCell({ row }) {
       {label}
     </span>
   )
+}
+
+/* Custom range bounds stop at today (IST). A typed future date is clamped
+   rather than kept, so the table can never filter to days that do not exist yet. */
+function clampToToday(value) {
+  return value && value > todayIst() ? todayIst() : value
 }
 
 /* The Source select cannot hold "" as an item value — "" is the real "(none)"
@@ -176,6 +183,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
     setCustomTo("")
   }
 
+  const today = todayIst()
   const sourceValue = source === ALL ? ALL : source === "" ? SOURCE_NONE : source
   const sourceLabel = source === ALL ? "All sources" : source === "" ? "(none)" : source
   const statusLabel = status === ALL ? "All statuses" : statusMeta(status).label
@@ -282,8 +290,8 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                 <input
                   type="date"
                   value={customFrom}
-                  max={customTo || undefined}
-                  onChange={(event) => setCustomFrom(event.target.value)}
+                  max={customTo || today}
+                  onChange={(event) => setCustomFrom(clampToToday(event.target.value))}
                   className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
                 />
               </label>
@@ -293,7 +301,8 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                   type="date"
                   value={customTo}
                   min={customFrom || undefined}
-                  onChange={(event) => setCustomTo(event.target.value)}
+                  max={today}
+                  onChange={(event) => setCustomTo(clampToToday(event.target.value))}
                   className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
                 />
               </label>
