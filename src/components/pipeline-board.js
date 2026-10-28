@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ContactsKanban } from "@/components/contacts-kanban"
+import { CalendarIcon } from "lucide-react"
 import {
   PIPELINE_SOURCES,
   DEFAULT_PIPELINE_SOURCE,
@@ -57,7 +58,14 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
   const counts = Object.fromEntries(
     PIPELINE_SOURCES.map((s) => [s.key, base.filter((c) => contactMatchesSource(c, s.key)).length])
   )
-  const visible = counts[source] ?? 0
+  /* A source with no contacts in the current view gets no tab (Zoho, once its
+     rows are gone). "All" always stays. A ?source= pointing at a hidden tab
+     falls back to All. */
+  const shownSources = PIPELINE_SOURCES.filter(
+    (s) => s.key === DEFAULT_PIPELINE_SOURCE || s.key === source || counts[s.key] > 0
+  )
+  const activeSource = shownSources.some((s) => s.key === source) ? source : DEFAULT_PIPELINE_SOURCE
+  const visible = counts[activeSource] ?? 0
   const filtersActive = query.trim() !== "" || windowKey !== "any" || needs !== ALL
 
   function onSourceChange(next) {
@@ -96,12 +104,21 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
       />
 
       <div className="flex flex-col gap-3">
-        <FilterSearch value={query} onChange={setQuery} placeholder="Search name, email, phone or company…" />
+        {/* Phone: stacked. Desktop: search fills the row, date and needs sit beside it. */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="min-w-0 md:flex-1">
+          <FilterSearch value={query} onChange={setQuery} placeholder="Search name, email, phone or company…" />
+        </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex md:shrink-0">
           <Select value={windowKey} onValueChange={setWindowKey}>
-            <SelectTrigger className="h-10 w-full text-sm md:h-9" aria-label="Date">
-              <SelectValue>{windowLabel}</SelectValue>
+            <SelectTrigger className="h-10 w-full text-sm md:h-9 md:w-44" aria-label="Date">
+              <SelectValue>
+                <span className="flex items-center gap-2">
+                  <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                  {windowLabel}
+                </span>
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {DATE_WINDOWS.map((w) => (
@@ -111,7 +128,7 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
           </Select>
 
           <Select value={needs} onValueChange={setNeeds}>
-            <SelectTrigger className="h-10 w-full text-sm md:h-9" aria-label="Needs">
+            <SelectTrigger className="h-10 w-full text-sm md:h-9 md:w-44" aria-label="Needs">
               <SelectValue>{needs === ALL ? "All needs" : needs}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -121,6 +138,8 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
         </div>
 
         {windowKey === "custom" && (
@@ -155,9 +174,9 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
         )}
       </div>
 
-      <Tabs value={source} onValueChange={onSourceChange}>
+      <Tabs value={activeSource} onValueChange={onSourceChange}>
         <TabsList>
-          {PIPELINE_SOURCES.map((s) => (
+          {shownSources.map((s) => (
             <TabsTrigger key={s.key} value={s.key}>
               {s.label}
               <span className="text-xs tabular-nums text-muted-foreground">{counts[s.key]}</span>
@@ -169,7 +188,7 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
       <ContactsKanban
         contacts={contacts}
         statusColumns={statusColumns}
-        filter={(c) => matchesPipelineFilters(c, filters) && contactMatchesSource(c, source)}
+        filter={(c) => matchesPipelineFilters(c, filters) && contactMatchesSource(c, activeSource)}
       />
     </PageShell>
   )
