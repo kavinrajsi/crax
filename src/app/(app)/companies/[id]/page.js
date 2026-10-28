@@ -49,7 +49,7 @@ export default async function CompanyDetailPage({ params }) {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <BuildingIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -61,7 +61,7 @@ export default async function CompanyDetailPage({ params }) {
             <p className="text-sm text-muted-foreground mt-1">{company.industry}</p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0">
           <CompanyForm company={company} />
         </div>
       </div>

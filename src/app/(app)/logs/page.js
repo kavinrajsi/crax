@@ -1,3 +1,4 @@
+import { PageShell, PageHeader } from "@/components/page"
 import { sql } from "@/lib/db"
 import { LogsView } from "@/components/logs-view"
 import { LogInIcon, ShieldAlertIcon, ListIcon, UsersIcon } from "lucide-react"
@@ -64,15 +65,16 @@ export default async function LogsPage() {
   }))
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Audit Logs</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Changes and sign-ins recorded in <code className="text-xs bg-muted px-1 py-0.5 rounded">public.audit_logs</code> — {counts.total} events
-          {counts.total > logs.length && `, showing the most recent ${logs.length}`}. Page views are not recorded.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Audit Logs"
+        description={
+          <>
+            Changes and sign-ins recorded in <code className="rounded bg-muted px-1 py-0.5 text-xs">public.audit_logs</code> — {counts.total} events
+            {counts.total > logs.length && `, showing the most recent ${logs.length}`}. Page views are not recorded.
+          </>
+        }
+      />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -93,6 +95,6 @@ export default async function LogsPage() {
 
       {/* Table */}
       <LogsView logs={logs} total={counts.total} />
-    </div>
+    </PageShell>
   )
 }

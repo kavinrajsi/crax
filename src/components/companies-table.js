@@ -10,22 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { safeHref } from "@/lib/utils"
 import { CompanyForm } from "@/components/company-form"
 import { deleteCompany } from "@/app/(app)/companies/actions"
-import {
-  SearchIcon,
-  Trash2Icon,
-  GlobeIcon,
-} from "lucide-react"
+import { Trash2Icon, GlobeIcon } from "lucide-react"
 import { sortRows } from "@/lib/table-utils"
 import { SortableHead, useSort } from "@/components/sortable-head"
+import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
+import { ListCard } from "@/components/list-card"
 
-
-
+/** Website without scheme or trailing slash, for display. */
+function displayWebsite(url) {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "")
+}
 
 export function CompaniesTable({ companies: initialCompanies }) {
   const router = useRouter()
@@ -34,7 +33,6 @@ export function CompaniesTable({ companies: initialCompanies }) {
   const [error, setError] = useState(null)
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
   const [isPending, startTransition] = useTransition()
-
 
   const filtered = companies.filter((c) => {
     if (!search) return true
@@ -70,6 +68,10 @@ export function CompaniesTable({ companies: initialCompanies }) {
     setCompanies((prev) => [{ ...company, contact_count: 0 }, ...prev])
   }
 
+  const emptyText = companies.length === 0
+    ? "No companies yet — create one to get started."
+    : "No companies match your search."
+
   return (
     <div className="flex flex-col gap-4">
       {error && (
@@ -77,87 +79,102 @@ export function CompaniesTable({ companies: initialCompanies }) {
           {error}
         </p>
       )}
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search companies…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-8 text-xs"
-          />
+
+      {/* Toolbar: search fills the row; the count and add button sit beside it. */}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <FilterSearch value={search} onChange={setSearch} placeholder="Search companies…" />
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
-          <CompanyForm onSaved={handleCreated} />
-        </div>
+        <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">{rows.length}</Badge>
+        <CompanyForm onSaved={handleCreated} />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHead label="Company"  column="name"          sort={sort} onSort={toggleSort} />
-              <SortableHead label="Industry" column="industry"      sort={sort} onSort={toggleSort} />
-              <SortableHead label="Website"  column="website"       sort={sort} onSort={toggleSort} />
-              <SortableHead label="Phone"    column="phone"         sort={sort} onSort={toggleSort} />
-              <SortableHead label="Contacts" column="contact_count" sort={sort} onSort={toggleSort} className="w-24 text-center" />
-              <TableHead className="w-16" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12 text-sm">
-                  {companies.length === 0 ? "No companies yet — create one to get started." : "No companies match your search."}
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((company) => (
-                <TableRow
-                  key={company.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/companies/${company.id}`)}
-                >
-                  <TableCell className="font-medium">{company.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{company.industry || "—"}</TableCell>
-                  <TableCell className="text-xs">
-                    {safeHref(company.website) ? (
-                      <a
-                        href={safeHref(company.website)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 text-primary hover:underline"
-                      >
-                        <GlobeIcon className="h-3 w-3" />
-                        {company.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                      </a>
-                    ) : (company.website || "—")}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{company.phone || "—"}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="secondary" className="text-xs tabular-nums">{company.contact_count ?? 0}</Badge>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={(e) => handleDelete(e, company.id)}
-                      disabled={isPending}
-                    >
-                      <Trash2Icon className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
+      {rows.length === 0 ? (
+        <EmptyState>{emptyText}</EmptyState>
+      ) : (
+        <>
+          <MobileList>
+            {rows.map((company) => (
+              <ListCard
+                key={company.id}
+                href={`/companies/${company.id}`}
+                title={company.name}
+                subtitle={company.industry || (company.website ? displayWebsite(company.website) : null)}
+                badge={<Badge variant="secondary" className="text-xs tabular-nums">{company.contact_count ?? 0} contacts</Badge>}
+                meta={[company.phone || null, company.website ? displayWebsite(company.website) : null]}
+                actions={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={(e) => handleDelete(e, company.id)}
+                    disabled={isPending}
+                  >
+                    <Trash2Icon className="size-3.5" />
+                    Delete
+                  </Button>
+                }
+              />
+            ))}
+          </MobileList>
+
+          <DesktopTable>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableHead label="Company"  column="name"          sort={sort} onSort={toggleSort} />
+                  <SortableHead label="Industry" column="industry"      sort={sort} onSort={toggleSort} />
+                  <SortableHead label="Website"  column="website"       sort={sort} onSort={toggleSort} />
+                  <SortableHead label="Phone"    column="phone"         sort={sort} onSort={toggleSort} />
+                  <SortableHead label="Contacts" column="contact_count" sort={sort} onSort={toggleSort} className="w-24 text-center" />
+                  <TableHead className="w-16" />
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {rows.map((company) => (
+                  <TableRow
+                    key={company.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/companies/${company.id}`)}
+                  >
+                    <TableCell className="font-medium">{company.name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{company.industry || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {safeHref(company.website) ? (
+                        <a
+                          href={safeHref(company.website)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <GlobeIcon className="h-3 w-3" />
+                          {displayWebsite(company.website)}
+                        </a>
+                      ) : (company.website || "—")}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{company.phone || "—"}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="secondary" className="text-xs tabular-nums">{company.contact_count ?? 0}</Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={(e) => handleDelete(e, company.id)}
+                        disabled={isPending}
+                      >
+                        <Trash2Icon className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DesktopTable>
+        </>
+      )}
     </div>
   )
 }

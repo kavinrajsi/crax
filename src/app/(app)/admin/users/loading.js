@@ -6,7 +6,7 @@ import { PageHeading, StatCardGrid, TableSkeleton } from "@/components/skeletons
  */
 export default function AdminUsersLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-32" subWidth="w-96" />
 
       {/* Four cards, no sub-line — same shape as the logs page's */}

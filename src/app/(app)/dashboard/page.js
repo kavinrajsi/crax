@@ -1,3 +1,4 @@
+import { PageShell, PageHeader } from "@/components/page"
 import Link from "next/link"
 import { MailIcon, GlobeIcon, AlarmClockIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -75,11 +76,8 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Welcome back, {firstName}.</p>
-      </div>
+    <PageShell>
+      <PageHeader title="Dashboard" description={`Welcome back, ${firstName}.`} />
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -146,6 +144,6 @@ export default async function DashboardPage() {
         </Card>
 
       </div>
-    </div>
+    </PageShell>
   )
 }

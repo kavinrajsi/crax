@@ -12,7 +12,7 @@ const CARDS_PER_COLUMN = [3, 2, 2, 1, 1, 1, 1, 1, 1]
 
 export default function PipelineLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-28" subWidth="w-72" />
 
       <TabsListSkeleton widths={["w-14", "w-16", "w-20", "w-18"]} />

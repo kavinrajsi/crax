@@ -8,7 +8,7 @@ import { PageHeading, TableSkeleton } from "@/components/skeletons"
  */
 export default function CompaniesLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-40" subWidth="w-32" />
 
       <div className="flex flex-col gap-4">

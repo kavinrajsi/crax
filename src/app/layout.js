@@ -1,15 +1,11 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { DM_Sans } from "next/font/google"
 import { NeonAuthProvider } from "@/components/neon-auth-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
 })
 
@@ -18,15 +14,25 @@ export const metadata = {
   description: "Crax app",
 }
 
+/* viewportFit cover lets the fixed mobile tab bar sit over the home-indicator
+   area; the tab bar pads itself with env(safe-area-inset-bottom). */
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+}
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={dmSans.variable} suppressHydrationWarning>
       <body>
-        <NeonAuthProvider>
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
-        </NeonAuthProvider>
+        <ThemeProvider>
+          <NeonAuthProvider>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </NeonAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

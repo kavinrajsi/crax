@@ -18,6 +18,8 @@ import {
 import { sortRows, formatDate, timeAgo } from "@/lib/table-utils"
 import { SortableHead, useSort } from "@/components/sortable-head"
 import { JsonViewer } from "@/components/json-viewer"
+import { ListCard } from "@/components/list-card"
+import { EmptyState, MobileList } from "@/components/page"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
@@ -118,7 +120,7 @@ export function LogsView({ logs, total }) {
               placeholder="Search actor, action, ID…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-xs"
+              className="pl-8 h-10 text-sm md:h-8 md:text-xs"
             />
           </div>
         </div>
@@ -142,7 +144,34 @@ export function LogsView({ logs, total }) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-0">
+      <CardContent className="p-0 md:p-0">
+        {/* Phone: one card per event, the detail columns are on the table below md. */}
+        <div className="p-3 md:hidden">
+          <MobileList>
+            {rows.length === 0 ? (
+              <EmptyState>No events match your filters.</EmptyState>
+            ) : (
+              rows.map((row) => (
+                <ListCard
+                  key={row.id}
+                  title={
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ACTION_STYLES[row.action] ?? ACTION_STYLES.view_list}`}>
+                      {row.action}
+                    </span>
+                  }
+                  subtitle={row.actor_email || "—"}
+                  meta={[
+                    timeAgo(row.created_at),
+                    row.target_table ? `${row.target_table}${row.target_id ? ` #${row.target_id}` : ""}` : null,
+                    row.ip_address || null,
+                  ]}
+                />
+              ))
+            )}
+          </MobileList>
+        </div>
+
+        <div className="hidden md:block">
         <ScrollArea className="h-[560px]">
           <Table>
             <TableHeader>
@@ -214,6 +243,7 @@ export function LogsView({ logs, total }) {
             </TableBody>
           </Table>
         </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   )

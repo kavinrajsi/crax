@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdsLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-32" subWidth="w-56" />
 
       <Card>

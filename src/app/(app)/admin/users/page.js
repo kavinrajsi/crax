@@ -2,6 +2,8 @@ import Link from "next/link"
 import { UsersIcon, ShieldCheckIcon, KeyRoundIcon, ActivityIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, EmptyState } from "@/components/page"
+import { ListCard } from "@/components/list-card"
 import {
   Table,
   TableBody,
@@ -94,10 +96,11 @@ export default async function AdminUsersPage() {
   ]
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">All Users</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+    <PageShell>
+      <PageHeader
+        title="All Users"
+        description={
+        <>
           Every account in{" "}
           <code className="text-xs bg-muted px-1 py-0.5 rounded">neon_auth.user</code>. Open a row
           for that user&apos;s own log, or see{" "}
@@ -105,8 +108,9 @@ export default async function AdminUsersPage() {
             Audit Logs
           </Link>{" "}
           for every user at once. This page is read-only.
-        </p>
-      </div>
+        </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map(({ key, label, icon: Icon, value }) => (
@@ -124,6 +128,34 @@ export default async function AdminUsersPage() {
 
       <Card>
         <CardContent className="p-0">
+          {/* Phone: one card per account, with the same facts as the table. */}
+          <div className="flex flex-col gap-2 p-3 md:hidden">
+            {users.length === 0 && <EmptyState>No accounts yet.</EmptyState>}
+            {users.map((u) => {
+              const admin = isAdminEmail(u.email, process.env.SUPER_ADMIN_EMAILS)
+              return (
+                <ListCard
+                  key={u.id}
+                  href={`/admin/users/${u.id}`}
+                  title={u.name || "—"}
+                  subtitle={u.email}
+                  badge={
+                    <div className="flex gap-1">
+                      {admin && <Badge variant="secondary">Super admin</Badge>}
+                      {u.banned && <Badge variant="destructive">Banned</Badge>}
+                    </div>
+                  }
+                  meta={[
+                    `Joined ${formatDate(u.created_at, { compact: true })}`,
+                    u.last_session ? timeAgo(u.last_session) : "No live session",
+                    `${u.events ?? 0} events`,
+                  ]}
+                />
+              )
+            })}
+          </div>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -168,6 +200,7 @@ export default async function AdminUsersPage() {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -176,6 +209,6 @@ export default async function AdminUsersPage() {
         trail only holds what the app has written since it was added, so an account that predates it
         can legitimately show zero.
       </p>
-    </div>
+    </PageShell>
   )
 }

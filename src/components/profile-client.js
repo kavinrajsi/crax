@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PageShell } from "@/components/page"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FacebookBackfillCard } from "@/components/lead-backfill"
 import { CheckCircleIcon, AlertCircleIcon, Link2Icon, XIcon } from "lucide-react"
@@ -269,7 +270,7 @@ export function ProfileClient({ initialName, initialEmail, connections = [], lin
   const displayName = initialName || initialEmail || "User"
 
   return (
-    <div className="flex flex-col gap-6">
+    <PageShell>
       {/* Profile header */}
       <div className="flex items-center gap-4">
         <Avatar className="h-16 w-16">
@@ -285,7 +286,8 @@ export function ProfileClient({ initialName, initialEmail, connections = [], lin
 
       {/* Tabs */}
       <Tabs defaultValue="account">
-        <TabsList>
+        {/* Phone: three equal tabs across the full width. */}
+        <TabsList className="grid w-full grid-cols-3 md:inline-flex md:w-auto">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
@@ -304,6 +306,6 @@ export function ProfileClient({ initialName, initialEmail, connections = [], lin
           </TabsContent>
         </div>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

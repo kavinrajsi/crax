@@ -46,22 +46,22 @@ export default async function AdsPage() {
           {configured && campaigns.map((c) => {
             const pct = (c.cost / maxCost) * 100
             return (
-              <div key={c.id} className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground w-40 shrink-0 text-right truncate" title={c.name}>
+              /* Phone: name on its own line, bar full width, figures beneath.
+                 md+: one row, name / bar / figures side by side. */
+              <div key={c.id} className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-3">
+                <span className="truncate text-sm font-medium md:w-40 md:shrink-0 md:text-right md:text-xs md:font-normal md:text-muted-foreground" title={c.name}>
                   {c.name}
                 </span>
-                <div className="flex-1 h-6 bg-muted rounded-lg overflow-hidden relative">
+                <div className="h-6 flex-1 bg-muted rounded-lg overflow-hidden relative">
                   <div className="h-full rounded-lg bg-primary/50" style={{ width: `${pct}%` }} />
                   <span className="absolute inset-y-0 left-2 flex items-center text-xs font-medium">
                     {CURRENCY.format(c.cost)}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground w-16 shrink-0 tabular-nums text-right">
-                  {c.clicks.toLocaleString()} clicks
-                </span>
-                <span className="text-xs text-muted-foreground w-20 shrink-0 tabular-nums text-right">
-                  {c.conversions.toLocaleString()} conv.
-                </span>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums md:contents">
+                  <span className="md:w-16 md:shrink-0 md:text-right">{c.clicks.toLocaleString()} clicks</span>
+                  <span className="md:w-20 md:shrink-0 md:text-right">{c.conversions.toLocaleString()} conv.</span>
+                </div>
               </div>
             )
           })}
