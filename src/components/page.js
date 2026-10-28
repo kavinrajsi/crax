@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
    Server-safe: no "use client" here, so pages can use these directly. */
 
 export function PageShell({ children, className }) {
-  return <div className={cn("flex w-full flex-col gap-5", className)}>{children}</div>
+  return <div className={cn("flex w-full min-w-0 flex-col gap-5", className)}>{children}</div>
 }
 
 /** Title and actions. Actions wrap under the title on phones. */
@@ -65,12 +65,12 @@ export function FilterSearch({ value, onChange, placeholder }) {
 
 /** Phone list of ListCard rows. Hidden from md up, where DesktopTable shows. */
 export function MobileList({ children }) {
-  return <div className="flex flex-col gap-2 md:hidden">{children}</div>
+  return <div className="flex min-w-0 flex-col gap-2 md:hidden">{children}</div>
 }
 
 /** Table wrapper that only shows from md up. */
 export function DesktopTable({ children }) {
-  return <div className="hidden overflow-hidden rounded-xl border border-border md:block">{children}</div>
+  return <div className="hidden min-w-0 overflow-hidden rounded-xl border border-border md:block">{children}</div>
 }
 
 /** Shown in place of the list or table when nothing matches. Works at both widths. */
