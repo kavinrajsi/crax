@@ -2,6 +2,7 @@ import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 import { recordAudit } from "@/lib/audit"
 import { resolveExportColumns } from "@/lib/export-columns"
+import { CONTACT_STATUS_KEYS, RESOLVED_STATUS_KEYS } from "@/lib/contact-statuses"
 
 /**
  * Strips the scheme and a leading `www.` so what is left of source_url up to the
@@ -75,6 +76,23 @@ export async function GET(request) {
   const domains = listParam(searchParams, "domain")
   const needs = listParam(searchParams, "need")
   const tags = listParam(searchParams, "tag")
+
+  const statuses = listParam(searchParams, "status")
+  if (statuses && statuses.some((key) => !CONTACT_STATUS_KEYS.includes(key))) {
+    return Response.json(
+      { error: "The status parameter must be a contact status key." },
+      { status: 400 }
+    )
+  }
+
+  /* The table's search box and "Needs attention" toggle are matched in the
+     browser; these two mirror them here so the export is the same set of rows
+     the table shows. ILIKE with the wildcard characters escaped keeps the
+     search literal, and is case-insensitive like the client's toLowerCase(). */
+  const q = searchParams.get("q")?.trim() || null
+  const pattern = q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : null
+  const attention = searchParams.get("attention") === "1" ? true : null
+
   const columns = resolveExportColumns(listParam(searchParams, "col"))
 
   /* One query, no branches. Every filter is a bound parameter guarded by an
@@ -99,10 +117,17 @@ export async function GET(request) {
       AND (${domains}::text[] IS NULL OR c.source_domain = ANY(${domains}))
       AND (${from}::timestamptz IS NULL OR c.created_at >= ${from})
       AND (${to}::timestamptz IS NULL OR c.created_at < ${to}::timestamptz + interval '1 day')
+      AND (${statuses}::text[] IS NULL OR c.status = ANY(${statuses}))
       AND (${needs}::text[] IS NULL OR c.needs && ${needs})
       AND (${tags}::text[] IS NULL OR EXISTS (
             SELECT 1 FROM public.contact_tags t
             WHERE t.contact_id = c.id AND t.tag = ANY(${tags})))
+      AND (${pattern}::text IS NULL OR c.name ILIKE ${pattern}
+            OR c.email ILIKE ${pattern} OR c.company ILIKE ${pattern}
+            OR c.phone ILIKE ${pattern})
+      AND (${attention}::boolean IS NULL OR (
+            c.status <> ALL(${RESOLVED_STATUS_KEYS}::text[])
+            AND NOT EXISTS (SELECT 1 FROM public.contact_notes n WHERE n.contact_id = c.id)))
     ORDER BY c.created_at DESC
   `
 

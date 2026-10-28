@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   SearchIcon,
   AlarmClockIcon,
 } from "lucide-react"
@@ -22,7 +29,14 @@ import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
-import { statusMeta } from "@/lib/contact-statuses"
+import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
+import {
+  ALL,
+  DATE_PRESETS,
+  matchesFilters,
+  presetRange,
+  tally,
+} from "@/lib/contact-filters"
 
 /* The badge previously keyed a variant map on New / Contacted / Closed. Only
    "New" ever matched: "Contacted" is not a status this app has, and the real
@@ -44,6 +58,11 @@ function LastTouchCell({ row }) {
   )
 }
 
+/* The Source select cannot hold "" as an item value — "" is the real "(none)"
+   bucket (source_url defaults to ''), so it is mapped to this sentinel in the
+   UI and back to "" in state. */
+const SOURCE_NONE = "__none__"
+
 /* ─── main component ───────────────────────────────────────────────────── */
 
 export function DataPageClient({ contacts, companies, contactTags }) {
@@ -52,6 +71,11 @@ export function DataPageClient({ contacts, companies, contactTags }) {
   const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
   // Seeded from ?attention=1 so the dashboard card deep-links into this view.
   const [onlyStale, setOnlyStale] = useState(searchParams.get("attention") === "1")
+  const [status, setStatus] = useState(ALL)
+  const [source, setSource] = useState(ALL)
+  const [datePreset, setDatePreset] = useState(ALL)
+  const [customFrom, setCustomFrom] = useState("")
+  const [customTo, setCustomTo] = useState("")
   const rowLinkRef = useRef(null)
 
   /* Drawer open state lives in the URL, but written with the native History API
@@ -112,68 +136,185 @@ export function DataPageClient({ contacts, companies, contactTags }) {
 
   const staleCount = useMemo(() => contacts.filter(needsAttention).length, [contacts])
 
-  const rows = useMemo(() => {
-    let filtered = contacts
-    if (onlyStale) filtered = filtered.filter(needsAttention)
-    if (search) {
-      const query = search.toLowerCase()
-      filtered = filtered.filter(
-        (contact) =>
-          contact.name?.toLowerCase().includes(query) ||
-          contact.email?.toLowerCase().includes(query) ||
-          contact.company?.toLowerCase().includes(query) ||
-          contact.phone?.includes(query)
-      )
+  /* Source options come from source_domain, derived in SQL by data/page.js.
+     Nulls are dropped; "" stays as its own option, shown as "(none)". */
+  const sourceOptions = useMemo(
+    () => tally(contacts.map((contact) => contact.source_domain).filter((d) => d != null)),
+    [contacts]
+  )
+
+  /* One object carries every filter, so the table and the export dialog read
+     the same values. The date preset resolves to a from/to pair here. */
+  const filters = useMemo(() => {
+    const range = datePreset === "custom"
+      ? { from: customFrom, to: customTo }
+      : presetRange(datePreset)
+    return {
+      status,
+      source,
+      preset: datePreset,
+      from: range.from,
+      to: range.to,
+      search,
+      attention: onlyStale,
     }
-    return sortRows(filtered, sort.column, sort.direction)
-  }, [contacts, search, sort, onlyStale])
+  }, [status, source, datePreset, customFrom, customTo, search, onlyStale])
+
+  const rows = useMemo(
+    () => sortRows(contacts.filter((contact) => matchesFilters(contact, filters)), sort.column, sort.direction),
+    [contacts, filters, sort]
+  )
+
+  const activeFilterCount =
+    (status !== ALL ? 1 : 0) + (source !== ALL ? 1 : 0) + (datePreset !== ALL ? 1 : 0)
+
+  function clearFilters() {
+    setStatus(ALL)
+    setSource(ALL)
+    setDatePreset(ALL)
+    setCustomFrom("")
+    setCustomTo("")
+  }
+
+  const sourceValue = source === ALL ? ALL : source === "" ? SOURCE_NONE : source
+  const sourceLabel = source === ALL ? "All sources" : source === "" ? "(none)" : source
+  const statusLabel = status === ALL ? "All statuses" : statusMeta(status).label
+  const dateLabel = DATE_PRESETS.find((preset) => preset.key === datePreset)?.label
 
   return (
     <div className="flex flex-col w-full">
         {/* Sticky header */}
-        <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background px-4 py-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-sm font-medium">Contacts</span>
-            <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
-          </div>
+        <header className="sticky top-0 z-10 flex flex-col gap-3 border-b bg-background px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-sm font-medium">Contacts</span>
+              <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
+            </div>
 
-          <div className="ml-auto flex items-center gap-2">
-
-            {/* Needs attention */}
-            <Button
-              variant={onlyStale ? "default" : "outline"}
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => setOnlyStale((v) => !v)}
-              aria-pressed={onlyStale}
-              title="Open leads nobody has left a note on"
-              disabled={staleCount === 0 && !onlyStale}
-            >
-              <AlarmClockIcon className="h-3.5 w-3.5" />
-              Needs attention
-              <Badge
-                variant={onlyStale ? "secondary" : "outline"}
-                className="text-[10px] px-1.5 py-0 tabular-nums"
+            <div className="ml-auto flex items-center gap-2">
+              {/* Needs attention */}
+              <Button
+                variant={onlyStale ? "default" : "outline"}
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => setOnlyStale((v) => !v)}
+                aria-pressed={onlyStale}
+                title="Open leads nobody has left a note on"
+                disabled={staleCount === 0 && !onlyStale}
               >
-                {staleCount}
-              </Badge>
-            </Button>
+                <AlarmClockIcon className="h-3.5 w-3.5" />
+                Needs attention
+                <Badge
+                  variant={onlyStale ? "secondary" : "outline"}
+                  className="text-[10px] px-1.5 py-0 tabular-nums"
+                >
+                  {staleCount}
+                </Badge>
+              </Button>
 
-            {/* Export — opens the filter/column dialog. Leaving it untouched
-                exports everything, which is what this button used to do. */}
-            <CsvExportDialog contacts={contacts} contactTags={contactTags} />
-
-            {/* Search */}
-            <div className="relative">
-              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search name, email, phone…"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="pl-8 h-8 w-56 text-xs"
-              />
+              {/* Export — exports exactly the rows this view shows. */}
+              <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
             </div>
           </div>
+
+          {/* Search */}
+          <div className="relative">
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search name, email, company, phone…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="pl-8 h-8 w-full text-xs"
+            />
+          </div>
+
+          {/* Filters: date, status, source — combined with each other and with
+              search and Needs attention, and carried into the export. */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Select value={datePreset} onValueChange={setDatePreset}>
+              <SelectTrigger className="h-8 w-full text-xs" aria-label="Date">
+                <SelectValue>{dateLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_PRESETS.map((preset) => (
+                  <SelectItem key={preset.key} value={preset.key}>{preset.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={status}
+              onValueChange={setStatus}
+            >
+              <SelectTrigger className="h-8 w-full text-xs" aria-label="Status">
+                <SelectValue>{statusLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All statuses</SelectItem>
+                {CONTACT_STATUSES.map((opt) => (
+                  <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={sourceValue}
+              onValueChange={(value) => setSource(value === ALL ? ALL : value === SOURCE_NONE ? "" : value)}
+            >
+              <SelectTrigger className="h-8 w-full text-xs" aria-label="Source">
+                <SelectValue>{sourceLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All sources</SelectItem>
+                {sourceOptions.map(({ value, count }) => (
+                  <SelectItem key={value === "" ? SOURCE_NONE : value} value={value === "" ? SOURCE_NONE : value}>
+                    {value === "" ? "(none)" : value} · {count}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {datePreset === "custom" && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 text-xs">
+                <span className="w-10 shrink-0 text-muted-foreground">From</span>
+                <input
+                  type="date"
+                  value={customFrom}
+                  max={customTo || undefined}
+                  onChange={(event) => setCustomFrom(event.target.value)}
+                  className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-xs">
+                <span className="w-10 shrink-0 text-muted-foreground">To</span>
+                <input
+                  type="date"
+                  value={customTo}
+                  min={customFrom || undefined}
+                  onChange={(event) => setCustomTo(event.target.value)}
+                  className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
+                />
+              </label>
+            </div>
+          )}
+
+          {activeFilterCount > 0 && (
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>
+                {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} on
+                {" · "}{rows.length} of {contacts.length} shown
+              </span>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="underline-offset-2 hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
         </header>
 
         {/* Table */}

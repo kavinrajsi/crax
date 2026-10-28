@@ -17,15 +17,23 @@ export default function DataLoading() {
       <div className="overflow-hidden rounded-xl border border-border">
         <div className="flex w-full flex-col">
           {/* DataPageClient's sticky header */}
-          <header className="flex items-center gap-2 border-b px-4 py-3">
-            <div className="flex shrink-0 items-center gap-2">
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-8 rounded-4xl" />
+          <header className="flex flex-col gap-3 border-b px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-8 rounded-4xl" />
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <Skeleton className="h-8 w-40 rounded-lg" />
+                <Skeleton className="h-8 w-24 rounded-lg" />
+              </div>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <Skeleton className="h-8 w-40 rounded-lg" />
-              <Skeleton className="h-8 w-24 rounded-lg" />
-              <Skeleton className="h-8 w-56 rounded-lg" />
+            {/* Search, then the date / status / source row */}
+            <Skeleton className="h-8 w-full rounded-lg" />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Skeleton className="h-8 w-full rounded-lg" />
+              <Skeleton className="h-8 w-full rounded-lg" />
+              <Skeleton className="h-8 w-full rounded-lg" />
             </div>
           </header>
 

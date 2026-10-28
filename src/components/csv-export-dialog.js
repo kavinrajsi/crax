@@ -12,9 +12,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { EXPORT_COLUMNS, DEFAULT_EXPORT_COLUMNS } from "@/lib/export-columns"
-
-/** Matches EXPORT_TZ_OFFSET in the export route — see the note on dates below. */
-const EXPORT_TZ_OFFSET = "+05:30"
+import { CONTACT_STATUSES } from "@/lib/contact-statuses"
+import { ALL, DATE_PRESETS, tally } from "@/lib/contact-filters"
 
 /** Shown for the contacts whose source_url is the empty-string default. */
 const NO_DOMAIN_LABEL = "(none)"
@@ -23,15 +22,6 @@ function toggle(set, value) {
   const next = new Set(set)
   next.has(value) ? next.delete(value) : next.add(value)
   return next
-}
-
-/** Distinct values with counts, most common first. */
-function tally(values) {
-  const counts = new Map()
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
-  return [...counts.entries()]
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
 }
 
 function CheckRow({ checked, onChange, label, count }) {
@@ -62,30 +52,43 @@ function Section({ title, children }) {
   )
 }
 
-export function CsvExportDialog({ contacts, contactTags }) {
+/** The table's filters as a sentence, so the dialog says what it will export. */
+function describeFilters(filters) {
+  const parts = []
+  if (filters.status !== ALL) {
+    parts.push(`Status: ${CONTACT_STATUSES.find((s) => s.key === filters.status)?.label ?? filters.status}`)
+  }
+  if (filters.source !== ALL) {
+    parts.push(`Source: ${filters.source === "" ? NO_DOMAIN_LABEL : filters.source}`)
+  }
+  if (filters.preset !== ALL) {
+    const label = filters.preset === "custom"
+      ? `${filters.from || "…"} to ${filters.to || "…"}`
+      : DATE_PRESETS.find((p) => p.key === filters.preset)?.label
+    parts.push(`Date: ${label}`)
+  }
+  if (filters.search.trim()) parts.push(`Search: "${filters.search.trim()}"`)
+  if (filters.attention) parts.push("Needs attention only")
+  return parts
+}
+
+/**
+ * The export dialog. `rows` is what the table currently shows, already filtered
+ * by status, source, date, search and attention; this dialog adds the needs and
+ * tags filters and the column choice, then sends every filter to the export
+ * route so the server returns the same set.
+ */
+export function CsvExportDialog({ rows, contactTags, filters }) {
   const [open, setOpen] = useState(false)
-  const [domains, setDomains] = useState(new Set())
   const [needs, setNeeds] = useState(new Set())
   const [tags, setTags] = useState(new Set())
-  const [from, setFrom] = useState("")
-  const [to, setTo] = useState("")
   const [columns, setColumns] = useState(new Set(DEFAULT_EXPORT_COLUMNS))
 
-  /* Options come from source_domain, derived in SQL by data/page.js using the
-     same expression the export route filters with. Deriving them here with
-     sourceDomain() instead would produce options that match nothing server-side
-     — it drops the port and throws on the empty string. */
-  /* Nulls are dropped rather than folded into the "" bucket: server-side
-     `source_domain = ANY(...)` is NULL for a NULL domain and so matches nothing.
-     Offering it as "(none)" would advertise an option that exports zero rows.
-     ("" itself is a real, matchable value — source_url defaults to it.) */
-  const domainOptions = useMemo(
-    () => tally(contacts.map((contact) => contact.source_domain).filter((d) => d != null)),
-    [contacts]
-  )
+  /* Options come from the rows the table shows, so a need or tag with no match
+     in the current view is not offered. */
   const needOptions = useMemo(
-    () => tally(contacts.flatMap((contact) => contact.needs ?? [])),
-    [contacts]
+    () => tally(rows.flatMap((contact) => contact.needs ?? [])),
+    [rows]
   )
   const tagOptions = useMemo(
     () => tally((contactTags ?? []).map((row) => row.tag)),
@@ -101,34 +104,19 @@ export function CsvExportDialog({ contacts, contactTags }) {
     return map
   }, [contactTags])
 
-  /* Mirrors the server's filter algebra exactly: OR within a group, AND across
-     groups, and a half-open date range whose bounds are IST wall-clock dates. */
+  /* The table's rows are already filtered by everything except needs and tags,
+     so the live count is those rows narrowed by the two remaining filters. The
+     server applies the same algebra: OR within a group, AND across groups. */
   const matchCount = useMemo(() => {
-    const fromAt = from ? new Date(`${from}T00:00:00${EXPORT_TZ_OFFSET}`) : null
-    const toAt = to ? new Date(`${to}T00:00:00${EXPORT_TZ_OFFSET}`) : null
-    /* Postgres advances `+ interval '1 day'` in the session timezone; setDate
-       advances a local calendar day. The two differ by an hour across a DST
-       transition, which IST does not have — inert for the intended user. */
-    if (toAt) toAt.setDate(toAt.getDate() + 1)
-
-    return contacts.filter((contact) => {
-      // `== null` check, not `?? ""` — see domainOptions.
-      if (domains.size && (contact.source_domain == null || !domains.has(contact.source_domain))) return false
+    return rows.filter((contact) => {
       if (needs.size && !(contact.needs ?? []).some((need) => needs.has(need))) return false
       if (tags.size) {
         const owned = tagsByContact.get(contact.id)
         if (!owned || ![...tags].some((tag) => owned.has(tag))) return false
       }
-      if (fromAt || toAt) {
-        // A date filter drops NULL-dated rows, matching the SQL comparison.
-        if (!contact.created_at) return false
-        const at = new Date(contact.created_at)
-        if (fromAt && at < fromAt) return false
-        if (toAt && at >= toAt) return false
-      }
       return true
     }).length
-  }, [contacts, domains, needs, tags, from, to, tagsByContact])
+  }, [rows, needs, tags, tagsByContact])
 
   function handleExport() {
     const params = new URLSearchParams()
@@ -137,31 +125,34 @@ export function CsvExportDialog({ contacts, contactTags }) {
     for (const column of EXPORT_COLUMNS) {
       if (columns.has(column.key)) params.append("col", column.key)
     }
-    for (const { value } of domainOptions) if (domains.has(value)) params.append("domain", value)
-    for (const { value } of needOptions) if (needs.has(value)) params.append("need", value)
-    for (const { value } of tagOptions) if (tags.has(value)) params.append("tag", value)
-    if (from) params.set("from", from)
-    if (to) params.set("to", to)
+    for (const need of needs) params.append("need", need)
+    for (const tag of tags) params.append("tag", tag)
+
+    if (filters.status !== ALL) params.set("status", filters.status)
+    // "" is the real "(none)" bucket, so it is sent as an empty value, not skipped.
+    if (filters.source !== ALL) params.append("domain", filters.source)
+    if (filters.from) params.set("from", filters.from)
+    if (filters.to) params.set("to", filters.to)
+    if (filters.search.trim()) params.set("q", filters.search.trim())
+    if (filters.attention) params.set("attention", "1")
 
     window.location.href = `/api/contacts/export?${params.toString()}`
     setOpen(false)
   }
 
   function handleReset() {
-    setDomains(new Set())
     setNeeds(new Set())
     setTags(new Set())
-    setFrom("")
-    setTo("")
     setColumns(new Set(DEFAULT_EXPORT_COLUMNS))
   }
 
   const noColumns = columns.size === 0
+  const activeFilters = describeFilters(filters)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {/* Label and size held identical to the button this replaced — the /data
-          loading skeleton sizes its three header bars to match (w-24 here). */}
+          loading skeleton sizes its header bars to match. */}
       <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" />}>
         <DownloadIcon className="h-3.5 w-3.5" />
         Export CSV
@@ -173,27 +164,13 @@ export function CsvExportDialog({ contacts, contactTags }) {
         </DialogHeader>
 
         <p className="text-xs text-muted-foreground">
-          Leave a filter empty to include everything. Options within a filter match
-          any; separate filters must all match.
+          {activeFilters.length > 0
+            ? <>Exports the rows the table is filtered to: <span className="text-foreground">{activeFilters.join(" · ")}</span>. </>
+            : <>Exports every contact. </>}
+          Needs and tags narrow further; options within each match any.
         </p>
 
         <div className="mt-1 grid gap-4 sm:grid-cols-2">
-          <Section title="Source">
-            {domainOptions.length === 0 ? (
-              <p className="py-1 text-xs text-muted-foreground">No sources.</p>
-            ) : (
-              domainOptions.map(({ value, count }) => (
-                <CheckRow
-                  key={value}
-                  checked={domains.has(value)}
-                  onChange={() => setDomains((prev) => toggle(prev, value))}
-                  label={value === "" ? NO_DOMAIN_LABEL : value}
-                  count={count}
-                />
-              ))
-            )}
-          </Section>
-
           <Section title="Needs">
             {needOptions.length === 0 ? (
               <p className="py-1 text-xs text-muted-foreground">No needs recorded.</p>
@@ -225,37 +202,6 @@ export function CsvExportDialog({ contacts, contactTags }) {
               ))
             )}
           </Section>
-
-          <div className="flex flex-col gap-1">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Date range
-            </p>
-            <div className="flex flex-col gap-2 rounded-lg border border-border px-2 py-2">
-              <label className="flex items-center gap-2 text-xs">
-                <span className="w-10 shrink-0 text-muted-foreground">From</span>
-                <input
-                  type="date"
-                  value={from}
-                  max={to || undefined}
-                  onChange={(event) => setFrom(event.target.value)}
-                  className="h-7 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-xs">
-                <span className="w-10 shrink-0 text-muted-foreground">To</span>
-                <input
-                  type="date"
-                  value={to}
-                  min={from || undefined}
-                  onChange={(event) => setTo(event.target.value)}
-                  className="h-7 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
-                />
-              </label>
-              <p className="text-[10px] text-muted-foreground">
-                Inclusive of both days, in IST.
-              </p>
-            </div>
-          </div>
         </div>
 
         <div className="mt-2 flex flex-col gap-1">
