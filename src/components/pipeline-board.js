@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageShell, PageHeader, FilterSearch } from "@/components/page"
 import {
   Select,
@@ -30,6 +29,15 @@ import { DATE_WINDOWS, matchesPipelineFilters } from "@/lib/pipeline-filters"
  * Next syncs with useSearchParams) so a tab is linkable without a navigation
  * that would re-run the page's SQL and flash the loading skeleton.
  */
+/* Chip colours for the source filter. Zoho is kept so a future Zoho import
+   gets a colour; the tab itself stays hidden while it has no contacts. */
+const SOURCE_COLORS = {
+  all: "#64748b",
+  zoho: "#a855f7",
+  madarth: "#0ea5e9",
+  search: "#f59e0b",
+}
+
 export function PipelineBoard({ contacts, statusColumns, initialSource }) {
   const [source, setSource] = useState(initialSource)
   const [query, setQuery] = useState("")
@@ -104,6 +112,32 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
       />
 
       <div className="flex flex-col gap-3">
+        {/* Source chips, styled like the contacts status chips: tinted, with the
+            selected one stronger. Hidden sources (no contacts) are not shown. */}
+        <div role="group" aria-label="Source" className="flex flex-wrap gap-2">
+          {shownSources.map((s) => {
+            const active = s.key === activeSource
+            const color = SOURCE_COLORS[s.key] ?? "#64748b"
+            return (
+              <button
+                key={s.key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onSourceChange(s.key)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm transition-colors"
+                style={{
+                  backgroundColor: `${color}${active ? "30" : "12"}`,
+                  color,
+                  borderColor: `${color}${active ? "90" : "40"}`,
+                }}
+              >
+                {s.label}
+                <span className="font-medium tabular-nums">{counts[s.key]}</span>
+              </button>
+            )
+          })}
+        </div>
+
         {/* Phone: stacked. Desktop: search fills the row, date and needs sit beside it. */}
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
         <div className="min-w-0 md:flex-1">
@@ -174,16 +208,6 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
         )}
       </div>
 
-      <Tabs value={activeSource} onValueChange={onSourceChange}>
-        <TabsList>
-          {shownSources.map((s) => (
-            <TabsTrigger key={s.key} value={s.key}>
-              {s.label}
-              <span className="text-xs tabular-nums text-muted-foreground">{counts[s.key]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
 
       <ContactsKanban
         contacts={contacts}
