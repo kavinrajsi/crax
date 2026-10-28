@@ -14,7 +14,7 @@ const CHART_BARS = [
 
 export default function AnalyticsLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-36" subWidth="w-56" />
 
       <div className="grid gap-4 lg:grid-cols-2">

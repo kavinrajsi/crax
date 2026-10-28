@@ -12,7 +12,7 @@ import { TabsListSkeleton } from "@/components/skeletons"
  */
 export default function ProfileLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       {/* Profile header */}
       <div className="flex items-center gap-4">
         <Skeleton className="h-16 w-16 shrink-0 rounded-full" />

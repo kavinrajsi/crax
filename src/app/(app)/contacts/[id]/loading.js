@@ -14,7 +14,7 @@ const EXTRA_CARD_GROUPS = ["Contact", "Enquiry"]
 
 export default function ContactDetailLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <BackLink width="w-28" />
 
       <div className="flex items-start justify-between gap-4">

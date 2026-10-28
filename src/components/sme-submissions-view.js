@@ -16,6 +16,8 @@ import { SearchIcon } from "lucide-react"
 import { sortRows, formatDate, timeAgo, sourceDomain } from "@/lib/table-utils"
 import { SortableHead, useSort } from "@/components/sortable-head"
 import { JsonViewer } from "@/components/json-viewer"
+import { ListCard } from "@/components/list-card"
+import { EmptyState, MobileList } from "@/components/page"
 
 const TYPE_STYLES = {
   quiz:           "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
@@ -70,7 +72,7 @@ export function SmeSubmissionsView({ submissions }) {
               placeholder="Search name, email, phone…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-xs"
+              className="pl-8 h-10 text-sm md:h-8 md:text-xs"
             />
           </div>
         </div>
@@ -82,7 +84,7 @@ export function SmeSubmissionsView({ submissions }) {
               variant={typeFilter === type ? "default" : "outline"}
               size="xs"
               onClick={() => setTypeFilter(type)}
-              className="h-6 px-2 text-xs"
+              className="h-9 px-3 text-xs md:h-6 md:px-2"
             >
               {type === "all" ? "all" : TYPE_LABELS[type] ?? type}
               <span className="ml-1 text-[10px] opacity-70">
@@ -94,6 +96,30 @@ export function SmeSubmissionsView({ submissions }) {
       </CardHeader>
 
       <CardContent className="p-0">
+        {/* Phone: one card per submission. Full columns from md up. */}
+        <div className="p-3 md:hidden">
+          <MobileList>
+            {rows.length === 0 ? (
+              <EmptyState>No submissions match your filters.</EmptyState>
+            ) : (
+              rows.map((row) => (
+                <ListCard
+                  key={row.id}
+                  title={row.name || row.email || "—"}
+                  subtitle={row.email || null}
+                  badge={
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${TYPE_STYLES[row.type] ?? TYPE_STYLES.quiz}`}>
+                      {TYPE_LABELS[row.type] ?? row.type}
+                    </span>
+                  }
+                  meta={[row.phone || null, sourceDomain(row.source_url), timeAgo(row.created_at)]}
+                />
+              ))
+            )}
+          </MobileList>
+        </div>
+
+        <div className="hidden md:block">
         <ScrollArea className="h-[560px]">
           <Table>
             <TableHeader>
@@ -146,6 +172,7 @@ export function SmeSubmissionsView({ submissions }) {
             </TableBody>
           </Table>
         </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   )

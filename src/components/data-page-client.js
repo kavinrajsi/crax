@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -20,15 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  SearchIcon,
-  AlarmClockIcon,
-} from "lucide-react"
+import { AlarmClockIcon } from "lucide-react"
 import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
+import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
+import { ListCard } from "@/components/list-card"
 import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
 import {
   ALL,
@@ -192,7 +190,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
   return (
     <div className="flex flex-col w-full">
         {/* Sticky header */}
-        <header className="sticky top-0 z-10 flex flex-col gap-3 border-b bg-background px-4 py-3">
+        <header className="sticky top-14 z-10 flex flex-col gap-3 border-b bg-background px-4 py-3 md:top-16">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-sm font-medium">Contacts</span>
@@ -225,22 +223,13 @@ export function DataPageClient({ contacts, companies, contactTags }) {
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search name, email, company, phone…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="pl-8 h-8 w-full text-xs"
-            />
-          </div>
+          <FilterSearch value={search} onChange={setSearch} placeholder="Search name, email, company, phone…" />
 
           {/* Filters: date, status, source — combined with each other and with
               search and Needs attention, and carried into the export. */}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Select value={datePreset} onValueChange={setDatePreset}>
-              <SelectTrigger className="h-8 w-full text-xs" aria-label="Date">
+              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Date">
                 <SelectValue>{dateLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -254,7 +243,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
               value={status}
               onValueChange={setStatus}
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label="Status">
+              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Status">
                 <SelectValue>{statusLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -269,7 +258,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
               value={sourceValue}
               onValueChange={(value) => setSource(value === ALL ? ALL : value === SOURCE_NONE ? "" : value)}
             >
-              <SelectTrigger className="h-8 w-full text-xs" aria-label="Source">
+              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Source">
                 <SelectValue>{sourceLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -292,7 +281,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                   value={customFrom}
                   max={customTo || today}
                   onChange={(event) => setCustomFrom(clampToToday(event.target.value))}
-                  className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
+                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
                 />
               </label>
               <label className="flex items-center gap-2 text-xs">
@@ -303,7 +292,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                   min={customFrom || undefined}
                   max={today}
                   onChange={(event) => setCustomTo(clampToToday(event.target.value))}
-                  className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
+                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
                 />
               </label>
             </div>
@@ -326,6 +315,39 @@ export function DataPageClient({ contacts, companies, contactTags }) {
           )}
         </header>
 
+        {/* Phone: one card per contact. Tapping a card opens the same drawer as a row. */}
+        <MobileList>
+          {rows.length === 0 ? (
+            <EmptyState>No records found.</EmptyState>
+          ) : (
+            rows.map((row) => (
+              <ListCard
+                key={row.id}
+                onClick={() => setOpenContactId(row.id)}
+                title={row.name || row.email || "—"}
+                subtitle={row.email || null}
+                badge={
+                  row.status ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] px-1.5 py-0"
+                      style={{
+                        backgroundColor: `${statusMeta(row.status).color}18`,
+                        color: statusMeta(row.status).color,
+                        borderColor: `${statusMeta(row.status).color}40`,
+                      }}
+                    >
+                      {statusMeta(row.status).label}
+                    </Badge>
+                  ) : null
+                }
+                meta={[row.phone, row.company || null, row.source_domain || null, formatDate(row.created_at, { compact: true })]}
+              />
+            ))
+          )}
+        </MobileList>
+
+        <DesktopTable>
         {/* Table */}
         <ScrollArea className="w-full">
           <Table>
@@ -407,6 +429,7 @@ export function DataPageClient({ contacts, companies, contactTags }) {
           </Table>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+        </DesktopTable>
 
         {/* Gate on the row, not the id: a pasted ?contact=<deleted id> would
             otherwise mount an empty overlay. */}

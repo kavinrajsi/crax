@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
+import { PageShell, PageHeader, FilterSearch } from "@/components/page"
 import {
   Select,
   SelectContent,
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { SearchIcon } from "lucide-react"
 import { ContactsKanban } from "@/components/contacts-kanban"
 import {
   PIPELINE_SOURCES,
@@ -90,28 +89,18 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
   const windowLabel = DATE_WINDOWS.find((w) => w.key === windowKey)?.label
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Pipeline</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track {visible} lead{visible === 1 ? "" : "s"} across the pipeline.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Pipeline"
+        description={`Track ${visible} lead${visible === 1 ? "" : "s"} across the pipeline.`}
+      />
 
       <div className="flex flex-col gap-3">
-        <div className="relative">
-          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search name, email, phone or company…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="pl-8 h-9 w-full text-sm"
-          />
-        </div>
+        <FilterSearch value={query} onChange={setQuery} placeholder="Search name, email, phone or company…" />
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Select value={windowKey} onValueChange={setWindowKey}>
-            <SelectTrigger className="h-9 w-full text-sm" aria-label="Date">
+            <SelectTrigger className="h-10 w-full text-sm md:h-9" aria-label="Date">
               <SelectValue>{windowLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -122,7 +111,7 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
           </Select>
 
           <Select value={needs} onValueChange={setNeeds}>
-            <SelectTrigger className="h-9 w-full text-sm" aria-label="Needs">
+            <SelectTrigger className="h-10 w-full text-sm md:h-9" aria-label="Needs">
               <SelectValue>{needs === ALL ? "All needs" : needs}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -182,7 +171,7 @@ export function PipelineBoard({ contacts, statusColumns, initialSource }) {
         statusColumns={statusColumns}
         filter={(c) => matchesPipelineFilters(c, filters) && contactMatchesSource(c, source)}
       />
-    </div>
+    </PageShell>
   )
 }
 
@@ -196,13 +185,13 @@ function DateTimePair({ label, date, time, min, max, onDate, onTime }) {
         min={min}
         max={max}
         onChange={(event) => onDate(event.target.value)}
-        className="h-8 flex-1 rounded-md border border-border bg-transparent px-2 text-xs"
+        className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
       />
       <input
         type="time"
         value={time}
         onChange={(event) => onTime(event.target.value)}
-        className="h-8 w-28 rounded-md border border-border bg-transparent px-2 text-xs"
+        className="h-10 w-28 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
       />
     </div>
   )

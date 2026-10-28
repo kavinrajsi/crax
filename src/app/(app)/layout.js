@@ -19,6 +19,9 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { SidebarUser } from "@/components/sidebar-user"
 import { AppNav } from "@/components/app-nav"
+import { AppHeaderTitle } from "@/components/app-header-title"
+import { MobileTabBar } from "@/components/mobile-tab-bar"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export const dynamic = "force-dynamic"
 
@@ -79,12 +82,20 @@ export default async function AppLayout({ children }) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background px-4">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur md:h-16 md:bg-background md:backdrop-blur-none">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
+          <AppHeaderTitle />
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        {/* Bottom padding clears the phone tab bar (56px + home indicator). */}
+        <main className="flex-1 px-4 py-5 pb-[calc(3.5rem+env(safe-area-inset-bottom)+1.25rem)] md:px-6 md:py-8 md:pb-8">
+          {children}
+        </main>
       </SidebarInset>
+      <MobileTabBar />
     </SidebarProvider>
   )
 }

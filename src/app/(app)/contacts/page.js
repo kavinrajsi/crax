@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { ContactsTable } from "@/components/contacts-table"
+import { PageShell, PageHeader } from "@/components/page"
 
 import { requireUser } from "@/lib/dal"
 
@@ -17,14 +18,12 @@ export default async function ContactsPage() {
   `
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Contacts</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {contacts.length} contact{contacts.length !== 1 ? "s" : ""}
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Contacts"
+        description={`${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`}
+      />
       <ContactsTable contacts={contacts} />
-    </div>
+    </PageShell>
   )
 }

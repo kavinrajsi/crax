@@ -228,7 +228,24 @@ export function ThreadSkeleton({
  */
 export function TableSkeleton({ columns, rows = 10, headClassName = "", rowClassName = "" }) {
   return (
-    <div className="relative w-full overflow-x-auto">
+    <>
+      {/* Phone: stacked row placeholders, the same shape as the MobileList cards. */}
+      <div className="flex flex-col gap-2 p-3 md:hidden">
+        {Array.from({ length: Math.min(rows, 6) }, (_, r) => (
+          <div key={r} className="rounded-xl border p-3">
+            <div className="flex items-start justify-between gap-2">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-5 w-16 rounded-md" />
+            </div>
+            <Skeleton className="mt-2 h-3 w-48" />
+            <div className="mt-2 flex gap-3">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="relative hidden w-full overflow-x-auto md:block">
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
           <tr className={cn("border-b", headClassName)}>
@@ -268,5 +285,6 @@ export function TableSkeleton({ columns, rows = 10, headClassName = "", rowClass
         </tbody>
       </table>
     </div>
+    </>
   )
 }

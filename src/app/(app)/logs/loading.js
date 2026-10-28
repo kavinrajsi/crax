@@ -8,7 +8,7 @@ import { PageHeading, StatCardGrid, TableSkeleton } from "@/components/skeletons
  */
 export default function LogsLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-36" subWidth="w-96" />
 
       {/* Logs stat cards have no sub-line, unlike the dashboard's */}

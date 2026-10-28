@@ -21,7 +21,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const navItems = [
+export const navItems = [
   { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboardIcon },
   { href: "/data",      label: "Data",       icon: DatabaseIcon },
   { href: "/sme",       label: "SME",        icon: GaugeIcon },

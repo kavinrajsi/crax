@@ -1,3 +1,4 @@
+import { PageShell, PageHeader } from "@/components/page"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { sql } from "@/lib/db"
@@ -46,13 +47,10 @@ export default async function AnalyticsPage() {
   const totalNewContacts = last30.reduce((s, d) => s + d.count, 0)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Analytics</h1>
-        <p className="text-sm text-muted-foreground mt-1">Contact and activity insights</p>
-      </div>
+    <PageShell>
+      <PageHeader title="Analytics" description="Contact and activity insights" />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Contact Status Distribution */}
         <Card>
           <CardHeader>
@@ -84,7 +82,7 @@ export default async function AnalyticsPage() {
         </Card>
 
         {/* New Contacts (30 days) */}
-        <Card className="lg:col-span-2">
+        <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -115,6 +113,6 @@ export default async function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   )
 }

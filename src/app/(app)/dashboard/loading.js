@@ -5,7 +5,7 @@ import { PageHeading, StatCardGrid } from "@/components/skeletons"
 /** Mirrors src/app/(app)/dashboard/page.js. Update both together. */
 export default function DashboardLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5">
       <PageHeading titleWidth="w-40" subWidth="w-56" />
 
       <StatCardGrid count={3} gridClassName="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />

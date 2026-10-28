@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { CompaniesTable } from "@/components/companies-table"
+import { PageShell, PageHeader } from "@/components/page"
 
 import { requireUser } from "@/lib/dal"
 
@@ -19,14 +20,12 @@ export default async function CompaniesPage() {
   `
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Companies</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {companies.length} compan{companies.length !== 1 ? "ies" : "y"}
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Companies"
+        description={`${companies.length} compan${companies.length !== 1 ? "ies" : "y"}`}
+      />
       <CompaniesTable companies={companies} />
-    </div>
+    </PageShell>
   )
 }

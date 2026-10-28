@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { PageShell, PageHeader } from "@/components/page"
 import { SmeSubmissionsView } from "@/components/sme-submissions-view"
 import { ListIcon, GaugeIcon, PhoneCallIcon, PresentationIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card"
@@ -37,13 +38,15 @@ export default async function SmePage() {
   }))
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">SME</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Submissions from sme.searchmadarth.com, stored in <code className="text-xs bg-muted px-1 py-0.5 rounded">public.sme_submissions</code> — {counts.total} records
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="SME"
+        description={
+          <>
+            Submissions from sme.searchmadarth.com, stored in <code className="rounded bg-muted px-1 py-0.5 text-xs">public.sme_submissions</code> — {counts.total} records
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map(({ key, label, icon: Icon, value }) => (
@@ -60,6 +63,6 @@ export default async function SmePage() {
       </div>
 
       <SmeSubmissionsView submissions={submissions} />
-    </div>
+    </PageShell>
   )
 }

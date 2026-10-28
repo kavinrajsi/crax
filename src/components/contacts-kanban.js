@@ -58,7 +58,7 @@ function ContactCard({ contact }) {
         <span
           {...attributes}
           {...listeners}
-          className="mt-0.5 shrink-0 text-muted-foreground/30 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+          className="mt-0.5 shrink-0 text-muted-foreground/30 hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-none"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVerticalIcon className="h-3.5 w-3.5" />
@@ -187,7 +187,8 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
           {error}
         </p>
       )}
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      {/* Phone: columns stack as full-width sections. md+: a horizontal board. */}
+      <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:pb-4">
         {statusColumns.map((col) => {
           const colContacts = contactsForStatus(col.key)
           const itemIds = colContacts.map((c) => `contact-${c.id}`)
@@ -196,7 +197,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
             <div
               key={col.key}
               id={`col-${col.key}`}
-              className="flex w-72 shrink-0 flex-col rounded-xl border border-border bg-muted/40"
+              className="flex w-full flex-col rounded-xl border border-border bg-muted/40 md:w-72 md:shrink-0"
             >
               {/* Column header */}
               <div className="flex items-center gap-2 px-3 py-2.5">
@@ -213,8 +214,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
               {/* Cards */}
               <div
                 id={`col-${col.key}`}
-                className="flex flex-col gap-2 overflow-y-auto p-2 min-h-[80px]"
-                style={{ maxHeight: "calc(100vh - 260px)" }}
+                className="flex flex-col gap-2 p-2 min-h-[80px] md:max-h-[calc(100vh-260px)] md:overflow-y-auto"
               >
                 <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
                   {colContacts.length === 0 ? (
