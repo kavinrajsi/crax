@@ -1,6 +1,6 @@
 import { PageShell, PageHeader } from "@/components/page"
 import Link from "next/link"
-import { MailIcon, GlobeIcon, AlarmClockIcon } from "lucide-react"
+import { MailIcon, GlobeIcon, AlarmClockIcon, ArrowRightIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -12,6 +12,16 @@ import { RESOLVED_STATUSES } from "@/lib/follow-up"
 
 export const dynamic = "force-dynamic"
 
+
+/** localhost and development.* hosts: where test submissions come from. */
+function isNonProductionHost(domain) {
+  return (
+    domain === "localhost" ||
+    domain === "127.0.0.1" ||
+    domain.endsWith(".localhost") ||
+    domain.startsWith("development.")
+  )
+}
 
 export default async function DashboardPage() {
   const user = await requireUser()
@@ -41,10 +51,12 @@ export default async function DashboardPage() {
   const contactTotal = contactRows[0]?.total ?? 0
   const contactNew   = contactRows[0]?.new_count ?? 0
 
-  // Roll up by domain
+  // Roll up by domain. Local and dev hosts are test submissions, not leads,
+  // so they stay out of the breakdown (the rows themselves are kept).
   const domainMap = {}
   for (const { source_url, cnt } of sourceRows) {
     const domain = sourceDomain(source_url, "unknown")
+    if (isNonProductionHost(domain)) continue
     domainMap[domain] = (domainMap[domain] ?? 0) + cnt
   }
   const domainList = Object.entries(domainMap)
@@ -97,8 +109,9 @@ export default async function DashboardPage() {
                   {stat.value ?? "—"}
                 </span>
                 {stat.href ? (
-                  <Link href={stat.href} className="text-xs text-primary hover:underline w-fit">
-                    {stat.sub} →
+                  <Link href={stat.href} className="inline-flex w-fit items-center gap-1 text-xs text-primary hover:underline">
+                    {stat.sub}
+                    <ArrowRightIcon className="size-3" />
                   </Link>
                 ) : (
                   <span className="text-xs text-muted-foreground">{stat.sub}</span>

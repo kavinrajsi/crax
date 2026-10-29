@@ -25,6 +25,8 @@ import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
 import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
+import { CsvImportDialog } from "@/components/csv-import-dialog"
+import { AddContactDialog } from "@/components/add-contact-dialog"
 import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
 import { ListCard } from "@/components/list-card"
 import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
@@ -70,7 +72,7 @@ const SOURCE_NONE = "__none__"
 
 /* ─── main component ───────────────────────────────────────────────────── */
 
-export function DataPageClient({ contacts, companies, contactTags }) {
+export function DataPageClient({ contacts, companies, contactTags, sources }) {
   const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
@@ -191,13 +193,20 @@ export function DataPageClient({ contacts, companies, contactTags }) {
     <div className="flex flex-col w-full">
         {/* Sticky header */}
         <header className="sticky top-14 z-10 flex flex-col gap-3 border-b bg-background px-4 py-3 md:top-16">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 shrink-0">
+          {/* One row: count, then Export, Import, Add lead, Needs attention.
+              Scrolls sideways inside the header on a phone rather than wrapping. */}
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex shrink-0 items-center gap-2">
               <span className="text-sm font-medium">Contacts</span>
               <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {/* Export — exports exactly the rows this view shows. */}
+              <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
+              <CsvImportDialog />
+              <AddContactDialog sources={sources} />
+
               {/* Needs attention */}
               <Button
                 variant={onlyStale ? "default" : "outline"}
@@ -217,9 +226,6 @@ export function DataPageClient({ contacts, companies, contactTags }) {
                   {staleCount}
                 </Badge>
               </Button>
-
-              {/* Export — exports exactly the rows this view shows. */}
-              <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
             </div>
           </div>
 

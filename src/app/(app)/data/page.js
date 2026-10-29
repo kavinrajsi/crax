@@ -1,7 +1,5 @@
 import { sql, getCompanyOptions } from "@/lib/db"
 import { DataPageClient } from "@/components/data-page-client"
-import { CsvImportDialog } from "@/components/csv-import-dialog"
-import { AddContactDialog } from "@/components/add-contact-dialog"
 import { PageShell, PageHeader } from "@/components/page"
 
 import { requireUser } from "@/lib/dal"
@@ -51,16 +49,15 @@ export default async function DataPage() {
       <PageHeader
         title="Data"
         description={`Live contact submissions from Neon DB — ${contacts.length} records`}
-        actions={
-          <>
-            <CsvImportDialog />
-            <AddContactDialog sources={sourceRows.map((r) => r.source_url)} />
-          </>
-        }
       />
       {/* No overflow-hidden wrapper here: it would stop the sticky filter header from sticking. */}
       <div className="mt-5">
-        <DataPageClient contacts={contacts} companies={companies} contactTags={contactTags} />
+        <DataPageClient
+          contacts={contacts}
+          companies={companies}
+          contactTags={contactTags}
+          sources={sourceRows.map((r) => r.source_url)}
+        />
       </div>
     </PageShell>
   )
