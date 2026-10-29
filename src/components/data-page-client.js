@@ -27,7 +27,7 @@ import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { AddContactDialog } from "@/components/add-contact-dialog"
-import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
+import { DesktopTable, EmptyState, FilterSearch, MobileList, PageHeader } from "@/components/page"
 import { ListCard } from "@/components/list-card"
 import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
 import {
@@ -190,45 +190,42 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
   const dateLabel = DATE_PRESETS.find((preset) => preset.key === datePreset)?.label
 
   return (
-    <div className="flex flex-col w-full">
-        {/* Sticky header */}
-        <header className="sticky top-14 z-10 flex flex-col gap-3 border-b bg-background px-4 py-3 md:top-16">
-          {/* One row: count, then Export, Import, Add lead, Needs attention.
-              Scrolls sideways inside the header on a phone rather than wrapping. */}
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="text-sm font-medium">Contacts</span>
-              <Badge variant="secondary" className="text-xs">{rows.length}</Badge>
-            </div>
-
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              {/* Export — exports exactly the rows this view shows. */}
-              <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
-              <CsvImportDialog />
-              <AddContactDialog sources={sources} />
-
-              {/* Needs attention */}
-              <Button
-                variant={onlyStale ? "default" : "outline"}
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={() => setOnlyStale((v) => !v)}
-                aria-pressed={onlyStale}
-                title="Open leads nobody has left a note on"
-                disabled={staleCount === 0 && !onlyStale}
+    <>
+      {/* Title row: the four actions sit on the same line as the page title. */}
+      <PageHeader
+        title="Data"
+        description={`Live contact submissions from Neon DB — ${rows.length} records`}
+        actions={
+          <>
+            {/* Export — exports exactly the rows this view shows. */}
+            <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
+            <CsvImportDialog />
+            <AddContactDialog sources={sources} />
+            <Button
+              variant={onlyStale ? "default" : "outline"}
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setOnlyStale((v) => !v)}
+              aria-pressed={onlyStale}
+              title="Open leads nobody has left a note on"
+              disabled={staleCount === 0 && !onlyStale}
+            >
+              <AlarmClockIcon className="h-3.5 w-3.5" />
+              Needs attention
+              <Badge
+                variant={onlyStale ? "secondary" : "outline"}
+                className="text-[10px] px-1.5 py-0 tabular-nums"
               >
-                <AlarmClockIcon className="h-3.5 w-3.5" />
-                Needs attention
-                <Badge
-                  variant={onlyStale ? "secondary" : "outline"}
-                  className="text-[10px] px-1.5 py-0 tabular-nums"
-                >
-                  {staleCount}
-                </Badge>
-              </Button>
-            </div>
-          </div>
+                {staleCount}
+              </Badge>
+            </Button>
+          </>
+        }
+      />
 
+      <div className="mt-5 flex w-full flex-col">
+        {/* Sticky header: search and filters. No bottom border. */}
+        <header className="sticky top-14 z-10 flex flex-col gap-3 bg-background px-4 py-3 md:top-16">
           <FilterSearch value={search} onChange={setSearch} placeholder="Search name, email, company, phone…" />
 
           {/* Filters: date, status, source — combined with each other and with
@@ -446,6 +443,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
           onOpenChange={(nextOpen) => { if (!nextOpen) setOpenContactId(null) }}
           finalFocusRef={rowLinkRef}
         />
-    </div>
+      </div>
+    </>
   )
 }
