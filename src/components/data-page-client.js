@@ -27,7 +27,7 @@ import { ContactDetailSheet } from "@/components/contact-detail-sheet"
 import { CsvExportDialog } from "@/components/csv-export-dialog"
 import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { AddContactDialog } from "@/components/add-contact-dialog"
-import { DesktopTable, EmptyState, FilterSearch, MobileList, PageHeader } from "@/components/page"
+import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
 import { ListCard } from "@/components/list-card"
 import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
 import {
@@ -191,12 +191,12 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
 
   return (
     <>
-      {/* Title row: the four actions sit on the same line as the page title. */}
-      <PageHeader
-        title="Data"
-        description={`Live contact submissions from Neon DB — ${rows.length} records`}
-        actions={
-          <>
+      {/* Title row: the title and the four actions share one flex row, so they
+          centre on the same line. The description sits under it. */}
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-heading text-xl font-semibold tracking-tight md:text-2xl">Data</h1>
+          <div className="flex flex-wrap items-center gap-2">
             {/* Export — exports exactly the rows this view shows. */}
             <CsvExportDialog rows={rows} contactTags={contactTags} filters={filters} />
             <CsvImportDialog />
@@ -219,9 +219,12 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
                 {staleCount}
               </Badge>
             </Button>
-          </>
-        }
-      />
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Live contact submissions from Neon DB — {rows.length} records
+        </p>
+      </div>
 
       <div className="mt-5 flex w-full flex-col">
         {/* Sticky header: search and filters. No bottom border. */}
