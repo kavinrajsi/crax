@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { Fragment, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   DndContext,
@@ -16,7 +16,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { GripVerticalIcon, MailIcon, PhoneIcon, BuildingIcon, GlobeIcon } from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, GripVerticalIcon, MailIcon, PhoneIcon, BuildingIcon, GlobeIcon } from "lucide-react"
 import { updateContactStatus } from "@/app/(app)/pipeline/actions"
 import { sourceDomain, timeAgo } from "@/lib/table-utils"
 
@@ -122,6 +122,19 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
 
   const sensors = useKanbanSensors()
 
+  /* Desktop only: a collapsed column shrinks to a narrow strip so the other
+     stages get the width. Phone always shows every column in full. */
+  const [collapsed, setCollapsed] = useState(() => new Set())
+
+  function toggleCollapsed(key) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   function contactsForStatus(status) {
     return contacts.filter((c) => c.status === status && (!filter || filter(c)))
   }
@@ -193,11 +206,30 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
           const colContacts = contactsForStatus(col.key)
           const itemIds = colContacts.map((c) => `contact-${c.id}`)
 
+          const isCollapsed = collapsed.has(col.key)
+
           return (
+            <Fragment key={col.key}>
+            {/* Collapsed strip (desktop only): label runs vertically, click to expand. */}
+            <button
+              type="button"
+              onClick={() => toggleCollapsed(col.key)}
+              aria-label={`Expand ${col.label}`}
+              title={`Expand ${col.label}`}
+              className={`${isCollapsed ? "md:flex" : "md:hidden"} hidden w-12 shrink-0 flex-col items-center gap-3 rounded-xl border border-border bg-muted/40 py-3 hover:bg-muted/60`}
+            >
+              <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+              <span
+                className="h-2.5 w-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: col.color }}
+              />
+              <span className="text-sm font-medium [writing-mode:vertical-rl] rotate-180">{col.label}</span>
+              <Badge variant="secondary" className="text-xs tabular-nums">{colContacts.length}</Badge>
+            </button>
+
             <div
-              key={col.key}
               id={`col-${col.key}`}
-              className="flex w-full flex-col rounded-xl border border-border bg-muted/40 md:w-72 md:shrink-0"
+              className={`flex w-full flex-col rounded-xl border border-border bg-muted/40 md:w-72 md:shrink-0 ${isCollapsed ? "md:hidden" : ""}`}
             >
               {/* Column header */}
               <div className="flex items-center gap-2 px-3 py-2.5">
@@ -207,6 +239,15 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
                 />
                 <span className="flex-1 text-sm font-medium">{col.label}</span>
                 <Badge variant="secondary" className="text-xs tabular-nums">{colContacts.length}</Badge>
+                <button
+                  type="button"
+                  onClick={() => toggleCollapsed(col.key)}
+                  aria-label={`Collapse ${col.label}`}
+                  title={`Collapse ${col.label}`}
+                  className="hidden md:inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
               </div>
 
               <Separator />
@@ -229,6 +270,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
                 </SortableContext>
               </div>
             </div>
+            </Fragment>
           )
         })}
       </div>
