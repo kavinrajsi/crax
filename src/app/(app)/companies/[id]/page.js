@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { sql } from "@/lib/db"
+import { formatDate } from "@/lib/table-utils"
 import { CompanyForm } from "@/components/company-form"
 import { CompanyNotesSection } from "@/components/company-notes-section"
 
@@ -28,7 +29,7 @@ export default async function CompanyDetailPage({ params }) {
     sql`SELECT * FROM public.companies WHERE id = ${id} LIMIT 1`,
     // The same view /companies counts through, so this list and the
     // contact_count beside it cannot disagree.
-    sql`SELECT id, name, email, status FROM public.contact_us
+    sql`SELECT id, name, email, status, created_at FROM public.contact_us
         WHERE company_id = ${id}
         ORDER BY created_at DESC`,
     sql`SELECT * FROM public.company_notes WHERE company_id = ${id} ORDER BY created_at ASC`,
@@ -123,6 +124,7 @@ export default async function CompanyDetailPage({ params }) {
                 <div>
                   <p className="text-sm font-medium">{c.name || "—"}</p>
                   <p className="text-xs text-muted-foreground">{c.email || "—"}</p>
+                  <p className="text-xs text-muted-foreground/70">Added {formatDate(c.created_at)}</p>
                 </div>
                 <Badge variant="outline" className="text-xs">{c.status || "—"}</Badge>
               </Link>

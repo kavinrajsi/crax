@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboardIcon,
-  UserIcon,
   DatabaseIcon,
   ScrollTextIcon,
   KanbanSquareIcon,
@@ -41,7 +40,6 @@ const navTree = [
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
   { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
   { href: "/logs",      label: "Logs",       icon: ScrollTextIcon },
-  { href: "/profile",   label: "Profile",    icon: UserIcon },
 ]
 
 /* Every linked page, flat. The header title looks pages up here. */
