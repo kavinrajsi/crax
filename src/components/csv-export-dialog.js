@@ -4,13 +4,13 @@ import { useMemo, useState } from "react"
 import { DownloadIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+} from "@/components/ui/sheet"
 import { EXPORT_COLUMNS, DEFAULT_EXPORT_COLUMNS } from "@/lib/export-columns"
 import { CONTACT_STATUSES } from "@/lib/contact-statuses"
 import { ALL, DATE_PRESETS, tally } from "@/lib/contact-filters"
@@ -150,18 +150,18 @@ export function CsvExportDialog({ rows, contactTags, filters }) {
   const activeFilters = describeFilters(filters)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={setOpen}>
       {/* Label and size held identical to the button this replaced — the /data
           loading skeleton sizes its header bars to match. */}
-      <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" />}>
+      <SheetTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" />}>
         <DownloadIcon className="h-3.5 w-3.5" />
         Export CSV
-      </DialogTrigger>
+      </SheetTrigger>
 
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Export Contacts</DialogTitle>
-        </DialogHeader>
+      <SheetContent className="data-[side=right]:sm:max-w-2xl w-full">
+        <SheetHeader>
+          <SheetTitle>Export Contacts</SheetTitle>
+        </SheetHeader>
 
         <p className="text-xs text-muted-foreground">
           {activeFilters.length > 0
@@ -229,7 +229,7 @@ export function CsvExportDialog({ rows, contactTags, filters }) {
           </div>
         </div>
 
-        <DialogFooter showCloseButton>
+        <SheetFooter>
           <div className="mr-auto text-xs text-muted-foreground">
             <span className="font-medium text-foreground tabular-nums">{matchCount}</span>
             {matchCount === 1 ? " contact" : " contacts"}
@@ -243,8 +243,8 @@ export function CsvExportDialog({ rows, contactTags, filters }) {
           <Button size="sm" className="text-xs" onClick={handleExport} disabled={noColumns || matchCount === 0}>
             Export
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

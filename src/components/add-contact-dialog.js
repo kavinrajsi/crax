@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+} from "@/components/ui/sheet"
 import {
   Select,
   SelectContent,
@@ -65,16 +65,16 @@ export function AddContactDialog({ sources = [] }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogTrigger render={<Button size="sm" className="gap-1.5 text-xs" />}>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetTrigger render={<Button size="sm" className="gap-1.5 text-xs" />}>
         <PlusIcon className="h-3.5 w-3.5" />
         Add Lead
-      </DialogTrigger>
+      </SheetTrigger>
 
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Lead</DialogTitle>
-        </DialogHeader>
+      <SheetContent className="data-[side=right]:sm:max-w-md w-full">
+        <SheetHeader>
+          <SheetTitle>Add Lead</SheetTitle>
+        </SheetHeader>
 
         <div className="flex flex-col gap-3 mt-2">
           <div className="grid grid-cols-2 gap-3">
@@ -135,7 +135,7 @@ export function AddContactDialog({ sources = [] }) {
           )}
         </div>
 
-        <DialogFooter showCloseButton>
+        <SheetFooter>
           <Button
             size="sm"
             onClick={handleSave}
@@ -143,8 +143,8 @@ export function AddContactDialog({ sources = [] }) {
           >
             {isPending ? "Saving…" : "Save lead"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

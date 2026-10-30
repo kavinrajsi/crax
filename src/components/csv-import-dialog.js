@@ -4,13 +4,13 @@ import { useState, useTransition, useRef } from "react"
 import { UploadIcon, CheckCircleIcon, AlertTriangleIcon, DownloadIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+} from "@/components/ui/sheet"
 import {
   Select,
   SelectContent,
@@ -165,20 +165,20 @@ export function CsvImportDialog({ onImported }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5 text-xs" />}>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetTrigger render={<Button variant="outline" size="sm" className="gap-1.5 text-xs" />}>
         <UploadIcon className="h-3.5 w-3.5" />
         Import CSV
-      </DialogTrigger>
+      </SheetTrigger>
 
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
+      <SheetContent className="data-[side=right]:sm:max-w-lg w-full">
+        <SheetHeader>
+          <SheetTitle>
             {step === "upload" && "Import Contacts from CSV"}
             {step === "map" && `Map Columns — ${parsed?.allRows.length} rows detected`}
             {step === "result" && (result?.error ? "Import Failed" : "Import Complete")}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
         {/* Step 1: Upload */}
         {step === "upload" && (
@@ -253,11 +253,11 @@ export function CsvImportDialog({ onImported }) {
               </div>
             </div>
 
-            <DialogFooter showCloseButton>
+            <SheetFooter>
               <Button size="sm" onClick={handleImport} disabled={isPending}>
                 {isPending ? "Importing…" : `Import ${parsed.allRows.length} rows`}
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </div>
         )}
 
@@ -307,7 +307,7 @@ export function CsvImportDialog({ onImported }) {
             <Button size="sm" onClick={() => handleClose(false)}>Done</Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
