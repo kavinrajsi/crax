@@ -8,7 +8,6 @@ import {
   ScrollTextIcon,
   KanbanSquareIcon,
   BuildingIcon,
-  BarChart2Icon,
   ShieldCheckIcon,
   GaugeIcon,
   ContactIcon,
@@ -38,7 +37,6 @@ const navTree = [
   },
   { href: "/contacts",  label: "Contacts",   icon: ContactIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
-  { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
   { href: "/logs",      label: "Logs",       icon: ScrollTextIcon },
 ]
 

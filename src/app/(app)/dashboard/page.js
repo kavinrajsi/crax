@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const user = await requireUser()
   const firstName = (user.name ?? user.email).split(" ")[0]
 
-  const [contactRows, sourceRows, staleRows] = await Promise.all([
+  const [contactRows, sourceRows, staleRows, stageRows, statusRows, dailyRows] = await Promise.all([
     sql`SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (WHERE status = ${DEFAULT_CONTACT_STATUS})::int AS new_count
         FROM public.contact_us`,
@@ -45,6 +45,20 @@ export default async function DashboardPage() {
         FROM public.contact_us cu
         WHERE cu.status NOT IN (SELECT key FROM public.pipeline_stages WHERE resolved)
           AND NOT EXISTS(SELECT 1 FROM public.contact_notes n WHERE n.contact_id = cu.id)`,
+    sql`SELECT key, color FROM public.pipeline_stages`,
+    sql`
+      SELECT status, COUNT(*)::int AS count
+      FROM public.contact_us
+      GROUP BY status
+      ORDER BY count DESC
+    `,
+    sql`
+      SELECT DATE_TRUNC('day', created_at)::date AS day, COUNT(*)::int AS count
+      FROM public.contact_us
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY day
+      ORDER BY day ASC
+    `,
   ])
 
   const contactTotal = contactRows[0]?.total ?? 0
@@ -72,6 +86,24 @@ export default async function DashboardPage() {
     maxDomainCount > 0 ? Math.max(4, Math.round((count / maxDomainCount) * 80)) : 0
 
   const staleCount = staleRows[0]?.stale ?? 0
+
+  // Every stage's colour, from the database, so custom stages are coloured too.
+  const stageColors = Object.fromEntries(stageRows.map((stageRow) => [stageRow.key, stageRow.color]))
+
+  // Contacts by status: bars scale against the largest status.
+  const maxStatusCount = Math.max(...statusRows.map((statusRow) => statusRow.count), 1)
+
+  // Last 30 days, with missing days filled in as zero.
+  const dailyCounts = Object.fromEntries(dailyRows.map((dailyRow) => [dailyRow.day.toISOString().slice(0, 10), dailyRow.count]))
+  const last30Days = []
+  for (let dayOffset = 29; dayOffset >= 0; dayOffset--) {
+    const day = new Date()
+    day.setDate(day.getDate() - dayOffset)
+    const dayKey = day.toISOString().slice(0, 10)
+    last30Days.push({ date: dayKey, count: dailyCounts[dayKey] ?? 0 })
+  }
+  const maxDayCount = Math.max(...last30Days.map((dayEntry) => dayEntry.count), 1)
+  const totalNewContacts = last30Days.reduce((total, dayEntry) => total + dayEntry.count, 0)
 
   const stats = [
     { label: "Total Contacts",  value: contactTotal,      icon: MailIcon,  sub: `${contactNew} new` },
@@ -155,6 +187,69 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Contacts by Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Contacts by Status</CardTitle>
+              <CardDescription>Distribution across CRM stages</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {statusRows.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No contacts yet.</p>
+              )}
+              {statusRows.map((statusRow) => {
+                const color = stageColors[statusRow.status] ?? "#64748b"
+                const percent = (statusRow.count / maxStatusCount) * 100
+                return (
+                  <div key={statusRow.status} className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-20 shrink-0 text-right capitalize">{statusRow.status}</span>
+                    <div className="flex-1 h-6 bg-muted rounded-lg overflow-hidden relative">
+                      <div
+                        className="h-full rounded-lg"
+                        style={{ width: `${percent}%`, backgroundColor: `${color}50` }}
+                      />
+                      <span className="absolute inset-y-0 left-2 flex items-center text-xs font-medium">{statusRow.count}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground w-8 shrink-0 tabular-nums">{Math.round(percent)}%</span>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          {/* New Contacts (30 days) */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>New Contacts — Last 30 Days</CardTitle>
+                  <CardDescription className="mt-1">{totalNewContacts} contacts added</CardDescription>
+                </div>
+                <Badge variant="secondary" className="text-xs">{totalNewContacts} total</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-px h-24 w-full">
+                {last30Days.map(({ date, count }) => (
+                  <div
+                    key={date}
+                    className="flex-1 rounded-t-sm bg-primary/50 hover:bg-primary/70 transition-colors cursor-default"
+                    style={{
+                      height: count > 0 ? `${Math.max((count / maxDayCount) * 100, 8)}%` : "2px",
+                      opacity: count === 0 ? 0.2 : 1,
+                    }}
+                    title={`${date}: ${count} contact${count !== 1 ? "s" : ""}`}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-between mt-2">
+                <span className="text-[10px] text-muted-foreground">{last30Days[0]?.date}</span>
+                <span className="text-[10px] text-muted-foreground">{last30Days[last30Days.length - 1]?.date}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </PageShell>
   )
