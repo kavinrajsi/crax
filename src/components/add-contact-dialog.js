@@ -76,7 +76,7 @@ export function AddContactDialog({ sources = [] }) {
           <SheetTitle>Add Lead</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 mt-2">
+        <div className="flex flex-col gap-3 mt-2 px-4">
           <div className="grid grid-cols-2 gap-3">
             <Input placeholder="Name" value={form.name} onChange={set("name")} autoFocus />
             <Input placeholder="Email" type="email" value={form.email} onChange={set("email")} />
