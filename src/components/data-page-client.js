@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AlarmClockIcon } from "lucide-react"
+import { AlarmClockIcon, CalendarIcon } from "lucide-react"
 import { sortRows, formatDate, truncate } from "@/lib/table-utils"
 import { SortableHead } from "@/components/sortable-head"
 import { needsAttention, daysSinceTouch } from "@/lib/follow-up"
@@ -229,14 +229,23 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
       <div className="mt-5 flex w-full flex-col">
         {/* Sticky header: search and filters. No bottom border. */}
         <header className="sticky top-14 z-10 flex flex-col gap-3 bg-background px-4 py-3 md:top-16">
-          <FilterSearch value={search} onChange={setSearch} placeholder="Search name, email, company, phone…" />
+          {/* Phone: stacked. Desktop: search fills the row, date, status and source sit beside it. */}
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <div className="min-w-0 md:flex-1">
+            <FilterSearch value={search} onChange={setSearch} placeholder="Search name, email, company, phone…" />
+          </div>
 
           {/* Filters: date, status, source — combined with each other and with
               search and Needs attention, and carried into the export. */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:flex md:shrink-0">
             <Select value={datePreset} onValueChange={setDatePreset}>
-              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Date">
-                <SelectValue>{dateLabel}</SelectValue>
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:w-44" aria-label="Date">
+                <SelectValue>
+                  <span className="flex items-center gap-2">
+                    <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+                    {dateLabel}
+                  </span>
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {DATE_PRESETS.map((preset) => (
@@ -249,7 +258,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               value={status}
               onValueChange={setStatus}
             >
-              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Status">
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:w-44" aria-label="Status">
                 <SelectValue>{statusLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -264,7 +273,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               value={sourceValue}
               onValueChange={(value) => setSource(value === ALL ? ALL : value === SOURCE_NONE ? "" : value)}
             >
-              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Source">
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:w-44" aria-label="Source">
                 <SelectValue>{sourceLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -276,6 +285,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
           </div>
 
           {datePreset === "custom" && (
