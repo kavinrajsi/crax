@@ -57,6 +57,41 @@ const CHECKS = [
   "Dashboard with status and source breakdowns",
 ]
 
+const FAQS = [
+  {
+    q: "Can we set our own pipeline stages?",
+    a: "Yes. Create pipelines and stages from Settings, pick each stage's name and colour, and move leads between pipelines whenever your process changes.",
+  },
+  {
+    q: "How do we know who changed a lead?",
+    a: "Every change is written to an audit log with the user, time and IP address. Timeline notes keep their author, and only that author can edit them.",
+  },
+  {
+    q: "Can we bring in our existing contacts?",
+    a: "Yes. Import a CSV, map its columns to contact fields, and review a preview before anything is saved. You can export your contacts at any time.",
+  },
+  {
+    q: "Does it work on a phone?",
+    a: "Yes. The app has a layout for small screens with a bottom tab bar, and pipeline stages swipe sideways so you can move through them one at a time.",
+  },
+  {
+    q: "Can leads arrive from our website?",
+    a: "Yes. Forms on your site can send submissions into Crax, and they appear as new leads in your pipeline.",
+  },
+  {
+    q: "Does Crax connect to our email or calendar?",
+    a: "Not yet. Email and calendar integrations are not built, so log activity in the app for now.",
+  },
+  {
+    q: "How is our data stored?",
+    a: "Your data is kept in a hosted Postgres database. Access requires a signed-in account, and changes are logged. See the Privacy Policy for the full details.",
+  },
+  {
+    q: "What does it cost?",
+    a: "Pricing is set when we talk to you. Use the Talk to sales button and we will send you the details.",
+  },
+]
+
 export default function LandingPage() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -116,6 +151,22 @@ export default function LandingPage() {
               </li>
             ))}
           </ol>
+        </section>
+
+        {/* FAQ. Native details/summary, so it works without JavaScript. */}
+        <section className="mx-auto max-w-3xl px-4 pb-16">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">Frequently asked questions</h2>
+          <div className="mt-8 divide-y rounded-2xl border">
+            {FAQS.map((faq) => (
+              <details key={faq.q} className="group p-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
+                  {faq.q}
+                  <span aria-hidden="true" className="text-muted-foreground transition-transform group-open:rotate-45 text-xl leading-none">+</span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{faq.a}</p>
+              </details>
+            ))}
+          </div>
         </section>
 
         {/* Checklist + CTA */}
