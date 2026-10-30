@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useTransition, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useState } from "react"
 import { authClient } from "@/lib/auth-client"
-import { disconnectFacebookPage, disconnectLinkedInAccount } from "@/app/(app)/profile/actions"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,9 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageShell } from "@/components/page"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { FacebookBackfillCard } from "@/components/lead-backfill"
-import { CheckCircleIcon, AlertCircleIcon, Link2Icon, XIcon } from "lucide-react"
-import { formatDate } from "@/lib/table-utils"
+import { CheckCircleIcon, AlertCircleIcon } from "lucide-react"
 
 function initials(name) {
   return (name || "U")
@@ -133,126 +129,6 @@ function SecurityTab({ initialEmail }) {
   )
 }
 
-/* One card per lead-source provider. `items` rows must be pre-shaped to
-   {id, name, created_at} — the DB column names differ per provider
-   (page_id/page_name vs account_urn/account_name) and the server component
-   normalizes them so this stays dumb. */
-function ProviderConnectionsCard({ provider, itemNoun, description, connectHref, items, onDisconnect, connectedParam, errorParam, errorMessages }) {
-  const searchParams = useSearchParams()
-  const connected = searchParams.get(connectedParam)
-  const error = searchParams.get(errorParam)
-  const [isPending, startTransition] = useTransition()
-  const [removingId, setRemovingId] = useState(null)
-
-  function handleDisconnect(id) {
-    setRemovingId(id)
-    startTransition(async () => {
-      await onDisconnect(id)
-      setRemovingId(null)
-    })
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{provider}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {connected != null && (
-          <Alert>
-            <CheckCircleIcon className="h-4 w-4" />
-            <AlertDescription>
-              {Number(connected) > 0
-                ? `Connected ${connected} ${itemNoun}${Number(connected) === 1 ? "" : "s"}.`
-                : `Signed in with ${provider}, but no ${itemNoun}s were found for this account.`}
-            </AlertDescription>
-          </Alert>
-        )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon className="h-4 w-4" />
-            <AlertDescription>{errorMessages[error] ?? `Could not connect ${provider}.`}</AlertDescription>
-          </Alert>
-        )}
-
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No {provider} {itemNoun}s connected yet.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{item.name}</span>
-                  <span className="text-xs text-muted-foreground">Connected {formatDate(item.created_at, { compact: true })}</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isPending && removingId === item.id}
-                  onClick={() => handleDisconnect(item.id)}
-                  className="gap-1 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <XIcon className="h-3.5 w-3.5" />
-                  {isPending && removingId === item.id ? "Disconnecting…" : "Disconnect"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="justify-end">
-        <Button render={<a href={connectHref} />} size="sm" className="gap-1.5">
-          <Link2Icon className="h-3.5 w-3.5" />
-          Connect {provider}
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-function IntegrationsTab({ connections, linkedinConnections }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <ProviderConnectionsCard
-        provider="Facebook"
-        itemNoun="Page"
-        description="Connect Facebook Pages to pull Lead Ads submissions automatically."
-        connectHref="/api/facebook/oauth/start"
-        items={connections.map((c) => ({ id: c.page_id, name: c.page_name, created_at: c.created_at }))}
-        onDisconnect={disconnectFacebookPage}
-        connectedParam="fb_connected"
-        errorParam="fb_error"
-        errorMessages={{
-          state: "Connection request expired or could not be verified — try again.",
-          denied: "Facebook did not return an authorization code — the request may have been cancelled.",
-          exchange: "Could not complete the connection with Facebook. Try again in a moment.",
-        }}
-      />
-      {/* Directly under the Facebook card: the backfill is only meaningful
-          once a Page is connected, and the ordering makes that dependency
-          read as a sequence rather than two unrelated features. */}
-      {connections.length > 0 && <FacebookBackfillCard />}
-      <ProviderConnectionsCard
-        provider="LinkedIn"
-        itemNoun="ad account"
-        description="Connect LinkedIn ad accounts to pull Lead Gen Form submissions automatically. Requires approved Lead Sync API access."
-        connectHref="/api/linkedin/oauth/start"
-        items={linkedinConnections.map((c) => ({ id: c.account_urn, name: c.account_name, created_at: c.created_at }))}
-        onDisconnect={disconnectLinkedInAccount}
-        connectedParam="li_connected"
-        errorParam="li_error"
-        errorMessages={{
-          state: "Connection request expired or could not be verified — try again.",
-          denied: "LinkedIn did not return an authorization code — the request may have been cancelled.",
-          exchange: "Could not complete the connection with LinkedIn. Try again in a moment.",
-        }}
-      />
-    </div>
-  )
-}
-
 /* The Notifications tab was removed on 2026-08-02. It offered two email
    subscriptions over a Save button that awaited a 500ms timer, showed "Saved"
    and persisted nothing — the toggle reset on reload.
@@ -266,7 +142,7 @@ function IntegrationsTab({ connections, linkedinConnections }) {
    Restore it when there is something to subscribe to and somewhere to store
    the preference. */
 
-export function ProfileClient({ initialName, initialEmail, connections = [], linkedinConnections = [] }) {
+export function ProfileClient({ initialName, initialEmail }) {
   const displayName = initialName || initialEmail || "User"
 
   return (
@@ -287,10 +163,9 @@ export function ProfileClient({ initialName, initialEmail, connections = [], lin
       {/* Tabs */}
       <Tabs defaultValue="account">
         {/* Phone: three equal tabs across the full width. */}
-        <TabsList className="grid w-full grid-cols-3 md:inline-flex md:w-auto">
+        <TabsList className="grid w-full grid-cols-2 md:inline-flex md:w-auto">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
         <div className="mt-4">
           <TabsContent value="account">
@@ -298,11 +173,6 @@ export function ProfileClient({ initialName, initialEmail, connections = [], lin
           </TabsContent>
           <TabsContent value="security">
             <SecurityTab initialEmail={initialEmail} />
-          </TabsContent>
-          <TabsContent value="integrations">
-            <Suspense fallback={null}>
-              <IntegrationsTab connections={connections} linkedinConnections={linkedinConnections} />
-            </Suspense>
           </TabsContent>
         </div>
       </Tabs>

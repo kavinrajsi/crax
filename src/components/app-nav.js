@@ -12,7 +12,6 @@ import {
   BarChart2Icon,
   ShieldCheckIcon,
   GaugeIcon,
-  MegaphoneIcon,
   ContactIcon,
 } from "lucide-react"
 import {
@@ -29,7 +28,6 @@ export const navItems = [
   { href: "/contacts",  label: "Contacts",   icon: ContactIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
   { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
-  { href: "/ads",       label: "Google Ads", icon: MegaphoneIcon },
   { href: "/logs",      label: "Logs",       icon: ScrollTextIcon },
   { href: "/profile",   label: "Profile",    icon: UserIcon },
 ]
