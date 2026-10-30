@@ -23,6 +23,14 @@ const PUBLIC_PATHS = [
   "/signup",
   "/forgot-password",
   "/reset-password",
+  "/policies",
+  "/privacy",
+  "/terms",
+  "/cookies",
+  "/acceptable-use",
+  "/data-retention",
+  "/refund",
+  "/compare-crm",
 ]
 
 export function proxy(request) {
