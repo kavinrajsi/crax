@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
-import { ChevronsUpDownIcon, UserIcon, LogOutIcon } from "lucide-react"
+import { ChevronsUpDownIcon, UserIcon, LogOutIcon, SettingsIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -73,6 +73,10 @@ export function SidebarUser({ displayName, email }) {
             <DropdownMenuItem render={<Link href="/profile" />}>
               <UserIcon className="h-4 w-4" />
               Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/settings" />}>
+              <SettingsIcon className="h-4 w-4" />
+              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

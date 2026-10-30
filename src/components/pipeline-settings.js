@@ -1,10 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeftIcon } from "lucide-react"
-import { PageShell, PageHeader } from "@/components/page"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PipelineManager } from "@/components/pipeline-manager"
 import {
@@ -16,8 +13,9 @@ import {
 } from "@/app/(app)/pipeline/actions"
 
 /**
- * Manage pipelines: pick one, then edit its stages (name and colour), add or
- * delete stages, create a pipeline, or delete an empty one.
+ * Pipelines and stages, shown under Settings → Pipelines: pick one, then edit
+ * its stages (name and colour), add or delete stages, create a pipeline, or
+ * delete an empty one. Renders inside the settings page's shell.
  */
 export function PipelineSettings({ pipelines, stages, contactCounts }) {
   const router = useRouter()
@@ -46,14 +44,7 @@ export function PipelineSettings({ pipelines, stages, contactCounts }) {
   }
 
   return (
-    <PageShell>
-      <PageHeader title="Manage pipelines" description="Create pipelines, and set the name and colour of each stage." />
-
-      <Link href="/pipeline" className="inline-flex w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeftIcon className="h-3.5 w-3.5" />
-        Back to Pipeline
-      </Link>
-
+    <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2">
         <Select value={String(selectedId)} onValueChange={(value) => setSelectedId(Number(value))}>
           <SelectTrigger className="h-9 w-56 text-sm" aria-label="Pipeline">
@@ -92,6 +83,6 @@ export function PipelineSettings({ pipelines, stages, contactCounts }) {
           }
         />
       )}
-    </PageShell>
+    </div>
   )
 }

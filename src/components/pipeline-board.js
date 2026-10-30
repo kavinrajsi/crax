@@ -158,7 +158,7 @@ export function PipelineBoard({
             ))}
           </SelectContent>
         </Select>
-        <Link href="/pipeline/manage" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs hover:bg-muted">
+        <Link href="/settings" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs hover:bg-muted">
           <SettingsIcon className="h-3.5 w-3.5" />
           Manage pipelines
         </Link>

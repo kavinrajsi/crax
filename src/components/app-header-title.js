@@ -9,5 +9,6 @@ export function AppHeaderTitle() {
   const item = navItems.find(
     ({ href }) => pathname === href || pathname.startsWith(`${href}/`)
   )
-  return <span className="truncate text-sm font-medium">{item?.label ?? "Crax"}</span>
+  const label = item?.label ?? (pathname.startsWith("/settings") ? "Settings" : pathname.startsWith("/profile") ? "Profile" : "Crax")
+  return <span className="truncate text-sm font-medium">{label}</span>
 }
