@@ -13,18 +13,30 @@ import {
   ShieldCheckIcon,
   GaugeIcon,
   ContactIcon,
+  TargetIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export const navItems = [
+/* Sidebar tree. A group has no href of its own; its children are links shown
+   beneath it. */
+const navTree = [
   { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboardIcon },
   { href: "/data",      label: "Data",       icon: DatabaseIcon },
-  { href: "/sme",       label: "SME",        icon: GaugeIcon },
-  { href: "/pipeline",  label: "Pipeline",   icon: KanbanSquareIcon },
+  {
+    label: "Leads",
+    icon: TargetIcon,
+    children: [
+      { href: "/sme",      label: "SME",      icon: GaugeIcon },
+      { href: "/pipeline", label: "Pipeline", icon: KanbanSquareIcon },
+    ],
+  },
   { href: "/contacts",  label: "Contacts",   icon: ContactIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
   { href: "/analytics", label: "Analytics",  icon: BarChart2Icon },
@@ -32,10 +44,19 @@ export const navItems = [
   { href: "/profile",   label: "Profile",    icon: UserIcon },
 ]
 
+/* Every linked page, flat. The header title looks pages up here. */
+export const navItems = navTree.flatMap((item) => item.children ?? [item])
+
 /** Super admins only. Appended, so it sits below the shared items. */
 const adminNavItems = [
   { href: "/admin/users", label: "All Users", icon: ShieldCheckIcon },
 ]
+
+/* Prefix match so /companies stays lit on /companies/123, with the trailing
+   slash keeping /data from matching /dashboard. */
+function isPathActive(pathname, href) {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 /**
  * @param {boolean} [isAdmin]  from isCurrentUserAdmin() in the layout.
@@ -46,23 +67,46 @@ const adminNavItems = [
  */
 export function AppNav({ isAdmin = false }) {
   const pathname = usePathname()
-  const items = isAdmin ? [...navItems, ...adminNavItems] : navItems
+  const items = isAdmin ? [...navTree, ...adminNavItems] : navTree
 
   return (
     <SidebarMenu>
-      {items.map(({ href, label, icon: Icon }) => {
-        // Prefix match so /companies stays lit on /companies/123, with the
-        // trailing slash keeping /data from matching /dashboard.
-        const isActive = pathname === href || pathname.startsWith(`${href}/`)
+      {items.map((item) => {
+        const Icon = item.icon
+
+        if (item.children) {
+          const groupActive = item.children.some(({ href }) => isPathActive(pathname, href))
+          return (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton tooltip={item.label} isActive={groupActive}>
+                <Icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+              <SidebarMenuSub>
+                {item.children.map((child) => (
+                  <SidebarMenuSubItem key={child.href}>
+                    <SidebarMenuSubButton
+                      render={<Link href={child.href} />}
+                      isActive={isPathActive(pathname, child.href)}
+                    >
+                      <span>{child.label}</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </SidebarMenuItem>
+          )
+        }
+
         return (
-          <SidebarMenuItem key={href}>
+          <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
-              render={<Link href={href} />}
-              tooltip={label}
-              isActive={isActive}
+              render={<Link href={item.href} />}
+              tooltip={item.label}
+              isActive={isPathActive(pathname, item.href)}
             >
               <Icon />
-              <span>{label}</span>
+              <span>{item.label}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         )
