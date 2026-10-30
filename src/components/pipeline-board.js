@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useMemo, useState } from "react"
+import Link from "next/link"
 import { PageShell, PageHeader, FilterSearch } from "@/components/page"
 import {
   Select,
@@ -11,15 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ContactsKanban } from "@/components/contacts-kanban"
-import { Button } from "@/components/ui/button"
-import { CalendarIcon, SettingsIcon, Trash2Icon, PlusIcon } from "lucide-react"
-import {
-  createPipeline,
-  deletePipeline,
-  addStage,
-  updateStage,
-  deleteStage,
-} from "@/app/(app)/pipeline/actions"
+import { CalendarIcon, SettingsIcon } from "lucide-react"
 import {
   PIPELINE_SOURCES,
   DEFAULT_PIPELINE_SOURCE,
@@ -50,7 +42,6 @@ export function PipelineBoard({
   initialSource,
   sourceColors: initialSourceColors,
 }) {
-  const router = useRouter()
   const [pipelineId, setPipelineId] = useState(activePipelineId)
   const [source, setSource] = useState(initialSource)
   const [query, setQuery] = useState("")
@@ -58,9 +49,6 @@ export function PipelineBoard({
   const [custom, setCustom] = useState({ startDate: "", startTime: "", endDate: "", endTime: "" })
   const [needs, setNeeds] = useState(ALL)
   const sourceColors = initialSourceColors
-  const [managing, setManaging] = useState(false)
-  const [error, setError] = useState(null)
-  const [isPending, startTransition] = useTransition()
 
   const today = todayIst()
 
@@ -131,21 +119,6 @@ export function PipelineBoard({
   }
 
 
-  /* Runs a server action, then refreshes the page's data. */
-  function run(action, onDone) {
-    setError(null)
-    startTransition(async () => {
-      try {
-        const result = await action()
-        if (onDone) onDone(result)
-        router.refresh()
-      } catch (err) {
-        console.error("[pipeline] action failed", err)
-        setError(err.message || "Something went wrong.")
-      }
-    })
-  }
-
   /* Custom bounds stop at today (IST). A typed future date is clamped, as on
      the Data page, so the board never filters to days that do not exist yet. */
   function setCustomDate(field, value) {
@@ -185,32 +158,11 @@ export function PipelineBoard({
             ))}
           </SelectContent>
         </Select>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setManaging((currentManaging) => !currentManaging)}>
+        <Link href="/pipeline/manage" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs hover:bg-muted">
           <SettingsIcon className="h-3.5 w-3.5" />
-          {managing ? "Done" : "Manage stages"}
-        </Button>
+          Manage pipelines
+        </Link>
       </div>
-
-      {managing && activePipeline && (
-        <PipelineManager
-          pipeline={activePipeline}
-          stages={statusColumns}
-          pipelineCount={pipelines.length}
-          contactCount={contacts.filter((contact) => contact.pipeline_id === pipelineId).length}
-          isPending={isPending}
-          onAddStage={(label, color) => run(() => addStage(pipelineId, label, color))}
-          onUpdateStage={(key, label, color) => run(() => updateStage(key, label, color))}
-          onDeleteStage={(key) => run(() => deleteStage(key))}
-          onCreatePipeline={(name, stage) => run(() => createPipeline(name, stage), (row) => setPipelineId(row.id))}
-          onDeletePipeline={() => run(() => deletePipeline(pipelineId), () => setPipelineId(pipelines.find((pipeline) => pipeline.id !== pipelineId)?.id ?? null))}
-        />
-      )}
-
-      {error && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          {error}
-        </p>
-      )}
 
       <div className="flex flex-col gap-3">
         {/* Source chips, styled like the contacts status chips: tinted, with the
@@ -324,162 +276,6 @@ export function PipelineBoard({
 
 /* Stage list, add-stage form, new-pipeline form and delete. Shown only while
    "Manage stages" is open. */
-/* One stage: editable name and colour, saved on demand. */
-function StageRow({ stage, disabled, onSave, onDelete }) {
-  const [label, setLabel] = useState(stage.label)
-  const [color, setColor] = useState(stage.color)
-  const dirty = label.trim() !== stage.label || color.toLowerCase() !== stage.color.toLowerCase()
-
-  return (
-    <li className="flex items-center gap-2">
-      <input
-        type="color"
-        value={color}
-        onChange={(event) => setColor(event.target.value)}
-        aria-label={`Colour for ${stage.label}`}
-        className="h-7 w-7 shrink-0 cursor-pointer rounded border border-border bg-transparent p-0.5"
-      />
-      <input
-        value={label}
-        onChange={(event) => setLabel(event.target.value)}
-        maxLength={60}
-        aria-label={`Name of stage ${stage.label}`}
-        className="h-8 flex-1 min-w-0 rounded-md border border-border bg-transparent px-2 text-sm"
-      />
-      {dirty && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={disabled || !label.trim()}
-          onClick={() => onSave(stage.key, label, color)}
-        >
-          Save
-        </Button>
-      )}
-      <button
-        type="button"
-        onClick={() => onDelete(stage.key)}
-        disabled={disabled}
-        aria-label={`Delete stage ${stage.label}`}
-        className="text-muted-foreground hover:text-destructive disabled:opacity-50"
-      >
-        <Trash2Icon className="h-3.5 w-3.5" />
-      </button>
-    </li>
-  )
-}
-
-function PipelineManager({
-  pipeline,
-  stages,
-  pipelineCount,
-  contactCount,
-  isPending,
-  onAddStage,
-  onUpdateStage,
-  onDeleteStage,
-  onCreatePipeline,
-  onDeletePipeline,
-}) {
-  const [label, setLabel] = useState("")
-  const [color, setColor] = useState("#64748b")
-  const [pipelineName, setPipelineName] = useState("")
-  const [firstStage, setFirstStage] = useState("")
-
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/30 p-4 text-sm">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold text-muted-foreground">Stages in {pipeline.name}</h3>
-        <ul className="flex flex-col gap-1.5">
-          {stages.map((stage) => (
-            <StageRow
-              key={stage.key}
-              stage={stage}
-              disabled={isPending}
-              onSave={onUpdateStage}
-              onDelete={onDeleteStage}
-            />
-          ))}
-        </ul>
-        <form
-          className="flex flex-wrap items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!label.trim()) return
-            onAddStage(label, color)
-            setLabel("")
-          }}
-        >
-          <input
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            placeholder="New stage name"
-            maxLength={60}
-            className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"
-          />
-          <input
-            type="color"
-            value={color}
-            onChange={(event) => setColor(event.target.value)}
-            aria-label="Stage colour"
-            className="h-9 w-10 cursor-pointer rounded border border-border bg-transparent p-1"
-          />
-          <Button type="submit" size="sm" disabled={isPending || !label.trim()} className="gap-1.5">
-            <PlusIcon className="h-3.5 w-3.5" />
-            Add stage
-          </Button>
-        </form>
-      </div>
-
-      <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <h3 className="text-xs font-semibold text-muted-foreground">New pipeline</h3>
-        <form
-          className="flex flex-wrap items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!pipelineName.trim() || !firstStage.trim()) return
-            onCreatePipeline(pipelineName, firstStage)
-            setPipelineName("")
-            setFirstStage("")
-          }}
-        >
-          <input
-            value={pipelineName}
-            onChange={(event) => setPipelineName(event.target.value)}
-            placeholder="Pipeline name, e.g. Enterprise"
-            maxLength={60}
-            className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"
-          />
-          <input
-            value={firstStage}
-            onChange={(event) => setFirstStage(event.target.value)}
-            placeholder="First stage, e.g. Qualified"
-            maxLength={60}
-            className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"
-          />
-          <Button type="submit" size="sm" disabled={isPending || !pipelineName.trim() || !firstStage.trim()}>
-            Create pipeline
-          </Button>
-        </form>
-        <p className="text-[11px] text-muted-foreground">
-          Add more stages above. Move contacts into the pipeline from their cards on the board.
-        </p>
-        {pipelineCount > 1 && (
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-muted-foreground">
-              {contactCount === 0 ? `${pipeline.name} has no contacts.` : `${pipeline.name} has ${contactCount} contact${contactCount === 1 ? "" : "s"}; move them before deleting.`}
-            </span>
-            <Button type="button" variant="outline" size="sm" disabled={isPending || contactCount > 0} onClick={onDeletePipeline}>
-              Delete {pipeline.name}
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function DateTimePair({ label, date, time, min, max, onDate, onTime }) {
   return (
     <div className="flex items-center gap-2 text-xs">
