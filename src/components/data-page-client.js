@@ -228,7 +228,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
 
       <div className="mt-5 flex w-full flex-col">
         {/* Sticky header: search and filters. No bottom border. */}
-        <header className="sticky top-14 z-10 flex flex-col gap-3 bg-background px-4 py-3 md:top-16">
+        <header className="sticky top-14 z-10 flex flex-col gap-3 bg-background py-3 md:top-16">
           {/* Phone: stacked. Desktop: search fills the row, date, status and source sit beside it. */}
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
           <div className="min-w-0 md:flex-1">
