@@ -83,7 +83,6 @@ export function ContactsTable({ contacts }) {
               <TableHeader>
                 <TableRow>
                   <SortableHead label="Name"    column="name"       sort={sort} onSort={toggleSort} />
-                  <SortableHead label="Email"   column="email"      sort={sort} onSort={toggleSort} />
                   <SortableHead label="Phone"   column="phone"      sort={sort} onSort={toggleSort} />
                   <SortableHead label="Company" column="company"    sort={sort} onSort={toggleSort} />
                   <SortableHead label="Status"  column="status"     sort={sort} onSort={toggleSort} />
@@ -101,9 +100,8 @@ export function ContactsTable({ contacts }) {
                     >
                       <TableCell className="font-medium">
                         <div>{c.name || "—"}</div>
-                        <div className="text-xs font-normal text-muted-foreground">{c.email || ""}</div>
+                        {c.email && <div className="text-xs font-normal text-muted-foreground">{c.email}</div>}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{c.email || "—"}</TableCell>
                       <TableCell className="text-xs tabular-nums text-muted-foreground">{c.phone || "—"}</TableCell>
                       <TableCell className="text-xs">{c.company_name || c.company || "—"}</TableCell>
                       <TableCell>
