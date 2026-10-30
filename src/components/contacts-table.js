@@ -99,7 +99,10 @@ export function ContactsTable({ contacts }) {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => router.push(`/contacts/${c.id}`)}
                     >
-                      <TableCell className="font-medium">{c.name || "—"}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{c.name || "—"}</div>
+                        <div className="text-xs font-normal text-muted-foreground">{c.email || ""}</div>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{c.email || "—"}</TableCell>
                       <TableCell className="text-xs tabular-nums text-muted-foreground">{c.phone || "—"}</TableCell>
                       <TableCell className="text-xs">{c.company_name || c.company || "—"}</TableCell>
