@@ -271,22 +271,28 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
               className={`flex w-full flex-col rounded-xl border border-border bg-muted/40 md:w-72 md:shrink-0 ${isCollapsed ? "md:hidden" : ""}`}
             >
               {/* Column header */}
-              <div className="flex items-center gap-2 px-3 py-2.5">
+              {/* The whole header collapses the column on desktop. Phone keeps every column open. */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Collapse ${col.label}`}
+                title={`Collapse ${col.label}`}
+                onClick={() => toggleCollapsed(col.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    toggleCollapsed(col.key)
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 md:cursor-pointer md:rounded-t-xl md:hover:bg-muted/60 md:focus-visible:outline-none md:focus-visible:ring-2 md:focus-visible:ring-ring"
+              >
                 <span
                   className="h-2.5 w-2.5 rounded-full shrink-0"
                   style={{ backgroundColor: col.color }}
                 />
                 <span className="flex-1 text-sm font-medium">{col.label}</span>
                 <Badge variant="secondary" className="text-xs tabular-nums">{colContacts.length}</Badge>
-                <button
-                  type="button"
-                  onClick={() => toggleCollapsed(col.key)}
-                  aria-label={`Collapse ${col.label}`}
-                  title={`Collapse ${col.label}`}
-                  className="hidden md:inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <ChevronLeftIcon className="h-4 w-4" />
-                </button>
+                <ChevronLeftIcon aria-hidden="true" className="hidden md:block h-4 w-4 text-muted-foreground" />
               </div>
 
               <Separator />
