@@ -19,12 +19,12 @@ import {
   addStage,
   updateStage,
   deleteStage,
-  setSourceColor,
 } from "@/app/(app)/pipeline/actions"
 import {
   PIPELINE_SOURCES,
   DEFAULT_PIPELINE_SOURCE,
   contactMatchesSource,
+  SOURCE_DEFAULT_COLORS,
 } from "@/lib/contact-sources"
 import { ALL, tally, todayIst } from "@/lib/contact-filters"
 import { DATE_WINDOWS, matchesPipelineFilters } from "@/lib/pipeline-filters"
@@ -41,14 +41,6 @@ import { DATE_WINDOWS, matchesPipelineFilters } from "@/lib/pipeline-filters"
  * that would re-run the page's SQL and flash the loading skeleton.
  */
 
-/* Default chip colours. A user's own choice (pipeline_source_colors) overrides
-   these. Zoho is kept so a future Zoho import gets a colour. */
-const SOURCE_COLORS = {
-  all: "#64748b",
-  zoho: "#a855f7",
-  madarth: "#0ea5e9",
-  search: "#f59e0b",
-}
 
 export function PipelineBoard({
   contacts,
@@ -65,7 +57,7 @@ export function PipelineBoard({
   const [windowKey, setWindowKey] = useState("any")
   const [custom, setCustom] = useState({ startDate: "", startTime: "", endDate: "", endTime: "" })
   const [needs, setNeeds] = useState(ALL)
-  const [sourceColors, setSourceColors] = useState(initialSourceColors)
+  const sourceColors = initialSourceColors
   const [managing, setManaging] = useState(false)
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
@@ -117,7 +109,7 @@ export function PipelineBoard({
   const filtersActive = query.trim() !== "" || windowKey !== "any" || needs !== ALL
 
   function colorFor(key) {
-    return sourceColors[key] ?? SOURCE_COLORS[key] ?? "#64748b"
+    return sourceColors[key] ?? SOURCE_DEFAULT_COLORS[key] ?? "#64748b"
   }
 
   function onSourceChange(next) {
@@ -138,17 +130,6 @@ export function PipelineBoard({
     window.history.replaceState(null, "", url)
   }
 
-  function onSourceColor(key, color) {
-    setSourceColors((prev) => ({ ...prev, [key]: color }))
-    startTransition(async () => {
-      try {
-        await setSourceColor(key, color)
-      } catch (err) {
-        console.error("[pipeline] source colour save failed", err)
-        setError(err.message || "Couldn't save that colour.")
-      }
-    })
-  }
 
   /* Runs a server action, then refreshes the page's data. */
   function run(action, onDone) {
@@ -255,14 +236,6 @@ export function PipelineBoard({
                   {shownSource.label}
                   <span className="font-medium tabular-nums">{counts[shownSource.key]}</span>
                 </button>
-                <input
-                  type="color"
-                  value={color}
-                  aria-label={`Colour for ${shownSource.label}`}
-                  title={`Colour for ${shownSource.label}`}
-                  onChange={(event) => onSourceColor(shownSource.key, event.target.value)}
-                  className="h-6 w-6 cursor-pointer rounded border border-border bg-transparent p-0.5"
-                />
               </span>
             )
           })}

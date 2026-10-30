@@ -17,6 +17,15 @@ export const PIPELINE_SOURCES = [
 
 export const DEFAULT_PIPELINE_SOURCE = "all"
 
+/* Default tag colours. A user's own choice (pipeline_source_colors) overrides
+   these. Zoho is kept so a future Zoho import gets a colour. */
+export const SOURCE_DEFAULT_COLORS = {
+  all: "#64748b",
+  zoho: "#a855f7",
+  madarth: "#0ea5e9",
+  search: "#f59e0b",
+}
+
 const SOURCE_KEYS = new Set(PIPELINE_SOURCES.map((source) => source.key))
 
 /** Coerce a ?source= value to a known key; unknown → default. */
