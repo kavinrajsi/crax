@@ -15,7 +15,7 @@ export function ListCard({ href, onClick, title, badge, subtitle, meta = [], act
     <>
       <div className="flex min-h-10 items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{title || "—"}</div>
+          <div className="truncate text-base font-semibold">{title || "—"}</div>
           {subtitle && <div className="truncate text-sm text-muted-foreground">{subtitle}</div>}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -35,7 +35,7 @@ export function ListCard({ href, onClick, title, badge, subtitle, meta = [], act
 
   const interactive = Boolean(href || onClick)
   return (
-    <div className={cn("rounded-xl border bg-card p-3 text-card-foreground", interactive && "transition-colors active:bg-muted/50")}>
+    <div className={cn("rounded-2xl border bg-card p-4 text-card-foreground", interactive && "transition-colors active:bg-muted/50")}>
       {href ? (
         <Link href={href} className="block">{body}</Link>
       ) : onClick ? (

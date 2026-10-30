@@ -15,7 +15,7 @@ export function PageHeader({ title, description, actions }) {
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
       <div className="min-w-0">
-        <h1 className="font-heading text-xl font-semibold tracking-tight md:text-2xl">{title}</h1>
+        <h1 className="font-heading text-[32px] font-bold leading-tight tracking-tight md:text-2xl md:font-semibold">{title}</h1>
         {description && (
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}

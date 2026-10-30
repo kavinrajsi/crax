@@ -23,7 +23,7 @@ export function MobileTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
     >
       <ul className="grid grid-cols-5">
         {TABS.map(({ href, label, icon: Icon }) => {
@@ -33,12 +33,12 @@ export function MobileTabBar() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground"
+                className="flex min-h-[49px] flex-col items-center justify-center gap-0.5 text-[10px] text-muted-foreground"
               >
-                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full", active && "bg-muted text-foreground")}>
-                  <Icon className="size-5" />
+                <span className={cn("flex h-6 items-center justify-center", active && "text-primary")}>
+                  <Icon className="size-6" />
                 </span>
-                <span className={cn(active && "font-medium text-foreground")}>{label}</span>
+                <span className={cn(active && "font-semibold text-primary")}>{label}</span>
               </Link>
             </li>
           )
