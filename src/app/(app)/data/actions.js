@@ -5,7 +5,7 @@ import { sql } from "@/lib/db"
 import { requireUserOrThrow } from "@/lib/dal"
 import { recordAudit } from "@/lib/audit"
 import { autoLinkCompany } from "@/lib/company-enrichment"
-import { DEFAULT_CONTACT_STATUS, isContactStatus } from "@/lib/contact-statuses"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 
 /**
  * Manual lead entry from the Data page. Mirrors the import route's rules:
@@ -29,16 +29,23 @@ export async function createContact({ name, email, phone, company, sourceUrl, me
     if (existing) return { error: `A lead with this email already exists (#${existing.id}).` }
   }
 
-  const cleanStatus = isContactStatus(status) ? status : DEFAULT_CONTACT_STATUS
+  /* Any stage in the database is valid, not only the built-in nine. The stage
+     also decides the pipeline, so the lead lands in the pipeline its stage
+     belongs to. */
+  const [stage] = status
+    ? await sql`SELECT key, pipeline_id FROM public.pipeline_stages WHERE key = ${status}`
+    : []
+  const cleanStatus = stage ? stage.key : DEFAULT_CONTACT_STATUS
+  const pipelineId = stage ? stage.pipeline_id : 1
   const cleanNeeds = Array.isArray(needs)
     ? needs.map((n) => String(n).trim()).filter(Boolean)
     : []
 
   const [contact] = await sql`
-    INSERT INTO public.contact_us (name, email, phone, company, source_url, message, needs, status)
+    INSERT INTO public.contact_us (name, email, phone, company, source_url, message, needs, status, pipeline_id)
     VALUES (${cleanName}, ${cleanEmail}, ${String(phone ?? "").trim()},
             ${String(company ?? "").trim()}, ${String(sourceUrl ?? "").trim()},
-            ${String(message ?? "").trim()}, ${cleanNeeds}, ${cleanStatus})
+            ${String(message ?? "").trim()}, ${cleanNeeds}, ${cleanStatus}, ${pipelineId})
     RETURNING *
   `
 

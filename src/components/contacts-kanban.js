@@ -17,7 +17,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ChevronLeftIcon, ChevronRightIcon, GripVerticalIcon, MailIcon, PhoneIcon, BuildingIcon, GlobeIcon } from "lucide-react"
-import { updateContactStatus } from "@/app/(app)/pipeline/actions"
+import { updateContactStatus, moveContactToPipeline } from "@/app/(app)/pipeline/actions"
 import { sourceDomain, timeAgo } from "@/lib/table-utils"
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
@@ -34,7 +34,7 @@ function CardRow({ icon: Icon, value }) {
 
 /* ─── Contact Card ────────────────────────────────────────────────────── */
 
-function ContactCard({ contact }) {
+function ContactCard({ contact, pipelines = [], onMove }) {
   const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `contact-${contact.id}`,
@@ -90,6 +90,27 @@ function ContactCard({ contact }) {
               ))}
             </div>
           )}
+
+          {/* Move to another pipeline. Stops the click and the drag from reaching the card. */}
+          {pipelines.length > 1 && onMove && (
+            <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+              <select
+                aria-label="Move to pipeline"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) onMove(contact, Number(e.target.value))
+                }}
+                className="h-7 w-full rounded-md border border-border bg-transparent px-1.5 text-[11px] text-muted-foreground"
+              >
+                <option value="">Move to pipeline…</option>
+                {pipelines
+                  .filter((p) => p.id !== contact.pipeline_id)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -114,13 +135,31 @@ function OverlayCard({ contact }) {
  * state so the caller can switch filters without remounting and losing an
  * optimistic move that is still in flight.
  */
-export function ContactsKanban({ contacts: initialContacts, statusColumns, filter }) {
+export function ContactsKanban({ contacts: initialContacts, statusColumns, pipelines = [], filter }) {
   const [contacts, setContacts] = useState(initialContacts)
   const [activeContact, setActiveContact] = useState(null)
   const [error, setError] = useState(null)
   const [, startTransition] = useTransition()
 
   const sensors = useKanbanSensors()
+
+  /* The card leaves this board at once (its pipeline no longer matches the
+     filter); the server then sets its first stage in the target pipeline. */
+  function moveToPipeline(contact, pipelineId) {
+    const previous = { pipeline_id: contact.pipeline_id, status: contact.status }
+    setError(null)
+    setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, pipeline_id: pipelineId } : c))
+    startTransition(async () => {
+      try {
+        const { status } = await moveContactToPipeline(contact.id, pipelineId)
+        setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, status } : c))
+      } catch (err) {
+        console.error("[contacts-kanban] pipeline move failed", err)
+        setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, ...previous } : c))
+        setError(`Couldn't move ${contact.name || "contact"}.`)
+      }
+    })
+  }
 
   /* Desktop only: a collapsed column shrinks to a narrow strip so the other
      stages get the width. Phone always shows every column in full. */
@@ -264,7 +303,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, filte
                     </div>
                   ) : (
                     colContacts.map((contact) => (
-                      <ContactCard key={contact.id} contact={contact} />
+                      <ContactCard key={contact.id} contact={contact} pipelines={pipelines} onMove={moveToPipeline} />
                     ))
                   )}
                 </SortableContext>

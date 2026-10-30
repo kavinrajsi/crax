@@ -23,6 +23,7 @@ export default async function DataPage() {
        interpolation, and that is worth keeping. */
     sql`
       SELECT cu.*,
+             COALESCE(ps.resolved, false) AS resolved,
              split_part(regexp_replace(cu.source_url, ${SOURCE_DOMAIN_RE}, ''), '/', 1) AS source_domain,
              GREATEST(
                cu.created_at,
@@ -30,6 +31,7 @@ export default async function DataPage() {
              ) AS last_touch,
              EXISTS(SELECT 1 FROM public.contact_notes n WHERE n.contact_id = cu.id) AS has_touch
       FROM public.contact_us cu
+      LEFT JOIN public.pipeline_stages ps ON ps.key = cu.status
       ORDER BY cu.created_at DESC
     `,
     getCompanyOptions(),

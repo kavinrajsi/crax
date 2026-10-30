@@ -102,6 +102,10 @@ export async function snapshot(table, id) {
         return (await sql`SELECT * FROM public.contact_notes WHERE id = ${id}`)[0] ?? null
       case "company_notes":
         return (await sql`SELECT * FROM public.company_notes WHERE id = ${id}`)[0] ?? null
+      case "pipelines":
+        return (await sql`SELECT * FROM public.pipelines WHERE id = ${id}`)[0] ?? null
+      case "pipeline_stages":
+        return (await sql`SELECT * FROM public.pipeline_stages WHERE key = ${id}`)[0] ?? null
       default:
         return null
     }

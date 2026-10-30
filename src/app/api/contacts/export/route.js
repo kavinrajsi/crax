@@ -2,7 +2,6 @@ import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 import { recordAudit } from "@/lib/audit"
 import { resolveExportColumns } from "@/lib/export-columns"
-import { CONTACT_STATUS_KEYS, RESOLVED_STATUS_KEYS } from "@/lib/contact-statuses"
 
 /**
  * Strips the scheme and a leading `www.` so what is left of source_url up to the
@@ -78,7 +77,10 @@ export async function GET(request) {
   const tags = listParam(searchParams, "tag")
 
   const statuses = listParam(searchParams, "status")
-  if (statuses && statuses.some((key) => !CONTACT_STATUS_KEYS.includes(key))) {
+  const knownStages = statuses
+    ? (await sql`SELECT key FROM public.pipeline_stages`).map((r) => r.key)
+    : []
+  if (statuses && statuses.some((key) => !knownStages.includes(key))) {
     return Response.json(
       { error: "The status parameter must be a contact status key." },
       { status: 400 }
@@ -126,7 +128,7 @@ export async function GET(request) {
             OR c.email ILIKE ${pattern} OR c.company ILIKE ${pattern}
             OR c.phone ILIKE ${pattern})
       AND (${attention}::boolean IS NULL OR (
-            c.status <> ALL(${RESOLVED_STATUS_KEYS}::text[])
+            c.status NOT IN (SELECT key FROM public.pipeline_stages WHERE resolved)
             AND NOT EXISTS (SELECT 1 FROM public.contact_notes n WHERE n.contact_id = c.id)))
     ORDER BY c.created_at DESC
   `

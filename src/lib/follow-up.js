@@ -32,7 +32,11 @@ import { RESOLVED_STATUS_KEYS } from "./contact-statuses.js"
 
 export const RESOLVED_STATUSES = RESOLVED_STATUS_KEYS
 
+/* `resolved` is the stage's flag from pipeline_stages, carried on each row by
+   the pages that query it. A row without it (an older call site) falls back
+   to the built-in list. */
 export function isOpen(contact) {
+  if (typeof contact.resolved === "boolean") return !contact.resolved
   return !RESOLVED_STATUSES.includes(contact.status)
 }
 

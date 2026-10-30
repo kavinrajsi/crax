@@ -8,7 +8,6 @@ import { requireUser } from "@/lib/dal"
 import { sql } from "@/lib/db"
 import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
 import { sourceDomain } from "@/lib/table-utils"
-import { RESOLVED_STATUSES } from "@/lib/follow-up"
 
 export const dynamic = "force-dynamic"
 
@@ -44,7 +43,7 @@ export default async function DashboardPage() {
        card sends you to a list that does not match it. */
     sql`SELECT COUNT(*)::int AS stale
         FROM public.contact_us cu
-        WHERE cu.status <> ALL(${RESOLVED_STATUSES})
+        WHERE cu.status NOT IN (SELECT key FROM public.pipeline_stages WHERE resolved)
           AND NOT EXISTS(SELECT 1 FROM public.contact_notes n WHERE n.contact_id = cu.id)`,
   ])
 

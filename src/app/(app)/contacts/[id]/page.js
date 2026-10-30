@@ -78,7 +78,7 @@ export default async function ContactDetailPage({ params }) {
           <p className="text-sm text-muted-foreground mt-1">Contact #{contact.id}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 md:shrink-0">
-          <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} />
+          <ContactStatusSelect contactId={contact.id} initialStatus={contact.status} pipelineId={contact.pipeline_id} />
         </div>
       </div>
 

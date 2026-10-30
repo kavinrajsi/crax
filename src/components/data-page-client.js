@@ -29,7 +29,7 @@ import { CsvImportDialog } from "@/components/csv-import-dialog"
 import { AddContactDialog } from "@/components/add-contact-dialog"
 import { DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
 import { ListCard } from "@/components/list-card"
-import { CONTACT_STATUSES, statusMeta } from "@/lib/contact-statuses"
+import { useStages, useStatusMeta } from "@/components/stage-context"
 import {
   ALL,
   DATE_PRESETS,
@@ -73,6 +73,8 @@ const SOURCE_NONE = "__none__"
 /* ─── main component ───────────────────────────────────────────────────── */
 
 export function DataPageClient({ contacts, companies, contactTags, sources }) {
+  const statusMeta = useStatusMeta()
+  const stages = useStages()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
   const [sort, setSort] = useState({ column: "created_at", direction: "desc" })
@@ -263,7 +265,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>All statuses</SelectItem>
-                {CONTACT_STATUSES.map((opt) => (
+                {stages.map((opt) => (
                   <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>

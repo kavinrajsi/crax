@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/table"
 import { sortRows, formatDate } from "@/lib/table-utils"
 import { SortableHead, useSort } from "@/components/sortable-head"
-import { statusMeta } from "@/lib/contact-statuses"
+import { useStages, useStatusMeta } from "@/components/stage-context"
 import { CountChips, DesktopTable, EmptyState, FilterSearch, MobileList } from "@/components/page"
 import { ListCard } from "@/components/list-card"
 import { Badge } from "@/components/ui/badge"
-import { CONTACT_STATUSES } from "@/lib/contact-statuses"
 
 function StatusBadge({ status }) {
+  const statusMeta = useStatusMeta()
   const meta = statusMeta(status)
   return (
     <Badge
@@ -49,7 +49,10 @@ export function ContactsTable({ contacts }) {
 
   const rows = sortRows(filtered, sort.column, sort.direction)
 
-  const chips = CONTACT_STATUSES.map((s) => ({
+  const stages = useStages()
+  const statusMeta = useStatusMeta()
+
+  const chips = stages.map((s) => ({
     label: s.label,
     color: s.color,
     count: contacts.filter((c) => c.status === s.key).length,

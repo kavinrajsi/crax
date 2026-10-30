@@ -2,20 +2,16 @@ import { PageShell, PageHeader } from "@/components/page"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { sql } from "@/lib/db"
-import { CONTACT_STATUSES } from "@/lib/contact-statuses"
 
 import { requireUser } from "@/lib/dal"
 
 export const dynamic = "force-dynamic"
 
-const STATUS_COLORS = Object.fromEntries(
-  CONTACT_STATUSES.map((s) => [s.key, s.color])
-)
-
 export default async function AnalyticsPage() {
   await requireUser()
 
-  const [statusRows, dailyRows] = await Promise.all([
+  const [stageRows, statusRows, dailyRows] = await Promise.all([
+    sql`SELECT key, color FROM public.pipeline_stages`,
     sql`
       SELECT status, COUNT(*)::int AS count
       FROM public.contact_us
@@ -30,6 +26,9 @@ export default async function AnalyticsPage() {
       ORDER BY day ASC
     `,
   ])
+
+  // Every stage's colour, from the database, so custom stages are coloured too.
+  const STATUS_COLORS = Object.fromEntries(stageRows.map((s) => [s.key, s.color]))
 
   // Contact status max for bar scaling
   const maxStatusCount = Math.max(...statusRows.map((r) => r.count), 1)

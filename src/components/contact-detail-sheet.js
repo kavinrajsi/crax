@@ -93,6 +93,7 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
                   key={`status-${displayedContact.id}`}
                   contactId={displayedContact.id}
                   initialStatus={displayedContact.status}
+                  pipelineId={displayedContact.pipeline_id}
                 />
               </div>
             </SheetHeader>

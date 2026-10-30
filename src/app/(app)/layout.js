@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { BoltIcon } from "lucide-react"
 import { isCurrentUserAdmin, requireUser } from "@/lib/dal"
+import { sql } from "@/lib/db"
+import { StageProvider } from "@/components/stage-context"
 import {
   Sidebar,
   SidebarContent,
@@ -35,7 +37,15 @@ export default async function AppLayout({ children }) {
      memoized for the render, so this costs no extra round trip. */
   const isAdmin = await isCurrentUserAdmin()
 
+  /* Every stage of every pipeline, for labels and colours app-wide. */
+  const stages = await sql`
+    SELECT key, pipeline_id, label, color, position, resolved
+    FROM public.pipeline_stages
+    ORDER BY pipeline_id ASC, position ASC, key ASC
+  `
+
   return (
+    <StageProvider stages={stages}>
     <SidebarProvider>
       <Sidebar collapsible="icon">
 
@@ -97,5 +107,6 @@ export default async function AppLayout({ children }) {
       </SidebarInset>
       <MobileTabBar />
     </SidebarProvider>
+    </StageProvider>
   )
 }

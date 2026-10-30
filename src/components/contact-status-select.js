@@ -9,11 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updateContactStatus } from "@/app/(app)/pipeline/actions"
-import {
-  CONTACT_STATUSES,
-  DEFAULT_CONTACT_STATUS,
-  statusMeta,
-} from "@/lib/contact-statuses"
+import { DEFAULT_CONTACT_STATUS } from "@/lib/contact-statuses"
+import { useStages, useStatusMeta } from "@/components/stage-context"
 
 /** The status swatch. Same size and shape in the trigger and the menu. */
 function StatusDot({ color }) {
@@ -25,7 +22,12 @@ function StatusDot({ color }) {
   )
 }
 
-export function ContactStatusSelect({ contactId, initialStatus }) {
+/* pipelineId limits the menu to that pipeline's stages. Omit it to list every
+   stage. */
+export function ContactStatusSelect({ contactId, initialStatus, pipelineId }) {
+  const statusMeta = useStatusMeta()
+  const stages = useStages()
+  const menuStages = pipelineId == null ? stages : stages.filter((s) => s.pipeline_id === pipelineId)
   const [status, setStatus] = useState(initialStatus ?? DEFAULT_CONTACT_STATUS)
   const [failed, setFailed] = useState(false)
   const [, startTransition] = useTransition()
@@ -79,7 +81,7 @@ export function ContactStatusSelect({ contactId, initialStatus }) {
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {CONTACT_STATUSES.map((opt) => (
+          {menuStages.map((opt) => (
             <SelectItem key={opt.key} value={opt.key}>
               <StatusDot color={opt.color} />
               {opt.label}
