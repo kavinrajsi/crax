@@ -239,8 +239,8 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
           {error}
         </p>
       )}
-      {/* Phone: columns stack as full-width sections. md+: a horizontal board. */}
-      <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:pb-4">
+      {/* Phone: one column at a time, swiped left to right with snap. md+: a horizontal board. */}
+      <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:snap-none md:px-0 md:pb-4">
         {statusColumns.map((col) => {
           const colContacts = contactsForStatus(col.key)
           const itemIds = colContacts.map((colContact) => `contact-${colContact.id}`)
@@ -268,7 +268,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
 
             <div
               id={`col-${col.key}`}
-              className={`flex w-full flex-col rounded-xl border border-border bg-muted/40 md:w-72 md:shrink-0 ${isCollapsed ? "md:hidden" : ""}`}
+              className={`flex w-[85%] shrink-0 snap-center flex-col rounded-xl border border-border bg-muted/40 md:w-72 ${isCollapsed ? "md:hidden" : ""}`}
             >
               {/* Column header */}
               {/* The whole header collapses the column on desktop. Phone keeps every column open. */}
@@ -300,7 +300,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
               {/* Cards */}
               <div
                 id={`col-${col.key}`}
-                className="flex flex-col gap-2 p-2 min-h-[80px] md:max-h-[calc(100vh-260px)] md:overflow-y-auto"
+                className="flex max-h-[calc(100vh-300px)] flex-col gap-2 overflow-y-auto p-2 min-h-[80px] md:max-h-[calc(100vh-260px)]"
               >
                 <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
                   {colContacts.length === 0 ? (
