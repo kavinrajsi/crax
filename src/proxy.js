@@ -31,6 +31,7 @@ const PUBLIC_PATHS = [
   "/data-retention",
   "/refund",
   "/compare-crm",
+  "/landing",
 ]
 
 export function proxy(request) {
