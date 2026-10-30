@@ -31,7 +31,6 @@ const PUBLIC_PATHS = [
   "/data-retention",
   "/refund",
   "/compare-crm",
-  "/landing",
 ]
 
 export function proxy(request) {
@@ -43,7 +42,8 @@ export function proxy(request) {
      is the intentionally public intake webhook. */
   if (pathname.startsWith("/api/")) return NextResponse.next()
 
-  if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+  /* "/" is exact-match only: the prefix rule below would open the whole app. */
+  if (pathname === "/" || PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return NextResponse.next()
   }
 
