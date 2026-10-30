@@ -106,7 +106,7 @@ export default async function LandingPage() {
           <span className="font-semibold">{LEGAL.appName}</span>
           <nav className="flex items-center gap-2">
             <Link href="/login" className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground">Log in</Link>
-            <Button size="sm" render={<Link href="/signup" />}>Get started</Button>
+            <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90" render={<Link href="/signup" />}>Get started</Button>
           </nav>
         </div>
       </header>
@@ -122,7 +122,7 @@ export default async function LandingPage() {
             {LEGAL.appName} gives your team custom pipelines, a clear record of every change and a dashboard that shows what needs attention today.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" render={<Link href="/signup" />}>Get started</Button>
+            <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90" render={<Link href="/signup" />}>Get started</Button>
             <Button size="lg" variant="outline" render={<a href={`mailto:${LEGAL.contactEmail}?subject=${encodeURIComponent(`${LEGAL.appName} sales enquiry`)}`} />}>
               Talk to sales
             </Button>
@@ -184,7 +184,7 @@ export default async function LandingPage() {
                 Start on your own, or talk to us about setting up {LEGAL.appName} for a bigger team.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" render={<Link href="/signup" />}>Get started</Button>
+                <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90" render={<Link href="/signup" />}>Get started</Button>
                 <Button size="lg" variant="outline" render={<a href={`mailto:${LEGAL.contactEmail}?subject=${encodeURIComponent(`${LEGAL.appName} sales enquiry`)}`} />}>
                   Talk to sales
                 </Button>
