@@ -12,6 +12,7 @@ import {
   GaugeIcon,
   ContactIcon,
   TargetIcon,
+  SettingsIcon,
 } from "lucide-react"
 import {
   SidebarMenu,
@@ -37,6 +38,7 @@ const navTree = [
   },
   { href: "/contacts",  label: "Contacts",   icon: ContactIcon },
   { href: "/companies", label: "Companies",  icon: BuildingIcon },
+  { href: "/settings",  label: "Settings",   icon: SettingsIcon },
   { href: "/logs",      label: "Logs",       icon: ScrollTextIcon },
 ]
 
