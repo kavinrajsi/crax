@@ -29,6 +29,11 @@ export async function updateNote(noteId, body) {
 
   const before = await snapshot("contact_notes", noteId)
   if (!before) throw new Error("Note not found")
+  // Only the author may edit a timeline note. Checked here, not just hidden in the UI,
+  // because server actions are reachable by any signed-in caller.
+  if (before.author_email?.toLowerCase() !== user.email?.toLowerCase()) {
+    throw new Error("You can only edit your own notes")
+  }
   const [note] = await sql`
     UPDATE public.contact_notes SET body = ${html}, updated_at = now() WHERE id = ${noteId} RETURNING *
   `

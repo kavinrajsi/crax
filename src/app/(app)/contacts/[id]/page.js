@@ -42,7 +42,7 @@ function FieldCard({ field, contact, children }) {
 }
 
 export default async function ContactDetailPage({ params }) {
-  await requireUser()
+  const viewer = await requireUser()
 
   const { id } = await params
   const [rows, notes, tags, companies] = await Promise.all([
@@ -124,6 +124,7 @@ export default async function ContactDetailPage({ params }) {
       <ContactTimeline
         contactId={contact.id}
         initialNotes={notes}
+        currentUserEmail={viewer.email}
       />
     </div>
   )

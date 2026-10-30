@@ -171,6 +171,7 @@ export function ContactDetailSheet({ contact, companies, open, onOpenChange, fin
                   key={`timeline-${displayedContact.id}`}
                   contactId={displayedContact.id}
                   initialNotes={contactDetail.notes}
+                  currentUserEmail={contactDetail.viewerEmail}
                 />
               ) : (
                 <div className="flex flex-col gap-3">

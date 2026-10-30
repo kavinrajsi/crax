@@ -2,7 +2,8 @@ import { sql } from "@/lib/db"
 import { getUserOrNull } from "@/lib/dal"
 
 export async function GET(request, { params }) {
-  if (!(await getUserOrNull())) {
+  const user = await getUserOrNull()
+  if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -17,5 +18,5 @@ export async function GET(request, { params }) {
     sql`SELECT * FROM public.contact_tags WHERE contact_id = ${contactId} ORDER BY created_at ASC`,
   ])
 
-  return Response.json({ notes, tags })
+  return Response.json({ notes, tags, viewerEmail: user.email })
 }

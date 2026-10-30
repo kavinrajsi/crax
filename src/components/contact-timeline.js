@@ -8,7 +8,7 @@ import { addNote, updateNote } from "@/app/(app)/contacts/[id]/actions"
 import { NoteItem } from "@/components/note-item"
 import { RichTextEditor } from "@/components/rich-text-editor"
 
-export function ContactTimeline({ contactId, initialNotes }) {
+export function ContactTimeline({ contactId, initialNotes, currentUserEmail }) {
   const [notes, setNotes] = useState(initialNotes)
   const [draft, setDraft] = useState({ html: "", empty: true })
   const [error, setError] = useState(null)
@@ -100,7 +100,12 @@ export function ContactTimeline({ contactId, initialNotes }) {
           {items.map((item, i) => (
             <div key={item.id}>
               {i > 0 && <Separator className="mb-4" />}
-              <NoteItem note={item} icon={MessageSquareIcon} onSave={handleNoteSave} />
+              <NoteItem
+                note={item}
+                icon={MessageSquareIcon}
+                onSave={handleNoteSave}
+                canEdit={!!currentUserEmail && item.author_email?.toLowerCase() === currentUserEmail.toLowerCase()}
+              />
             </div>
           ))}
         </div>

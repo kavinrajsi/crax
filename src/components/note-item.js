@@ -21,8 +21,9 @@ function initials(email) {
  * @param {object}   props.note        row from contact_notes / company_notes
  * @param {Function} props.onSave      (noteId, html) → Promise; rejects on failure
  * @param {object}   [props.icon]      lucide icon shown before the author
+ * @param {boolean}  [props.canEdit=true] whether the viewer may open the edit control
  */
-export function NoteItem({ note, onSave, icon: Icon }) {
+export function NoteItem({ note, onSave, icon: Icon, canEdit = true }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ html: "", empty: true })
   const [error, setError] = useState(null)
@@ -69,7 +70,7 @@ export function NoteItem({ note, onSave, icon: Icon }) {
               <span title={`Edited ${timeAgo(note.updated_at)}`}> · edited</span>
             )}
           </span>
-          {!editing && !note.pending && (
+          {canEdit && !editing && !note.pending && (
             <Button
               type="button"
               variant="ghost"

@@ -9,7 +9,6 @@ import {
   ItalicIcon,
   UnderlineIcon,
   StrikethroughIcon,
-  CodeIcon,
   ListIcon,
   ListOrderedIcon,
   TextQuoteIcon,
@@ -90,6 +89,7 @@ export function RichTextEditor({
   const extensions = useMemo(
     () => [
       StarterKit.configure({
+        code: false,
         heading: { levels: [1, 2, 3] },
         link: { openOnClick: false, autolink: true, defaultProtocol: "https" },
       }),
@@ -144,7 +144,6 @@ export function RichTextEditor({
             italic: e.isActive("italic"),
             underline: e.isActive("underline"),
             strike: e.isActive("strike"),
-            code: e.isActive("code"),
             bulletList: e.isActive("bulletList"),
             orderedList: e.isActive("orderedList"),
             blockquote: e.isActive("blockquote"),
@@ -206,9 +205,6 @@ export function RichTextEditor({
         </ToolbarButton>
         <ToolbarButton label="Strikethrough" active={state?.strike} onClick={run((c) => c.toggleStrike())}>
           <StrikethroughIcon />
-        </ToolbarButton>
-        <ToolbarButton label="Inline code" active={state?.code} onClick={run((c) => c.toggleCode())}>
-          <CodeIcon />
         </ToolbarButton>
         <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
         <ToolbarButton label="Bullet list" active={state?.bulletList} onClick={run((c) => c.toggleBulletList())}>
