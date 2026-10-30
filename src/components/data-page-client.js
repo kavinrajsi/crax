@@ -235,7 +235,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               search and Needs attention, and carried into the export. */}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Select value={datePreset} onValueChange={setDatePreset}>
-              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Date">
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Date">
                 <SelectValue>{dateLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -249,7 +249,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               value={status}
               onValueChange={setStatus}
             >
-              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Status">
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Status">
                 <SelectValue>{statusLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -264,7 +264,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               value={sourceValue}
               onValueChange={(value) => setSource(value === ALL ? ALL : value === SOURCE_NONE ? "" : value)}
             >
-              <SelectTrigger className="h-10 w-full text-sm md:h-8 md:text-xs" aria-label="Source">
+              <SelectTrigger className="h-10 w-full text-sm md:h-9 md:text-sm" aria-label="Source">
                 <SelectValue>{sourceLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -287,7 +287,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
                   value={customFrom}
                   max={customTo || today}
                   onChange={(event) => setCustomFrom(clampToToday(event.target.value))}
-                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
+                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-9 md:text-sm"
                 />
               </label>
               <label className="flex items-center gap-2 text-xs">
@@ -298,7 +298,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
                   min={customFrom || undefined}
                   max={today}
                   onChange={(event) => setCustomTo(clampToToday(event.target.value))}
-                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-8 md:text-xs"
+                  className="h-10 flex-1 rounded-md border border-border bg-transparent px-2 text-sm md:h-9 md:text-sm"
                 />
               </label>
             </div>
