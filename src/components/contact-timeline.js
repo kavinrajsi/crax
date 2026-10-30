@@ -16,11 +16,11 @@ export function ContactTimeline({ contactId, initialNotes, currentUserEmail }) {
   const editorRef = useRef(null)
 
   const items = [...notes].sort(
-    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+    (first, second) => new Date(first.created_at) - new Date(second.created_at)
   )
 
-  function handleNoteSubmit(e) {
-    e?.preventDefault()
+  function handleNoteSubmit(event) {
+    event?.preventDefault()
     if (draft.empty || isPending) return
     const html = draft.html
     const tempId = `pending-${Date.now()}`
@@ -43,10 +43,10 @@ export function ContactTimeline({ contactId, initialNotes, currentUserEmail }) {
       try {
         const saved = await addNote(contactId, html)
         // Swap in the real row so the new note can be edited straight away.
-        setNotes((prev) => prev.map((n) => (n.id === tempId ? saved : n)))
+        setNotes((prev) => prev.map((note) => (note.id === tempId ? saved : note)))
       } catch (err) {
         console.error("[contact-timeline] addNote failed", { contactId, err })
-        setNotes((prev) => prev.filter((n) => n.id !== tempId))
+        setNotes((prev) => prev.filter((note) => note.id !== tempId))
         editorRef.current?.commands.setContent(html)
         setDraft({ html, empty: false })
         setError("Couldn't save that note. Your text has been restored.")
@@ -56,7 +56,7 @@ export function ContactTimeline({ contactId, initialNotes, currentUserEmail }) {
 
   async function handleNoteSave(noteId, html) {
     const saved = await updateNote(noteId, html)
-    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, body: saved.body, updated_at: saved.updated_at } : n)))
+    setNotes((prev) => prev.map((note) => (note.id === noteId ? { ...note, body: saved.body, updated_at: saved.updated_at } : note)))
   }
 
   return (
@@ -97,9 +97,9 @@ export function ContactTimeline({ contactId, initialNotes, currentUserEmail }) {
       {/* Items */}
       {items.length > 0 && (
         <div className="flex flex-col gap-4">
-          {items.map((item, i) => (
+          {items.map((item, index) => (
             <div key={item.id}>
-              {i > 0 && <Separator className="mb-4" />}
+              {index > 0 && <Separator className="mb-4" />}
               <NoteItem
                 note={item}
                 icon={MessageSquareIcon}

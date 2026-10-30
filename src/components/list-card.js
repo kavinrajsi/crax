@@ -39,7 +39,7 @@ export function ListCard({ href, onClick, title, badge, subtitle, meta = [], act
       {href ? (
         <Link href={href} className="block">{body}</Link>
       ) : onClick ? (
-        <div role="button" tabIndex={0} onClick={onClick} onKeyDown={(e) => e.key === "Enter" && onClick()} className="block cursor-pointer">
+        <div role="button" tabIndex={0} onClick={onClick} onKeyDown={(event) => event.key === "Enter" && onClick()} className="block cursor-pointer">
           {body}
         </div>
       ) : (

@@ -56,7 +56,7 @@ function Section({ title, children }) {
 function describeFilters(filters) {
   const parts = []
   if (filters.status !== ALL) {
-    parts.push(`Status: ${CONTACT_STATUSES.find((s) => s.key === filters.status)?.label ?? filters.status}`)
+    parts.push(`Status: ${CONTACT_STATUSES.find((option) => option.key === filters.status)?.label ?? filters.status}`)
   }
   if (filters.source !== ALL) {
     parts.push(`Source: ${filters.source === "" ? NO_DOMAIN_LABEL : filters.source}`)
@@ -64,7 +64,7 @@ function describeFilters(filters) {
   if (filters.preset !== ALL) {
     const label = filters.preset === "custom"
       ? `${filters.from || "…"} to ${filters.to || "…"}`
-      : DATE_PRESETS.find((p) => p.key === filters.preset)?.label
+      : DATE_PRESETS.find((option) => option.key === filters.preset)?.label
     parts.push(`Date: ${label}`)
   }
   if (filters.search.trim()) parts.push(`Search: "${filters.search.trim()}"`)

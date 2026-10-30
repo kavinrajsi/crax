@@ -20,13 +20,13 @@ export function StageProvider({ stages, children }) {
   return <StageContext.Provider value={stages}>{children}</StageContext.Provider>
 }
 
-const FALLBACK = CONTACT_STATUSES.map((s, position) => ({
-  key: s.key,
+const FALLBACK = CONTACT_STATUSES.map((status, position) => ({
+  key: status.key,
   pipeline_id: 1,
-  label: s.label,
-  color: s.color,
+  label: status.label,
+  color: status.color,
   position,
-  resolved: Boolean(s.resolved),
+  resolved: Boolean(status.resolved),
 }))
 
 export function useStages() {
@@ -43,7 +43,7 @@ export function useStatusMeta() {
   return useCallback(
     (key) => {
       if (key == null) return stages[0] ?? FALLBACK[0]
-      return stages.find((s) => s.key === key) ?? { key, label: key, color: "#64748b", resolved: false }
+      return stages.find((stage) => stage.key === key) ?? { key, label: key, color: "#64748b", resolved: false }
     },
     [stages]
   )

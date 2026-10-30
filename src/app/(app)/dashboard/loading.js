@@ -19,9 +19,9 @@ export default function DashboardLoading() {
           </CardHeader>
           <CardContent className="p-0">
             <ul>
-              {Array.from({ length: 6 }, (_, i) => (
-                <li key={i}>
-                  {i > 0 && <div className="h-px w-full shrink-0 bg-border" />}
+              {Array.from({ length: 6 }, (_, index) => (
+                <li key={index}>
+                  {index > 0 && <div className="h-px w-full shrink-0 bg-border" />}
                   <div className="flex items-center justify-between px-4 py-2.5">
                     <Skeleton className="h-5 w-32" />
                     <div className="ml-3 flex shrink-0 items-center gap-2">

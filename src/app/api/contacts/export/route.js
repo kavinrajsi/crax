@@ -49,14 +49,14 @@ export async function GET(request) {
     const raw = idsParam.split(",")
     // Match the digits explicitly rather than trusting Number(): `Number.isInteger`
     // alone accepts 1e20, which then overflows the int4 column and 500s.
-    const valid = raw.every((t) => /^\d{1,9}$/.test(t.trim()))
+    const valid = raw.every((token) => /^\d{1,9}$/.test(token.trim()))
     if (!valid) {
       return Response.json(
         { error: "The ids parameter must be a comma-separated list of positive integers." },
         { status: 400 }
       )
     }
-    ids = raw.map((t) => Number(t.trim()))
+    ids = raw.map((token) => Number(token.trim()))
   }
 
   const fromParam = searchParams.get("from")
@@ -78,7 +78,7 @@ export async function GET(request) {
 
   const statuses = listParam(searchParams, "status")
   const knownStages = statuses
-    ? (await sql`SELECT key FROM public.pipeline_stages`).map((r) => r.key)
+    ? (await sql`SELECT key FROM public.pipeline_stages`).map((stage) => stage.key)
     : []
   if (statuses && statuses.some((key) => !knownStages.includes(key))) {
     return Response.json(
@@ -163,8 +163,8 @@ export async function GET(request) {
     return value
   }
 
-  const rows = contacts.map((c) =>
-    columns.map((column) => escape(toCell(c[column.key]))).join(",")
+  const rows = contacts.map((contact) =>
+    columns.map((column) => escape(toCell(contact[column.key]))).join(",")
   )
 
   /* The one read worth auditing: this is contact PII leaving the system. */

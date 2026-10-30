@@ -81,22 +81,22 @@ export function LogsView({ logs, total }) {
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
 
   const presentActions = useMemo(
-    () => ["all", ...new Set(logs.map((r) => r.action))],
+    () => ["all", ...new Set(logs.map((log) => log.action))],
     [logs]
   )
 
   const rows = useMemo(() => {
     let filtered = logs
-    if (actionFilter !== "all") filtered = filtered.filter((r) => r.action === actionFilter)
+    if (actionFilter !== "all") filtered = filtered.filter((entry) => entry.action === actionFilter)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
-        (r) =>
-          r.actor_email?.toLowerCase().includes(q) ||
-          r.action?.toLowerCase().includes(q) ||
-          r.target_table?.toLowerCase().includes(q) ||
-          String(r.target_id ?? "").includes(q) ||
-          String(r.id).includes(q)
+        (entry) =>
+          entry.actor_email?.toLowerCase().includes(q) ||
+          entry.action?.toLowerCase().includes(q) ||
+          entry.target_table?.toLowerCase().includes(q) ||
+          String(entry.target_id ?? "").includes(q) ||
+          String(entry.id).includes(q)
       )
     }
     return sortRows(filtered, sort.column, sort.direction)
@@ -119,7 +119,7 @@ export function LogsView({ logs, total }) {
             <Input
               placeholder="Search actor, action, ID…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               className="pl-8 h-10 text-sm md:h-8 md:text-xs"
             />
           </div>
@@ -137,7 +137,7 @@ export function LogsView({ logs, total }) {
             >
               {action}
               <span className="ml-1 text-[10px] opacity-70">
-                {action === "all" ? logs.length : logs.filter((r) => r.action === action).length}
+                {action === "all" ? logs.length : logs.filter((log) => log.action === action).length}
               </span>
             </Button>
           ))}

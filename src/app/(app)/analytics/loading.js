@@ -40,9 +40,9 @@ export default function AnalyticsLoading() {
           </CardHeader>
           <CardContent>
             <div className="flex h-24 w-full items-end gap-px">
-              {CHART_BARS.map((height, i) => (
+              {CHART_BARS.map((height, index) => (
                 <div
-                  key={i}
+                  key={index}
                   className="flex-1 animate-pulse rounded-t-sm bg-muted"
                   style={{ height: `${height}%` }}
                 />

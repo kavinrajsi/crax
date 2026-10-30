@@ -16,8 +16,8 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setError("")
     setLoading(true)
     try {
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Sending…" : "Send reset link"}

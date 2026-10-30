@@ -72,23 +72,23 @@ export function PipelineBoard({
 
   const today = todayIst()
 
-  const activePipeline = pipelines.find((p) => p.id === pipelineId) ?? null
+  const activePipeline = pipelines.find((pipeline) => pipeline.id === pipelineId) ?? null
 
   /* Columns are this pipeline's stages, in their saved order. */
   const statusColumns = useMemo(
     () => stages
-      .filter((s) => s.pipeline_id === pipelineId)
-      .map((s) => ({ key: s.key, label: s.label, color: s.color, resolved: s.resolved })),
+      .filter((stage) => stage.pipeline_id === pipelineId)
+      .map((stage) => ({ key: stage.key, label: stage.label, color: stage.color, resolved: stage.resolved })),
     [stages, pipelineId]
   )
 
   const pipelineContacts = useMemo(
-    () => contacts.filter((c) => c.pipeline_id === pipelineId),
+    () => contacts.filter((contact) => contact.pipeline_id === pipelineId),
     [contacts, pipelineId]
   )
 
   const needsOptions = useMemo(
-    () => tally(pipelineContacts.flatMap((c) => c.needs ?? [])),
+    () => tally(pipelineContacts.flatMap((pipelineContact) => pipelineContact.needs ?? [])),
     [pipelineContacts]
   )
 
@@ -99,20 +99,20 @@ export function PipelineBoard({
     [query, windowKey, custom, needs]
   )
   const base = useMemo(
-    () => pipelineContacts.filter((c) => matchesPipelineFilters(c, filters)),
+    () => pipelineContacts.filter((pipelineContact) => matchesPipelineFilters(pipelineContact, filters)),
     [pipelineContacts, filters]
   )
 
   const counts = Object.fromEntries(
-    PIPELINE_SOURCES.map((s) => [s.key, base.filter((c) => contactMatchesSource(c, s.key)).length])
+    PIPELINE_SOURCES.map((sourceTab) => [sourceTab.key, base.filter((contact) => contactMatchesSource(contact, sourceTab.key)).length])
   )
   /* A source with no contacts in the current view gets no tab (Zoho, once its
      rows are gone). "All" always stays. A ?source= pointing at a hidden tab
      falls back to All. */
   const shownSources = PIPELINE_SOURCES.filter(
-    (s) => s.key === DEFAULT_PIPELINE_SOURCE || s.key === source || counts[s.key] > 0
+    (sourceTab) => sourceTab.key === DEFAULT_PIPELINE_SOURCE || sourceTab.key === source || counts[sourceTab.key] > 0
   )
-  const activeSource = shownSources.some((s) => s.key === source) ? source : DEFAULT_PIPELINE_SOURCE
+  const activeSource = shownSources.some((shownSource) => shownSource.key === source) ? source : DEFAULT_PIPELINE_SOURCE
   const visible = counts[activeSource] ?? 0
   const filtersActive = query.trim() !== "" || windowKey !== "any" || needs !== ALL
 
@@ -183,7 +183,7 @@ export function PipelineBoard({
     setCustom({ startDate: "", startTime: "", endDate: "", endTime: "" })
   }
 
-  const windowLabel = DATE_WINDOWS.find((w) => w.key === windowKey)?.label
+  const windowLabel = DATE_WINDOWS.find((window) => window.key === windowKey)?.label
 
   return (
     <PageShell>
@@ -199,12 +199,12 @@ export function PipelineBoard({
             <SelectValue>{activePipeline?.name ?? "Choose a pipeline"}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {pipelines.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+            {pipelines.map((pipeline) => (
+              <SelectItem key={pipeline.id} value={String(pipeline.id)}>{pipeline.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setManaging((v) => !v)}>
+        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setManaging((currentManaging) => !currentManaging)}>
           <SettingsIcon className="h-3.5 w-3.5" />
           {managing ? "Done" : "Manage stages"}
         </Button>
@@ -215,13 +215,13 @@ export function PipelineBoard({
           pipeline={activePipeline}
           stages={statusColumns}
           pipelineCount={pipelines.length}
-          contactCount={contacts.filter((c) => c.pipeline_id === pipelineId).length}
+          contactCount={contacts.filter((contact) => contact.pipeline_id === pipelineId).length}
           isPending={isPending}
           onAddStage={(label, color) => run(() => addStage(pipelineId, label, color))}
           onUpdateStage={(key, label, color) => run(() => updateStage(key, label, color))}
           onDeleteStage={(key) => run(() => deleteStage(key))}
           onCreatePipeline={(name, stage) => run(() => createPipeline(name, stage), (row) => setPipelineId(row.id))}
-          onDeletePipeline={() => run(() => deletePipeline(pipelineId), () => setPipelineId(pipelines.find((p) => p.id !== pipelineId)?.id ?? null))}
+          onDeletePipeline={() => run(() => deletePipeline(pipelineId), () => setPipelineId(pipelines.find((pipeline) => pipeline.id !== pipelineId)?.id ?? null))}
         />
       )}
 
@@ -236,15 +236,15 @@ export function PipelineBoard({
             selected one stronger. Each chip's colour is saved per user; the
             swatch beside it changes it. Hidden sources (no contacts) are not shown. */}
         <div role="group" aria-label="Source" className="flex flex-wrap items-center gap-2">
-          {shownSources.map((s) => {
-            const active = s.key === activeSource
-            const color = colorFor(s.key)
+          {shownSources.map((shownSource) => {
+            const active = shownSource.key === activeSource
+            const color = colorFor(shownSource.key)
             return (
-              <span key={s.key} className="inline-flex items-center gap-1">
+              <span key={shownSource.key} className="inline-flex items-center gap-1">
                 <button
                   type="button"
                   aria-pressed={active}
-                  onClick={() => onSourceChange(s.key)}
+                  onClick={() => onSourceChange(shownSource.key)}
                   className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm transition-colors"
                   style={{
                     backgroundColor: `${color}${active ? "30" : "12"}`,
@@ -252,15 +252,15 @@ export function PipelineBoard({
                     borderColor: `${color}${active ? "90" : "40"}`,
                   }}
                 >
-                  {s.label}
-                  <span className="font-medium tabular-nums">{counts[s.key]}</span>
+                  {shownSource.label}
+                  <span className="font-medium tabular-nums">{counts[shownSource.key]}</span>
                 </button>
                 <input
                   type="color"
                   value={color}
-                  aria-label={`Colour for ${s.label}`}
-                  title={`Colour for ${s.label}`}
-                  onChange={(event) => onSourceColor(s.key, event.target.value)}
+                  aria-label={`Colour for ${shownSource.label}`}
+                  title={`Colour for ${shownSource.label}`}
+                  onChange={(event) => onSourceColor(shownSource.key, event.target.value)}
                   className="h-6 w-6 cursor-pointer rounded border border-border bg-transparent p-0.5"
                 />
               </span>
@@ -285,8 +285,8 @@ export function PipelineBoard({
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {DATE_WINDOWS.map((w) => (
-                <SelectItem key={w.key} value={w.key}>{w.label}</SelectItem>
+              {DATE_WINDOWS.map((window) => (
+                <SelectItem key={window.key} value={window.key}>{window.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -313,8 +313,8 @@ export function PipelineBoard({
               date={custom.startDate}
               time={custom.startTime}
               max={custom.endDate || today}
-              onDate={(v) => setCustomDate("startDate", v)}
-              onTime={(v) => setCustomTime("startTime", v)}
+              onDate={(value) => setCustomDate("startDate", value)}
+              onTime={(value) => setCustomTime("startTime", value)}
             />
             <DateTimePair
               label="End"
@@ -322,8 +322,8 @@ export function PipelineBoard({
               time={custom.endTime}
               min={custom.startDate || undefined}
               max={today}
-              onDate={(v) => setCustomDate("endDate", v)}
-              onTime={(v) => setCustomTime("endTime", v)}
+              onDate={(value) => setCustomDate("endDate", value)}
+              onTime={(value) => setCustomTime("endTime", value)}
             />
           </div>
         )}
@@ -362,13 +362,13 @@ function StageRow({ stage, disabled, onSave, onDelete }) {
       <input
         type="color"
         value={color}
-        onChange={(e) => setColor(e.target.value)}
+        onChange={(event) => setColor(event.target.value)}
         aria-label={`Colour for ${stage.label}`}
         className="h-7 w-7 shrink-0 cursor-pointer rounded border border-border bg-transparent p-0.5"
       />
       <input
         value={label}
-        onChange={(e) => setLabel(e.target.value)}
+        onChange={(event) => setLabel(event.target.value)}
         maxLength={60}
         aria-label={`Name of stage ${stage.label}`}
         className="h-8 flex-1 min-w-0 rounded-md border border-border bg-transparent px-2 text-sm"
@@ -419,10 +419,10 @@ function PipelineManager({
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-semibold text-muted-foreground">Stages in {pipeline.name}</h3>
         <ul className="flex flex-col gap-1.5">
-          {stages.map((s) => (
+          {stages.map((stage) => (
             <StageRow
-              key={s.key}
-              stage={s}
+              key={stage.key}
+              stage={stage}
               disabled={isPending}
               onSave={onUpdateStage}
               onDelete={onDeleteStage}
@@ -440,7 +440,7 @@ function PipelineManager({
         >
           <input
             value={label}
-            onChange={(e) => setLabel(e.target.value)}
+            onChange={(event) => setLabel(event.target.value)}
             placeholder="New stage name"
             maxLength={60}
             className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"
@@ -448,7 +448,7 @@ function PipelineManager({
           <input
             type="color"
             value={color}
-            onChange={(e) => setColor(e.target.value)}
+            onChange={(event) => setColor(event.target.value)}
             aria-label="Stage colour"
             className="h-9 w-10 cursor-pointer rounded border border-border bg-transparent p-1"
           />
@@ -473,14 +473,14 @@ function PipelineManager({
         >
           <input
             value={pipelineName}
-            onChange={(e) => setPipelineName(e.target.value)}
+            onChange={(event) => setPipelineName(event.target.value)}
             placeholder="Pipeline name, e.g. Enterprise"
             maxLength={60}
             className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"
           />
           <input
             value={firstStage}
-            onChange={(e) => setFirstStage(e.target.value)}
+            onChange={(event) => setFirstStage(event.target.value)}
             placeholder="First stage, e.g. Qualified"
             maxLength={60}
             className="h-9 flex-1 min-w-40 rounded-md border border-border bg-transparent px-2"

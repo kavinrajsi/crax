@@ -27,7 +27,7 @@ function StatusDot({ color }) {
 export function ContactStatusSelect({ contactId, initialStatus, pipelineId }) {
   const statusMeta = useStatusMeta()
   const stages = useStages()
-  const menuStages = pipelineId == null ? stages : stages.filter((s) => s.pipeline_id === pipelineId)
+  const menuStages = pipelineId == null ? stages : stages.filter((stage) => stage.pipeline_id === pipelineId)
   const [status, setStatus] = useState(initialStatus ?? DEFAULT_CONTACT_STATUS)
   const [failed, setFailed] = useState(false)
   const [, startTransition] = useTransition()

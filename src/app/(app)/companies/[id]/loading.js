@@ -40,8 +40,8 @@ export default function CompanyDetailLoading() {
           <Skeleton className="h-5 w-8 rounded-4xl" />
         </div>
         <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-1">
                 <Skeleton className="h-5 w-32" />
                 <Skeleton className="h-4 w-40" />

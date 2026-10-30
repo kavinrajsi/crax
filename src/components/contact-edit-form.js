@@ -87,7 +87,7 @@ export function ContactEditForm({ contact }) {
               <Input
                 type={type}
                 value={fields[key]}
-                onChange={(e) => setFields((prev) => ({ ...prev, [key]: e.target.value }))}
+                onChange={(event) => setFields((prev) => ({ ...prev, [key]: event.target.value }))}
                 disabled={isPending}
               />
             </div>

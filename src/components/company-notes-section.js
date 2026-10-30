@@ -15,8 +15,8 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
   const [isPending, startTransition] = useTransition()
   const editorRef = useRef(null)
 
-  function handleSubmit(e) {
-    e?.preventDefault()
+  function handleSubmit(event) {
+    event?.preventDefault()
     if (draft.empty || isPending) return
     const html = draft.html
     const tempId = `pending-${Date.now()}`
@@ -35,10 +35,10 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
     startTransition(async () => {
       try {
         const saved = await addCompanyNote(companyId, html)
-        setNotes((prev) => prev.map((n) => (n.id === tempId ? saved : n)))
+        setNotes((prev) => prev.map((note) => (note.id === tempId ? saved : note)))
       } catch (err) {
         console.error("[company-notes] addCompanyNote failed", { companyId, err })
-        setNotes((prev) => prev.filter((n) => n.id !== tempId))
+        setNotes((prev) => prev.filter((note) => note.id !== tempId))
         editorRef.current?.commands.setContent(html)
         setDraft({ html, empty: false })
         setError("Couldn't save that note. Your text has been restored.")
@@ -48,7 +48,7 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
 
   async function handleNoteSave(noteId, html) {
     const saved = await updateCompanyNote(noteId, html)
-    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, body: saved.body, updated_at: saved.updated_at } : n)))
+    setNotes((prev) => prev.map((note) => (note.id === noteId ? { ...note, body: saved.body, updated_at: saved.updated_at } : note)))
   }
 
   return (
@@ -62,9 +62,9 @@ export function CompanyNotesSection({ companyId, initialNotes }) {
 
       {notes.length > 0 && (
         <div className="flex flex-col gap-3">
-          {notes.map((note, i) => (
+          {notes.map((note, index) => (
             <div key={note.id}>
-              {i > 0 && <Separator className="mb-3" />}
+              {index > 0 && <Separator className="mb-3" />}
               <NoteItem note={note} onSave={handleNoteSave} />
             </div>
           ))}

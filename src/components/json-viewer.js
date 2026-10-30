@@ -25,7 +25,7 @@ export function JsonViewer({ data, className = "" }) {
     <div className={className}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((currentOpen) => !currentOpen)}
         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors max-w-full"
       >
         {open

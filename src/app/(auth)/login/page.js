@@ -18,8 +18,8 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setError("")
     setLoading(true)
     try {
@@ -52,7 +52,7 @@ export default function LoginPage() {
           )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </div>
           <Button type="submit" className="w-full mt-1" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}

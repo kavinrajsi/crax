@@ -38,21 +38,21 @@ export function SmeSubmissionsView({ submissions }) {
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
 
   const presentTypes = useMemo(
-    () => ["all", ...new Set(submissions.map((r) => r.type))],
+    () => ["all", ...new Set(submissions.map((submission) => submission.type))],
     [submissions]
   )
 
   const rows = useMemo(() => {
     let filtered = submissions
-    if (typeFilter !== "all") filtered = filtered.filter((r) => r.type === typeFilter)
+    if (typeFilter !== "all") filtered = filtered.filter((entry) => entry.type === typeFilter)
     if (search) {
       const q = search.toLowerCase()
       filtered = filtered.filter(
-        (r) =>
-          r.name?.toLowerCase().includes(q) ||
-          r.email?.toLowerCase().includes(q) ||
-          r.phone?.toLowerCase().includes(q) ||
-          String(r.id).includes(q)
+        (entry) =>
+          entry.name?.toLowerCase().includes(q) ||
+          entry.email?.toLowerCase().includes(q) ||
+          entry.phone?.toLowerCase().includes(q) ||
+          String(entry.id).includes(q)
       )
     }
     return sortRows(filtered, sort.column, sort.direction)
@@ -71,7 +71,7 @@ export function SmeSubmissionsView({ submissions }) {
             <Input
               placeholder="Search name, email, phone…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               className="pl-8 h-10 text-sm md:h-8 md:text-xs"
             />
           </div>
@@ -88,7 +88,7 @@ export function SmeSubmissionsView({ submissions }) {
             >
               {type === "all" ? "all" : TYPE_LABELS[type] ?? type}
               <span className="ml-1 text-[10px] opacity-70">
-                {type === "all" ? submissions.length : submissions.filter((r) => r.type === type).length}
+                {type === "all" ? submissions.length : submissions.filter((submission) => submission.type === type).length}
               </span>
             </Button>
           ))}

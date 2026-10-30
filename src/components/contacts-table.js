@@ -35,15 +35,15 @@ export function ContactsTable({ contacts }) {
   const [search, setSearch] = useState("")
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
 
-  const filtered = contacts.filter((c) => {
+  const filtered = contacts.filter((contact) => {
     if (!search) return true
     const q = search.toLowerCase()
     return (
-      c.name?.toLowerCase().includes(q) ||
-      c.email?.toLowerCase().includes(q) ||
-      c.phone?.toLowerCase().includes(q) ||
-      c.company?.toLowerCase().includes(q) ||
-      c.company_name?.toLowerCase().includes(q)
+      contact.name?.toLowerCase().includes(q) ||
+      contact.email?.toLowerCase().includes(q) ||
+      contact.phone?.toLowerCase().includes(q) ||
+      contact.company?.toLowerCase().includes(q) ||
+      contact.company_name?.toLowerCase().includes(q)
     )
   })
 
@@ -52,10 +52,10 @@ export function ContactsTable({ contacts }) {
   const stages = useStages()
   const statusMeta = useStatusMeta()
 
-  const chips = stages.map((s) => ({
-    label: s.label,
-    color: s.color,
-    count: contacts.filter((c) => c.status === s.key).length,
+  const chips = stages.map((stage) => ({
+    label: stage.label,
+    color: stage.color,
+    count: contacts.filter((contact) => contact.status === stage.key).length,
   })).filter((chip) => chip.count > 0)
 
   return (
@@ -69,14 +69,14 @@ export function ContactsTable({ contacts }) {
       ) : (
         <>
           <MobileList>
-            {rows.map((c) => (
+            {rows.map((row) => (
               <ListCard
-                key={c.id}
-                href={`/contacts/${c.id}`}
-                title={c.name || c.email || "—"}
-                subtitle={c.email || c.company_name || c.company}
-                badge={<StatusBadge status={c.status} />}
-                meta={[c.phone, c.company_name || c.company, formatDate(c.created_at, { compact: true })]}
+                key={row.id}
+                href={`/contacts/${row.id}`}
+                title={row.name || row.email || "—"}
+                subtitle={row.email || row.company_name || row.company}
+                badge={<StatusBadge status={row.status} />}
+                meta={[row.phone, row.company_name || row.company, formatDate(row.created_at, { compact: true })]}
               />
             ))}
           </MobileList>
@@ -93,20 +93,20 @@ export function ContactsTable({ contacts }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((c) => {
-                  const meta = statusMeta(c.status)
+                {rows.map((row) => {
+                  const meta = statusMeta(row.status)
                   return (
                     <TableRow
-                      key={c.id}
+                      key={row.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/contacts/${c.id}`)}
+                      onClick={() => router.push(`/contacts/${row.id}`)}
                     >
                       <TableCell className="font-medium">
-                        <div>{c.name || "—"}</div>
-                        {c.email && <div className="text-xs font-normal text-muted-foreground">{c.email}</div>}
+                        <div>{row.name || "—"}</div>
+                        {row.email && <div className="text-xs font-normal text-muted-foreground">{row.email}</div>}
                       </TableCell>
-                      <TableCell className="text-xs tabular-nums text-muted-foreground">{c.phone || "—"}</TableCell>
-                      <TableCell className="text-xs">{c.company_name || c.company || "—"}</TableCell>
+                      <TableCell className="text-xs tabular-nums text-muted-foreground">{row.phone || "—"}</TableCell>
+                      <TableCell className="text-xs">{row.company_name || row.company || "—"}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center gap-1.5 text-xs">
                           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />
@@ -114,7 +114,7 @@ export function ContactsTable({ contacts }) {
                         </span>
                       </TableCell>
                       <TableCell className="text-xs text-right tabular-nums text-muted-foreground">
-                        {formatDate(c.created_at)}
+                        {formatDate(row.created_at)}
                       </TableCell>
                     </TableRow>
                   )

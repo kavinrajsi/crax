@@ -53,7 +53,7 @@ export default async function DataPage() {
         contacts={contacts}
         companies={companies}
         contactTags={contactTags}
-        sources={sourceRows.map((r) => r.source_url)}
+        sources={sourceRows.map((sourceRow) => sourceRow.source_url)}
       />
     </PageShell>
   )

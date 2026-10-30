@@ -28,22 +28,22 @@ export default async function AnalyticsPage() {
   ])
 
   // Every stage's colour, from the database, so custom stages are coloured too.
-  const STATUS_COLORS = Object.fromEntries(stageRows.map((s) => [s.key, s.color]))
+  const STATUS_COLORS = Object.fromEntries(stageRows.map((stageRow) => [stageRow.key, stageRow.color]))
 
   // Contact status max for bar scaling
-  const maxStatusCount = Math.max(...statusRows.map((r) => r.count), 1)
+  const maxStatusCount = Math.max(...statusRows.map((statusRow) => statusRow.count), 1)
 
   // Last 30 days — fill missing days
-  const dailyMap = Object.fromEntries(dailyRows.map((r) => [r.day.toISOString().slice(0, 10), r.count]))
+  const dailyMap = Object.fromEntries(dailyRows.map((dailyRow) => [dailyRow.day.toISOString().slice(0, 10), dailyRow.count]))
   const last30 = []
-  for (let i = 29; i >= 0; i--) {
+  for (let index = 29; index >= 0; index--) {
     const d = new Date()
-    d.setDate(d.getDate() - i)
+    d.setDate(d.getDate() - index)
     const key = d.toISOString().slice(0, 10)
     last30.push({ date: key, count: dailyMap[key] ?? 0 })
   }
-  const maxDay = Math.max(...last30.map((d) => d.count), 1)
-  const totalNewContacts = last30.reduce((s, d) => s + d.count, 0)
+  const maxDay = Math.max(...last30.map((last302) => last302.count), 1)
+  const totalNewContacts = last30.reduce((accumulator, last302) => accumulator + last302.count, 0)
 
   return (
     <PageShell>

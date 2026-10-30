@@ -25,8 +25,8 @@ export function CompanyForm({ company, onSaved, trigger }) {
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
-  function handleSubmit(e) {
-    e.preventDefault()
+  function handleSubmit(event) {
+    event.preventDefault()
     if (!name.trim()) return
     const fields = {
       name: name.trim(),
@@ -83,19 +83,19 @@ export function CompanyForm({ company, onSaved, trigger }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Company name <span className="text-destructive">*</span></Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Acme Corp" disabled={isPending} required />
+            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Acme Corp" disabled={isPending} required />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Industry</Label>
-            <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. SaaS, Retail, Healthcare" disabled={isPending} />
+            <Input value={industry} onChange={(event) => setIndustry(event.target.value)} placeholder="e.g. SaaS, Retail, Healthcare" disabled={isPending} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Website</Label>
-            <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://example.com" type="url" disabled={isPending} />
+            <Input value={website} onChange={(event) => setWebsite(event.target.value)} placeholder="https://example.com" type="url" disabled={isPending} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs">Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" type="tel" disabled={isPending} />
+            <Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+91 98765 43210" type="tel" disabled={isPending} />
           </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}

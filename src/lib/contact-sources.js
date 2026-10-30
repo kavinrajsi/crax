@@ -17,7 +17,7 @@ export const PIPELINE_SOURCES = [
 
 export const DEFAULT_PIPELINE_SOURCE = "all"
 
-const SOURCE_KEYS = new Set(PIPELINE_SOURCES.map((s) => s.key))
+const SOURCE_KEYS = new Set(PIPELINE_SOURCES.map((source) => source.key))
 
 /** Coerce a ?source= value to a known key; unknown → default. */
 export function normalizePipelineSource(value) {

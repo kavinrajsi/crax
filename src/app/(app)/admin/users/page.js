@@ -86,7 +86,7 @@ export default async function AdminUsersPage() {
     `,
   ])
 
-  const admins = users.filter((u) => isAdminEmail(u.email, process.env.SUPER_ADMIN_EMAILS)).length
+  const admins = users.filter((user) => isAdminEmail(user.email, process.env.SUPER_ADMIN_EMAILS)).length
 
   const stats = [
     { key: "users", label: "All Users", icon: UsersIcon, value: totals.users },
@@ -131,24 +131,24 @@ export default async function AdminUsersPage() {
           {/* Phone: one card per account, with the same facts as the table. */}
           <div className="flex flex-col gap-2 p-3 md:hidden">
             {users.length === 0 && <EmptyState>No accounts yet.</EmptyState>}
-            {users.map((u) => {
-              const admin = isAdminEmail(u.email, process.env.SUPER_ADMIN_EMAILS)
+            {users.map((user) => {
+              const admin = isAdminEmail(user.email, process.env.SUPER_ADMIN_EMAILS)
               return (
                 <ListCard
-                  key={u.id}
-                  href={`/admin/users/${u.id}`}
-                  title={u.name || "—"}
-                  subtitle={u.email}
+                  key={user.id}
+                  href={`/admin/users/${user.id}`}
+                  title={user.name || "—"}
+                  subtitle={user.email}
                   badge={
                     <div className="flex gap-1">
                       {admin && <Badge variant="secondary">Super admin</Badge>}
-                      {u.banned && <Badge variant="destructive">Banned</Badge>}
+                      {user.banned && <Badge variant="destructive">Banned</Badge>}
                     </div>
                   }
                   meta={[
-                    `Joined ${formatDate(u.created_at, { compact: true })}`,
-                    u.last_session ? timeAgo(u.last_session) : "No live session",
-                    `${u.events ?? 0} events`,
+                    `Joined ${formatDate(user.created_at, { compact: true })}`,
+                    user.last_session ? timeAgo(user.last_session) : "No live session",
+                    `${user.events ?? 0} events`,
                   ]}
                 />
               )
@@ -168,32 +168,32 @@ export default async function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u) => {
-                const admin = isAdminEmail(u.email, process.env.SUPER_ADMIN_EMAILS)
+              {users.map((user) => {
+                const admin = isAdminEmail(user.email, process.env.SUPER_ADMIN_EMAILS)
                 return (
-                  <TableRow key={u.id}>
+                  <TableRow key={user.id}>
                     <TableCell>
                       <Link
-                        href={`/admin/users/${u.id}`}
+                        href={`/admin/users/${user.id}`}
                         className="font-medium underline-offset-4 hover:underline"
                       >
-                        {u.name || "—"}
+                        {user.name || "—"}
                       </Link>
                       <div className="flex gap-1.5 pt-1">
                         {admin && <Badge variant="secondary">Super admin</Badge>}
-                        {u.banned && <Badge variant="destructive">Banned</Badge>}
+                        {user.banned && <Badge variant="destructive">Banned</Badge>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDate(u.created_at)}
+                      {formatDate(user.created_at)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {u.last_session ? timeAgo(u.last_session) : "No live session"}
+                      {user.last_session ? timeAgo(user.last_session) : "No live session"}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{u.events ?? 0}</TableCell>
+                    <TableCell className="text-right tabular-nums">{user.events ?? 0}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {u.last_event ? timeAgo(u.last_event) : "—"}
+                      {user.last_event ? timeAgo(user.last_event) : "—"}
                     </TableCell>
                   </TableRow>
                 )

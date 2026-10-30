@@ -32,8 +32,8 @@ export default function LogsLoading() {
 
           {/* Action filter chips */}
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {Array.from({ length: 5 }, (_, i) => (
-              <Skeleton key={i} className="h-6 w-20 rounded-lg" />
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton key={index} className="h-6 w-20 rounded-lg" />
             ))}
           </div>
         </CardHeader>

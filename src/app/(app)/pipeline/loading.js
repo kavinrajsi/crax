@@ -37,9 +37,9 @@ export default function PipelineLoading() {
                   className="flex min-h-[80px] flex-col gap-2 overflow-y-auto p-2"
                   style={{ maxHeight: "calc(100vh - 260px)" }}
                 >
-                  {Array.from({ length: cardCount }, (_, i) => (
+                  {Array.from({ length: cardCount }, (_, index) => (
                     <div
-                      key={i}
+                      key={index}
                       className="rounded-lg border border-border bg-card p-3 text-xs shadow-sm"
                     >
                       <div className="flex items-start gap-2">

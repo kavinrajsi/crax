@@ -32,8 +32,8 @@ export default function ProfileLoading() {
               <Skeleton className="h-5 w-64" />
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {Array.from({ length: 2 }, (_, i) => (
-                <div key={i} className="flex flex-col gap-1.5">
+              {Array.from({ length: 2 }, (_, index) => (
+                <div key={index} className="flex flex-col gap-1.5">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-8 w-full rounded-lg" />
                 </div>

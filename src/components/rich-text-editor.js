@@ -32,7 +32,7 @@ function ToolbarButton({ label, active = false, disabled = false, onClick, child
       disabled={disabled}
       className={cn("text-muted-foreground", active && "bg-muted text-foreground")}
       // Keep the selection inside the editor; a focus change would collapse it.
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
     >
       {children}
@@ -235,13 +235,13 @@ export function RichTextEditor({
             type="url"
             placeholder="https://example.com"
             value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
+            onChange={(event) => setLinkUrl(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault()
                 applyLink()
-              } else if (e.key === "Escape") {
-                e.preventDefault()
+              } else if (event.key === "Escape") {
+                event.preventDefault()
                 setLinkOpen(false)
               }
             }}

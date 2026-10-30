@@ -20,11 +20,11 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false)
 
   function update(field) {
-    return (e) => setForm((p) => ({ ...p, [field]: e.target.value }))
+    return (event) => setForm((currentForm) => ({ ...currentForm, [field]: event.target.value }))
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setError("")
     if (form.password.length < 8) { setError("Password must be at least 8 characters."); return }
     if (form.password !== form.confirm) { setError("Passwords do not match."); return }

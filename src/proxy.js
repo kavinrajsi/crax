@@ -34,13 +34,13 @@ export function proxy(request) {
      is the intentionally public intake webhook. */
   if (pathname.startsWith("/api/")) return NextResponse.next()
 
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return NextResponse.next()
   }
 
   const hasSession = request.cookies
     .getAll()
-    .some((c) => c.name.endsWith(SESSION_COOKIE_SUFFIX) && c.value)
+    .some((cookie) => cookie.name.endsWith(SESSION_COOKIE_SUFFIX) && cookie.value)
 
   if (hasSession) return NextResponse.next()
 

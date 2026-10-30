@@ -148,7 +148,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
   /* Source options come from source_domain, derived in SQL by data/page.js.
      Nulls are dropped; "" stays as its own option, shown as "(none)". */
   const sourceOptions = useMemo(
-    () => tally(contacts.map((contact) => contact.source_domain).filter((d) => d != null)),
+    () => tally(contacts.map((contact) => contact.source_domain).filter((domain) => domain != null)),
     [contacts]
   )
 
@@ -207,7 +207,7 @@ export function DataPageClient({ contacts, companies, contactTags, sources }) {
               variant={onlyStale ? "default" : "outline"}
               size="sm"
               className="h-8 gap-1.5 text-xs"
-              onClick={() => setOnlyStale((v) => !v)}
+              onClick={() => setOnlyStale((currentOnlyStale) => !currentOnlyStale)}
               aria-pressed={onlyStale}
               title="Open leads nobody has left a note on"
               disabled={staleCount === 0 && !onlyStale}

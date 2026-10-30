@@ -16,7 +16,7 @@ function initials(name) {
   return (name || "U")
     .split(" ")
     .slice(0, 2)
-    .map((w) => w[0])
+    .map((word) => word[0])
     .join("")
     .toUpperCase()
 }
@@ -35,8 +35,8 @@ function AccountTab({ initialName, initialEmail }) {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setLoading(true)
     try {
       await authClient.updateUser({ name })
@@ -58,7 +58,7 @@ function AccountTab({ initialName, initialEmail }) {
           {saved && <SavedAlert />}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Display name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email address</Label>
@@ -82,8 +82,8 @@ function SecurityTab({ initialEmail }) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSendReset(e) {
-    e.preventDefault()
+  async function handleSendReset(event) {
+    event.preventDefault()
     setError("")
     setLoading(true)
     try {
@@ -116,7 +116,7 @@ function SecurityTab({ initialEmail }) {
           )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="reset-email">Email address</Label>
-            <Input id="reset-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="reset-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
         </CardContent>
         <CardFooter className="justify-end">

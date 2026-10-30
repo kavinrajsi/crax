@@ -12,11 +12,11 @@ export function ContactTags({ contactId, initialTags }) {
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
-  function handleKeyDown(e) {
-    if (e.key !== "Enter") return
-    e.preventDefault()
+  function handleKeyDown(event) {
+    if (event.key !== "Enter") return
+    event.preventDefault()
     const tag = input.trim().toLowerCase()
-    if (!tag || tags.some((t) => t.tag === tag)) {
+    if (!tag || tags.some((tagItem) => tagItem.tag === tag)) {
       setInput("")
       return
     }
@@ -31,15 +31,15 @@ export function ContactTags({ contactId, initialTags }) {
         await addTag(contactId, tag)
       } catch (err) {
         console.error("[contact-tags] addTag failed", { contactId, tag, err })
-        setTags((prev) => prev.filter((t) => t.id !== optimistic.id))
+        setTags((prev) => prev.filter((tagItem) => tagItem.id !== optimistic.id))
         setError(`Couldn't add "${tag}".`)
       }
     })
   }
 
   function handleRemove(tagId) {
-    const removed = tags.find((t) => t.id === tagId)
-    setTags((prev) => prev.filter((t) => t.id !== tagId))
+    const removed = tags.find((tagItem) => tagItem.id === tagId)
+    setTags((prev) => prev.filter((tagItem) => tagItem.id !== tagId))
     setError(null)
     startTransition(async () => {
       try {
@@ -55,11 +55,11 @@ export function ContactTags({ contactId, initialTags }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-1.5 min-h-[24px]">
-        {tags.map((t) => (
-          <Badge key={t.id} variant="outline" className="text-xs gap-1 pr-1">
-            {t.tag}
+        {tags.map((tagItem) => (
+          <Badge key={tagItem.id} variant="outline" className="text-xs gap-1 pr-1">
+            {tagItem.tag}
             <button
-              onClick={() => handleRemove(t.id)}
+              onClick={() => handleRemove(tagItem.id)}
               className="hover:text-destructive transition-colors leading-none ml-0.5"
               disabled={isPending}
             >
@@ -75,7 +75,7 @@ export function ContactTags({ contactId, initialTags }) {
       <Input
         placeholder="Type a tag and press Enter…"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(event) => setInput(event.target.value)}
         onKeyDown={handleKeyDown}
         className="h-7 text-xs w-56"
         disabled={isPending}

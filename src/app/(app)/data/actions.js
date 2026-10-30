@@ -38,7 +38,7 @@ export async function createContact({ name, email, phone, company, sourceUrl, me
   const cleanStatus = stage ? stage.key : DEFAULT_CONTACT_STATUS
   const pipelineId = stage ? stage.pipeline_id : 1
   const cleanNeeds = Array.isArray(needs)
-    ? needs.map((n) => String(n).trim()).filter(Boolean)
+    ? needs.map((need) => String(need).trim()).filter(Boolean)
     : []
 
   const [contact] = await sql`

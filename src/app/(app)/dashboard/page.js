@@ -59,7 +59,7 @@ export default async function DashboardPage() {
     domainMap[domain] = (domainMap[domain] ?? 0) + cnt
   }
   const domainList = Object.entries(domainMap)
-    .sort((a, b) => b[1] - a[1])
+    .sort((first, second) => second[1] - first[1])
 
   /* Bars are scaled against the largest domain, not contactTotal.
      contactTotal counts contacts with no source_url at all, so no bar could
@@ -135,9 +135,9 @@ export default async function DashboardPage() {
               </p>
             ) : (
               <ul>
-                {domainList.map(([domain, count], i) => (
+                {domainList.map(([domain, count], index) => (
                   <li key={domain}>
-                    {i > 0 && <Separator />}
+                    {index > 0 && <Separator />}
                     <div className="flex items-center justify-between px-4 py-2.5">
                       <span className="text-sm truncate">{domain}</span>
                       <div className="flex items-center gap-2 shrink-0 ml-3">

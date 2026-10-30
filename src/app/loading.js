@@ -41,8 +41,8 @@ export default function RootLoading() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex w-full min-w-0 flex-col p-2">
             <div className="flex w-full min-w-0 flex-col gap-0">
-              {Array.from({ length: 7 }, (_, i) => (
-                <div key={i} className="flex h-8 w-full items-center gap-2 rounded-md p-2">
+              {Array.from({ length: 7 }, (_, index) => (
+                <div key={index} className="flex h-8 w-full items-center gap-2 rounded-md p-2">
                   <Skeleton className="size-4 shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>

@@ -48,9 +48,9 @@ export function ContactCompanySelect({ contactId, initialCompanyId, companies, c
         }
         setCompanyId(String(result.companyId))
         // If it's a newly created company, add it to the local list so the Select shows it
-        if (result.created || !allCompanies.find((c) => c.id === result.companyId)) {
+        if (result.created || !allCompanies.find((allCompany) => allCompany.id === result.companyId)) {
           setAllCompanies((prev) => [
-            ...prev.filter((c) => c.id !== result.companyId),
+            ...prev.filter((allCompany) => allCompany.id !== result.companyId),
             { id: result.companyId, name: result.companyName },
           ])
         }
@@ -66,7 +66,7 @@ export function ContactCompanySelect({ contactId, initialCompanyId, companies, c
     })
   }
 
-  const linked = allCompanies.find((c) => String(c.id) === companyId)
+  const linked = allCompanies.find((allCompany) => String(allCompany.id) === companyId)
 
   return (
     <div className="flex flex-col gap-2">
@@ -77,10 +77,10 @@ export function ContactCompanySelect({ contactId, initialCompanyId, companies, c
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">None</SelectItem>
-            {allCompanies.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>
+            {allCompanies.map((allCompany) => (
+              <SelectItem key={allCompany.id} value={String(allCompany.id)}>
                 <BuildingIcon className="h-3 w-3 shrink-0" />
-                {c.name}
+                {allCompany.name}
               </SelectItem>
             ))}
           </SelectContent>

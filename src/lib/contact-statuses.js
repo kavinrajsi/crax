@@ -76,12 +76,12 @@ export const CONTACT_STATUSES = [
  * "fake" and "test" are triage outcomes for junk submissions on a public
  * intake form, not leftovers.
  */
-export const CONTACT_STATUS_KEYS = CONTACT_STATUSES.map((s) => s.key)
+export const CONTACT_STATUS_KEYS = CONTACT_STATUSES.map((status) => status.key)
 
 /** Statuses that mean the lead is finished. Anything else is still open. */
 export const RESOLVED_STATUS_KEYS = CONTACT_STATUSES
-  .filter((s) => s.resolved)
-  .map((s) => s.key)
+  .filter((status) => status.resolved)
+  .map((stage) => stage.key)
 
 /**
  * What a new row gets. Matches the column default in the schema and the literal
@@ -100,5 +100,5 @@ export function isContactStatus(key) {
  * instead of crashing the row it appears in.
  */
 export function statusMeta(key) {
-  return CONTACT_STATUSES.find((s) => s.key === key) ?? CONTACT_STATUSES[0]
+  return CONTACT_STATUSES.find((status) => status.key === key) ?? CONTACT_STATUSES[0]
 }

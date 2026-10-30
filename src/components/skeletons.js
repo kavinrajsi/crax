@@ -57,8 +57,8 @@ export function BackLink({ width = "w-28" }) {
 export function TabsListSkeleton({ widths = ["w-24", "w-24"] }) {
   return (
     <div className="inline-flex h-8 w-fit items-center justify-center gap-1.5 rounded-lg bg-muted p-[3px]">
-      {widths.map((width, i) => (
-        <Skeleton key={i} className={cn("h-[calc(100%-1px)] rounded-md", width)} />
+      {widths.map((width, index) => (
+        <Skeleton key={index} className={cn("h-[calc(100%-1px)] rounded-md", width)} />
       ))}
     </div>
   )
@@ -84,8 +84,8 @@ export function StatCardGrid({
 }) {
   return (
     <div className={gridClassName}>
-      {Array.from({ length: count }, (_, i) => (
-        <Card key={i}>
+      {Array.from({ length: count }, (_, index) => (
+        <Card key={index}>
           <CardHeader className="flex-row items-center justify-between pb-1">
             <Skeleton className="h-5 w-28" />
             <Skeleton className="h-4 w-4" />
@@ -115,13 +115,13 @@ export function BarRowsContent({
 }) {
   return (
     <CardContent className="flex flex-col gap-3">
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center gap-3">
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="flex items-center gap-3">
           <Skeleton className={cn("h-4 shrink-0", labelWidth)} />
           {/* bg-muted track is the real thing, not a placeholder — only the
               fill inside it pulses */}
           <div className={cn("flex-1 overflow-hidden bg-muted", barClassName)}>
-            <Skeleton className={cn("h-full", BAR_FILLS[i % BAR_FILLS.length])} />
+            <Skeleton className={cn("h-full", BAR_FILLS[index % BAR_FILLS.length])} />
           </div>
           <Skeleton className={cn("h-4 shrink-0", valueWidth)} />
         </div>
@@ -144,10 +144,10 @@ export function FieldCardSkeleton({ wide = false, valueLines = 1 }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-1">
-        {Array.from({ length: valueLines }, (_, i) => (
+        {Array.from({ length: valueLines }, (_, index) => (
           <Skeleton
-            key={i}
-            className={cn("h-5", i === valueLines - 1 ? "w-2/3" : "w-full")}
+            key={index}
+            className={cn("h-5", index === valueLines - 1 ? "w-2/3" : "w-full")}
           />
         ))}
       </CardContent>
@@ -178,9 +178,9 @@ export function ThreadSkeleton({
       </div>
 
       <div className={cn("flex flex-col", entryGapClassName)}>
-        {Array.from({ length: entries }, (_, i) => (
-          <div key={i}>
-            {i > 0 && (
+        {Array.from({ length: entries }, (_, index) => (
+          <div key={index}>
+            {index > 0 && (
               <div
                 className={cn(
                   "h-px w-full shrink-0 bg-border",
@@ -231,8 +231,8 @@ export function TableSkeleton({ columns, rows = 10, headClassName = "", rowClass
     <>
       {/* Phone: stacked row placeholders, the same shape as the MobileList cards. */}
       <div className="flex flex-col gap-2 p-3 md:hidden">
-        {Array.from({ length: Math.min(rows, 6) }, (_, r) => (
-          <div key={r} className="rounded-xl border p-3">
+        {Array.from({ length: Math.min(rows, 6) }, (_, index) => (
+          <div key={index} className="rounded-xl border p-3">
             <div className="flex items-start justify-between gap-2">
               <Skeleton className="h-4 w-36" />
               <Skeleton className="h-5 w-16 rounded-md" />
@@ -249,9 +249,9 @@ export function TableSkeleton({ columns, rows = 10, headClassName = "", rowClass
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
           <tr className={cn("border-b", headClassName)}>
-            {columns.map((column, i) => (
+            {columns.map((column, index) => (
               <th
-                key={i}
+                key={index}
                 className={cn(
                   "h-10 px-2 text-left align-middle font-medium whitespace-nowrap",
                   column.width
@@ -263,11 +263,11 @@ export function TableSkeleton({ columns, rows = 10, headClassName = "", rowClass
           </tr>
         </thead>
         <tbody className="[&_tr:last-child]:border-0">
-          {Array.from({ length: rows }, (_, r) => (
-            <tr key={r} className={cn("border-b", rowClassName)}>
-              {columns.map((column, i) => (
+          {Array.from({ length: rows }, (_, index) => (
+            <tr key={index} className={cn("border-b", rowClassName)}>
+              {columns.map((column, index) => (
                 <td
-                  key={i}
+                  key={index}
                   className={cn("p-2 align-middle whitespace-nowrap", column.cellClassName)}
                 >
                   {column.lines === 2 ? (

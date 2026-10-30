@@ -34,24 +34,24 @@ export function CompaniesTable({ companies: initialCompanies }) {
   const { sort, toggleSort } = useSort({ column: "created_at", direction: "desc" })
   const [isPending, startTransition] = useTransition()
 
-  const filtered = companies.filter((c) => {
+  const filtered = companies.filter((company) => {
     if (!search) return true
     const q = search.toLowerCase()
     return (
-      c.name?.toLowerCase().includes(q) ||
-      c.industry?.toLowerCase().includes(q) ||
-      c.website?.toLowerCase().includes(q)
+      company.name?.toLowerCase().includes(q) ||
+      company.industry?.toLowerCase().includes(q) ||
+      company.website?.toLowerCase().includes(q)
     )
   })
 
   const rows = sortRows(filtered, sort.column, sort.direction)
 
-  function handleDelete(e, companyId) {
-    e.stopPropagation()
+  function handleDelete(event, companyId) {
+    event.stopPropagation()
     // Snapshot before the optimistic removal — a failed delete used to leave the
     // company missing from the table while still present in the database.
     const previous = companies
-    setCompanies((prev) => prev.filter((c) => c.id !== companyId))
+    setCompanies((prev) => prev.filter((company) => company.id !== companyId))
     setError(null)
     startTransition(async () => {
       try {
@@ -107,7 +107,7 @@ export function CompaniesTable({ companies: initialCompanies }) {
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-destructive"
-                    onClick={(e) => handleDelete(e, company.id)}
+                    onClick={(event) => handleDelete(event, company.id)}
                     disabled={isPending}
                   >
                     <Trash2Icon className="size-3.5" />
@@ -145,7 +145,7 @@ export function CompaniesTable({ companies: initialCompanies }) {
                           href={safeHref(company.website)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(event) => event.stopPropagation()}
                           className="flex items-center gap-1 text-primary hover:underline"
                         >
                           <GlobeIcon className="h-3 w-3" />
@@ -157,12 +157,12 @@ export function CompaniesTable({ companies: initialCompanies }) {
                     <TableCell className="text-center">
                       <Badge variant="secondary" className="text-xs tabular-nums">{company.contact_count ?? 0}</Badge>
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(event) => event.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         className="text-muted-foreground hover:text-destructive"
-                        onClick={(e) => handleDelete(e, company.id)}
+                        onClick={(event) => handleDelete(event, company.id)}
                         disabled={isPending}
                       >
                         <Trash2Icon className="h-3.5 w-3.5" />

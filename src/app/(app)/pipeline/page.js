@@ -29,11 +29,11 @@ export default async function PipelinePage({ searchParams }) {
 
   // ?pipeline= picks the board; anything unknown falls back to the first pipeline.
   const requested = Number.parseInt(pipeline, 10)
-  const activePipelineId = pipelines.some((p) => p.id === requested)
+  const activePipelineId = pipelines.some((candidate) => candidate.id === requested)
     ? requested
     : pipelines[0]?.id ?? null
 
-  const sourceColors = Object.fromEntries(colorRows.map((r) => [r.source_key, r.color]))
+  const sourceColors = Object.fromEntries(colorRows.map((colorRow) => [colorRow.source_key, colorRow.color]))
 
   return (
     <PipelineBoard

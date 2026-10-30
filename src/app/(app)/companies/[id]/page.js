@@ -115,18 +115,18 @@ export default async function CompanyDetailPage({ params }) {
           </p>
         ) : (
           <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
-            {contacts.map((c) => (
+            {contacts.map((contact) => (
               <Link
-                key={c.id}
-                href={`/contacts/${c.id}`}
+                key={contact.id}
+                href={`/contacts/${contact.id}`}
                 className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium">{c.name || "—"}</p>
-                  <p className="text-xs text-muted-foreground">{c.email || "—"}</p>
-                  <p className="text-xs text-muted-foreground/70">Added {formatDate(c.created_at)}</p>
+                  <p className="text-sm font-medium">{contact.name || "—"}</p>
+                  <p className="text-xs text-muted-foreground">{contact.email || "—"}</p>
+                  <p className="text-xs text-muted-foreground/70">Added {formatDate(contact.created_at)}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">{c.status || "—"}</Badge>
+                <Badge variant="outline" className="text-xs">{contact.status || "—"}</Badge>
               </Link>
             ))}
           </div>

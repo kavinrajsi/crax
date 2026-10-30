@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 
 function initials(name) {
-  return (name || "G").split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+  return (name || "G").split(" ").slice(0, 2).map((word) => word[0]).join("").toUpperCase()
 }
 
 export function SidebarUser({ displayName, email }) {

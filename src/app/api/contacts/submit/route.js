@@ -53,8 +53,8 @@ function clientIp(request) {
 }
 
 function parseNeeds(raw) {
-  if (Array.isArray(raw)) return raw.map((n) => String(n).trim()).filter(Boolean)
-  if (typeof raw === "string") return raw.split(",").map((n) => n.trim()).filter(Boolean)
+  if (Array.isArray(raw)) return raw.map((need) => String(need).trim()).filter(Boolean)
+  if (typeof raw === "string") return raw.split(",").map((need) => need.trim()).filter(Boolean)
   return []
 }
 

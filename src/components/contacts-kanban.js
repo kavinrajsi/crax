@@ -59,7 +59,7 @@ function ContactCard({ contact, pipelines = [], onMove }) {
           {...attributes}
           {...listeners}
           className="mt-0.5 shrink-0 text-muted-foreground/30 hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-none"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           <GripVerticalIcon className="h-3.5 w-3.5" />
         </span>
@@ -85,28 +85,28 @@ function ContactCard({ contact, pipelines = [], onMove }) {
           {/* Needs */}
           {Array.isArray(contact.needs) && contact.needs.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {contact.needs.map((n) => (
-                <Badge key={n} variant="secondary" className="text-[10px] px-1.5 py-0">{n}</Badge>
+              {contact.needs.map((need) => (
+                <Badge key={need} variant="secondary" className="text-[10px] px-1.5 py-0">{need}</Badge>
               ))}
             </div>
           )}
 
           {/* Move to another pipeline. Stops the click and the drag from reaching the card. */}
           {pipelines.length > 1 && onMove && (
-            <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+            <div onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
               <select
                 aria-label="Move to pipeline"
                 value=""
-                onChange={(e) => {
-                  if (e.target.value) onMove(contact, Number(e.target.value))
+                onChange={(event) => {
+                  if (event.target.value) onMove(contact, Number(event.target.value))
                 }}
                 className="h-7 w-full rounded-md border border-border bg-transparent px-1.5 text-[11px] text-muted-foreground"
               >
                 <option value="">Move to pipeline…</option>
                 {pipelines
-                  .filter((p) => p.id !== contact.pipeline_id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                  .filter((pipeline) => pipeline.id !== contact.pipeline_id)
+                  .map((option) => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
               </select>
             </div>
@@ -148,14 +148,14 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
   function moveToPipeline(contact, pipelineId) {
     const previous = { pipeline_id: contact.pipeline_id, status: contact.status }
     setError(null)
-    setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, pipeline_id: pipelineId } : c))
+    setContacts((prev) => prev.map((entry) => entry.id === contact.id ? { ...entry, pipeline_id: pipelineId } : entry))
     startTransition(async () => {
       try {
         const { status } = await moveContactToPipeline(contact.id, pipelineId)
-        setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, status } : c))
+        setContacts((prev) => prev.map((entry) => entry.id === contact.id ? { ...entry, status } : entry))
       } catch (err) {
         console.error("[contacts-kanban] pipeline move failed", err)
-        setContacts((prev) => prev.map((c) => c.id === contact.id ? { ...c, ...previous } : c))
+        setContacts((prev) => prev.map((entry) => entry.id === contact.id ? { ...entry, ...previous } : entry))
         setError(`Couldn't move ${contact.name || "contact"}.`)
       }
     })
@@ -175,7 +175,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
   }
 
   function contactsForStatus(status) {
-    return contacts.filter((c) => c.status === status && (!filter || filter(c)))
+    return contacts.filter((contact) => contact.status === status && (!filter || filter(contact)))
   }
 
   function onDragStart(event) {
@@ -199,7 +199,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
       newStatus = overId.replace("col-", "")
     } else if (overId.startsWith("contact-")) {
       const targetId = parseInt(overId.replace("contact-", ""))
-      const target = contacts.find((c) => c.id === targetId)
+      const target = contacts.find((entry) => entry.id === targetId)
       if (target) newStatus = target.status
     }
 
@@ -210,7 +210,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
        its new column forever — the UI claimed a status the database never got. */
     const previousStatus = contact.status
     setContacts((prev) =>
-      prev.map((c) => c.id === contact.id ? { ...c, status: newStatus } : c)
+      prev.map((entry) => entry.id === contact.id ? { ...entry, status: newStatus } : entry)
     )
     setError(null)
 
@@ -220,7 +220,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
       } catch (err) {
         console.error("[contacts-kanban] status update failed", err)
         setContacts((prev) =>
-          prev.map((c) => c.id === contact.id ? { ...c, status: previousStatus } : c)
+          prev.map((entry) => entry.id === contact.id ? { ...entry, status: previousStatus } : entry)
         )
         setError(`Couldn't move ${contact.name || "contact"} to ${newStatus}.`)
       }
@@ -243,7 +243,7 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
       <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:pb-4">
         {statusColumns.map((col) => {
           const colContacts = contactsForStatus(col.key)
-          const itemIds = colContacts.map((c) => `contact-${c.id}`)
+          const itemIds = colContacts.map((colContact) => `contact-${colContact.id}`)
 
           const isCollapsed = collapsed.has(col.key)
 
@@ -278,9 +278,9 @@ export function ContactsKanban({ contacts: initialContacts, statusColumns, pipel
                 aria-label={`Collapse ${col.label}`}
                 title={`Collapse ${col.label}`}
                 onClick={() => toggleCollapsed(col.key)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
                     toggleCollapsed(col.key)
                   }
                 }}

@@ -92,5 +92,5 @@ export function tally(values) {
   for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
   return [...counts.entries()]
     .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
+    .sort((first, second) => second.count - first.count || String(first.value).localeCompare(String(second.value)))
 }

@@ -33,11 +33,11 @@ export function AddContactDialog({ sources = [] }) {
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
 
-  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (event) => setForm((currentForm) => ({ ...currentForm, [field]: event.target.value }))
 
-  function handleClose(v) {
-    setOpen(v)
-    if (!v) {
+  function handleClose(value) {
+    setOpen(value)
+    if (!value) {
       setForm(EMPTY)
       setError(null)
     }
@@ -50,7 +50,7 @@ export function AddContactDialog({ sources = [] }) {
         const result = await createContact({
           ...form,
           sourceUrl: form.sourceUrl === OTHER_SOURCE ? form.customSource : form.sourceUrl,
-          needs: form.needs.split(",").map((n) => n.trim()).filter(Boolean),
+          needs: form.needs.split(",").map((need) => need.trim()).filter(Boolean),
         })
         if (result?.error) {
           setError(result.error)
@@ -87,11 +87,11 @@ export function AddContactDialog({ sources = [] }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Source</p>
-            <Select value={form.sourceUrl || undefined} onValueChange={(v) => setForm((f) => ({ ...f, sourceUrl: v }))}>
+            <Select value={form.sourceUrl || undefined} onValueChange={(value) => setForm((currentForm) => ({ ...currentForm, sourceUrl: value }))}>
               <SelectTrigger className="w-full"><SelectValue placeholder="Select a source (optional)" /></SelectTrigger>
               <SelectContent>
-                {sources.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                {sources.map((source) => (
+                  <SelectItem key={source} value={source}>{source}</SelectItem>
                 ))}
                 <SelectItem value={OTHER_SOURCE}>Other…</SelectItem>
               </SelectContent>
@@ -114,14 +114,14 @@ export function AddContactDialog({ sources = [] }) {
           <Input placeholder="Needs, comma-separated (optional)" value={form.needs} onChange={set("needs")} />
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Status</p>
-            <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}>
+            <Select value={form.status} onValueChange={(value) => setForm((currentForm) => ({ ...currentForm, status: value }))}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {CONTACT_STATUSES.map((s) => (
-                  <SelectItem key={s.key} value={s.key}>
+                {CONTACT_STATUSES.map((status) => (
+                  <SelectItem key={status.key} value={status.key}>
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-                      {s.label}
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: status.color }} />
+                      {status.label}
                     </span>
                   </SelectItem>
                 ))}

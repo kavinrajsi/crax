@@ -75,7 +75,7 @@ export async function POST(request) {
     const company = str(row.company)
     const sourceUrl = str(row.source_url) || "csv-import"
     const needs = row.needs
-      ? String(row.needs).split(",").map((n) => n.trim()).filter(Boolean)
+      ? String(row.needs).split(",").map((need) => need.trim()).filter(Boolean)
       : []
 
     if (!name && !email && !phone) {

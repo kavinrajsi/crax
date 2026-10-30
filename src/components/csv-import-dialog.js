@@ -46,15 +46,15 @@ function downloadSampleCsv() {
 }
 
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim())
+  const lines = text.trim().split(/\r?\n/).filter((line) => line.trim())
   if (lines.length < 2) return { headers: [], rows: [] }
 
   function parseRow(line) {
     const result = []
     let cur = ""
     let inQuotes = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
+    for (let index = 0; index < line.length; index++) {
+      const ch = line[index]
       if (ch === '"') { inQuotes = !inQuotes }
       else if (ch === "," && !inQuotes) { result.push(cur.trim()); cur = "" }
       else { cur += ch }
@@ -63,14 +63,14 @@ function parseCSV(text) {
     return result
   }
 
-  const headers = parseRow(lines[0]).map((h) => h.replace(/^"|"$/g, ""))
-  const rows = lines.slice(1, 6).map((l) => {
-    const cells = parseRow(l).map((c) => c.replace(/^"|"$/g, ""))
-    return headers.reduce((obj, h, i) => ({ ...obj, [h]: cells[i] ?? "" }), {})
+  const headers = parseRow(lines[0]).map((header) => header.replace(/^"|"$/g, ""))
+  const rows = lines.slice(1, 6).map((line) => {
+    const cells = parseRow(line).map((cell) => cell.replace(/^"|"$/g, ""))
+    return headers.reduce((obj, header, index) => ({ ...obj, [header]: cells[index] ?? "" }), {})
   })
-  const allRows = lines.slice(1).map((l) => {
-    const cells = parseRow(l).map((c) => c.replace(/^"|"$/g, ""))
-    return headers.reduce((obj, h, i) => ({ ...obj, [h]: cells[i] ?? "" }), {})
+  const allRows = lines.slice(1).map((line) => {
+    const cells = parseRow(line).map((cell) => cell.replace(/^"|"$/g, ""))
+    return headers.reduce((obj, header, index) => ({ ...obj, [header]: cells[index] ?? "" }), {})
   })
 
   return { headers, previewRows: rows, allRows }
@@ -79,15 +79,15 @@ function parseCSV(text) {
 function guessMapping(headers) {
   const map = {}
   const lower = (s) => s.toLowerCase().replace(/[^a-z]/g, "")
-  headers.forEach((h) => {
-    const l = lower(h)
-    if (l.includes("name"))   map[h] = "name"
-    else if (l.includes("email")) map[h] = "email"
-    else if (l.includes("phone") || l.includes("mobile")) map[h] = "phone"
-    else if (l.includes("company") || l.includes("org")) map[h] = "company"
-    else if (l.includes("source") || l.includes("url")) map[h] = "source_url"
-    else if (l.includes("need") || l.includes("service")) map[h] = "needs"
-    else map[h] = "__skip__"
+  headers.forEach((header) => {
+    const l = lower(header)
+    if (l.includes("name"))   map[header] = "name"
+    else if (l.includes("email")) map[header] = "email"
+    else if (l.includes("phone") || l.includes("mobile")) map[header] = "phone"
+    else if (l.includes("company") || l.includes("org")) map[header] = "company"
+    else if (l.includes("source") || l.includes("url")) map[header] = "source_url"
+    else if (l.includes("need") || l.includes("service")) map[header] = "needs"
+    else map[header] = "__skip__"
   })
   return map
 }
@@ -101,12 +101,12 @@ export function CsvImportDialog({ onImported }) {
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef(null)
 
-  function handleFile(e) {
-    const file = e.target.files?.[0]
+  function handleFile(event) {
+    const file = event.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      const data = parseCSV(ev.target.result)
+    reader.onload = (event) => {
+      const data = parseCSV(event.target.result)
       if (data.headers.length === 0) return
       setParsed(data)
       setMapping(guessMapping(data.headers))
@@ -153,9 +153,9 @@ export function CsvImportDialog({ onImported }) {
     })
   }
 
-  function handleClose(v) {
-    setOpen(v)
-    if (!v) {
+  function handleClose(open2) {
+    setOpen(open2)
+    if (!open2) {
       setStep("upload")
       setParsed(null)
       setMapping({})
@@ -207,14 +207,14 @@ export function CsvImportDialog({ onImported }) {
           <div className="flex flex-col gap-4 mt-2">
             <p className="text-xs text-muted-foreground">Map your CSV columns to contact fields. Unneeded columns can be skipped.</p>
             <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-              {parsed.headers.map((h) => (
-                <div key={h} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-32 truncate shrink-0" title={h}>{h}</span>
+              {parsed.headers.map((header) => (
+                <div key={header} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-32 truncate shrink-0" title={header}>{header}</span>
                   <span className="text-muted-foreground text-xs">→</span>
-                  <Select value={mapping[h] ?? "__skip__"} onValueChange={(v) => setMapping((m) => ({ ...m, [h]: v }))}>
+                  <Select value={mapping[header] ?? "__skip__"} onValueChange={(value) => setMapping((currentMapping) => ({ ...currentMapping, [header]: value }))}>
                     <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {IMPORTABLE_FIELDS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                      {IMPORTABLE_FIELDS.map((field) => <SelectItem key={field.value} value={field.value}>{field.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -228,22 +228,22 @@ export function CsvImportDialog({ onImported }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b">
-                      {parsed.headers.map((h) => (
-                        <th key={h} className="text-left px-3 py-2 text-muted-foreground font-medium whitespace-nowrap">
-                          {mapping[h] && mapping[h] !== "__skip__"
-                            ? IMPORTABLE_FIELDS.find(f => f.value === mapping[h])?.label ?? h
-                            : <span className="line-through opacity-50">{h}</span>
+                      {parsed.headers.map((header) => (
+                        <th key={header} className="text-left px-3 py-2 text-muted-foreground font-medium whitespace-nowrap">
+                          {mapping[header] && mapping[header] !== "__skip__"
+                            ? IMPORTABLE_FIELDS.find(field => field.value === mapping[header])?.label ?? header
+                            : <span className="line-through opacity-50">{header}</span>
                           }
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {parsed.previewRows.map((row, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        {parsed.headers.map((h) => (
-                          <td key={h} className={`px-3 py-1.5 whitespace-nowrap ${mapping[h] === "__skip__" ? "opacity-40" : ""}`}>
-                            {row[h] || "—"}
+                    {parsed.previewRows.map((row, index) => (
+                      <tr key={index} className="border-b last:border-0">
+                        {parsed.headers.map((header) => (
+                          <td key={header} className={`px-3 py-1.5 whitespace-nowrap ${mapping[header] === "__skip__" ? "opacity-40" : ""}`}>
+                            {row[header] || "—"}
                           </td>
                         ))}
                       </tr>
@@ -297,8 +297,8 @@ export function CsvImportDialog({ onImported }) {
                 </p>
                 {result.errors?.length > 0 && (
                   <ul className="text-xs text-destructive/80 w-full max-w-sm space-y-0.5">
-                    {result.errors.map((e, i) => (
-                      <li key={i} className="truncate">{e}</li>
+                    {result.errors.map((error, index) => (
+                      <li key={index} className="truncate">{error}</li>
                     ))}
                   </ul>
                 )}
