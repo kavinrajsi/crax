@@ -1,6 +1,15 @@
+import { Fragment } from "react"
 import Link from "next/link"
+import { CheckIcon, MinusIcon } from "lucide-react"
 import { LEGAL } from "@/lib/legal"
-import { COMPARE_CHECKED, CRAX_FEATURES, COMPETITORS } from "@/lib/compare-crm"
+import { COMPARE_CHECKED, CRAX_FEATURES, COMPETITORS, MATRIX_TOOLS, MATRIX_GROUPS } from "@/lib/compare-crm"
+
+function MatrixCell({ value }) {
+  if (value === "yes") return <CheckIcon aria-label="Yes" className="mx-auto size-4 text-primary" />
+  if (value === "no") return <MinusIcon aria-label="No" className="mx-auto size-4 text-muted-foreground" />
+  if (value === "limited") return <span className="text-xs text-muted-foreground">Limited</span>
+  return <span className="text-xs italic text-muted-foreground/70">To verify</span>
+}
 
 export const metadata = { title: "Compare CRMs · Crax" }
 
@@ -57,6 +66,42 @@ export default function CompareCrmPage() {
                     <td className="py-3 pr-4 text-muted-foreground">{tool.choose}</td>
                     <td className="py-3 text-muted-foreground">{tool.limits}</td>
                   </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Feature comparison</h2>
+          <p className="text-xs text-muted-foreground">Scroll sideways on a phone. &ldquo;To verify&rdquo; marks a cell not yet checked against the vendor.</p>
+          <div className="-mx-4 overflow-x-auto px-4">
+            <table className="min-w-[960px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="sticky left-0 bg-background py-2 pr-4 font-medium">Feature</th>
+                  {MATRIX_TOOLS.map((tool) => (
+                    <th key={tool} className={`px-2 py-2 text-center font-medium ${tool === LEGAL.appName ? "bg-muted/40" : ""}`}>{tool}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MATRIX_GROUPS.map((group) => (
+                  <Fragment key={group.title}>
+                    <tr className="bg-muted/30">
+                      <th colSpan={MATRIX_TOOLS.length + 1} className="sticky left-0 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.title}</th>
+                    </tr>
+                    {group.rows.map((row) => (
+                      <tr key={row.label} className="border-b">
+                        <th scope="row" className="sticky left-0 bg-background py-2 pr-4 text-left font-normal">{row.label}</th>
+                        {row.values.map((value, index) => (
+                          <td key={MATRIX_TOOLS[index]} className={`px-2 py-2 text-center ${index === 0 ? "bg-muted/40" : ""}`}>
+                            <MatrixCell value={value} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

@@ -84,3 +84,52 @@ export const COMPETITORS = [
     limits: "Most value comes from staying inside the Zoho ecosystem.",
   },
 ]
+
+/* Feature matrix, in the style of an edition comparison table.
+   Values: "yes" | "no" | "limited" | "verify" (not yet checked against the vendor). */
+export const MATRIX_TOOLS = ["Crax", "Spreadsheets", "Pipedrive", "HubSpot", "monday.com", "Insightly", "Act! CRM", "Copper", "Capsule", "Close CRM", "Attio", "Zoho Bigin"]
+
+export const MATRIX_GROUPS = [
+  {
+    title: "Sales",
+    rows: [
+      { label: "Custom pipelines and stages", values: ["yes", "no", "yes", "yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "yes"] },
+      { label: "Contact and company records", values: ["yes", "yes", "yes", "yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+      { label: "Deal tracking", values: ["yes", "limited", "yes", "yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+    ],
+  },
+  {
+    title: "Automation",
+    rows: [
+      { label: "Email sync", values: ["no", "no", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+      { label: "Workflow automation", values: ["no", "limited", "verify", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+    ],
+  },
+  {
+    title: "Analytics",
+    rows: [
+      { label: "Dashboards and reports", values: ["yes", "limited", "verify", "yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+    ],
+  },
+  {
+    title: "Collaboration and records",
+    rows: [
+      { label: "Timeline notes", values: ["yes", "no", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+      { label: "Audit log of changes", values: ["yes", "limited", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+    ],
+  },
+  {
+    title: "Data and integrations",
+    rows: [
+      { label: "CSV import and export", values: ["yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+      { label: "Public lead intake API", values: ["yes", "no", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+    ],
+  },
+  {
+    title: "Access and pricing",
+    rows: [
+      { label: "Mobile app", values: ["no", "limited", "yes", "yes", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify"] },
+      { label: "Free plan", values: ["verify", "yes", "verify", "yes", "verify", "verify", "verify", "verify", "verify", "verify", "verify", "yes"] },
+    ],
+  },
+]
